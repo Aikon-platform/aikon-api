@@ -30,6 +30,7 @@ class FileListDataset(Dataset):
 
     def __getitem__(self, idx):
         zeros = torch.zeros(3, self.target_size[0], self.target_size[1]).to(self.device)
+        idx, rot = divmod(idx, len(self.rotations))
 
         try:
             img_path = self.data_paths[idx]
@@ -41,7 +42,6 @@ class FileListDataset(Dataset):
             return zeros
 
         try:
-            idx, rot = divmod(idx, len(self.rotations))
             try:
                 im = Image.open(img_path)
                 if im.mode != 'RGB':
