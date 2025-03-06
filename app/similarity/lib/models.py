@@ -132,7 +132,14 @@ def download_model(model_name):
     if model_name not in DEFAULT_MODEL_URLS:
         raise ValueError("Unknown network for feature extraction.")
 
-    download_file(DEFAULT_MODEL_URLS[model_name], MODEL_PATH / f"{model_name}.pth")
+    url = DEFAULT_MODEL_URLS[model_name]
+
+    if type(url) is str:
+        download_file(url, MODEL_PATH / f"{model_name}.pth")
+    else:
+        from huggingface_hub import hf_hub_download
+
+        hf_hub_download(local_dir=MODEL_PATH, **url)
 
 
 def get_model_path(model_name):
