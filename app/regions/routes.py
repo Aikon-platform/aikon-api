@@ -164,21 +164,14 @@ def clear_images():
 def delete(doc_id: str):
     model_name = request.args.get("model_name")
 
-    doc_dir = None
-    for folder in DOCUMENTS_PATH.iterdir():
-        if (folder / doc_id).exists():
-            doc_dir = folder / doc_id
-            break
-
+    doc_dir, _ = shared_routes.delete(doc_id, to_delete=bool(model_name))
     if not doc_dir:
         return {
             "error": f"Document {doc_id} not found",
         }
 
     if not model_name:
-        return {
-            "cleared_document": int(delete_path(doc_dir)),
-        }
+        return {"cleared_document": 1}
 
     return {
         "cleared_annotations": clear_dir(

@@ -5,7 +5,7 @@ import uuid
 from .tasks import compute_vectorization
 from ..shared import routes as shared_routes
 from .const import VEC_RESULTS_PATH, VEC_XACCEL_PREFIX, MODEL_PATH, DEFAULT_MODEL_INFOS
-
+from ..shared.utils.fileutils import clear_dir, delete_path
 
 blueprint = Blueprint("vectorization", __name__, url_prefix="/vectorization")
 
@@ -132,6 +132,26 @@ def result_vectorization(doc_id: str):
 @blueprint.route("models", methods=["GET"])
 def get_models():
     return shared_routes.models(MODEL_PATH, DEFAULT_MODEL_INFOS)
+
+
+@blueprint.route("<doc_id>/delete", methods=["POST"])
+def delete(doc_id: str):
+    doc_dir, dataset_id = shared_routes.delete(doc_id)
+    if not doc_dir:
+        return {"error": f"Document {doc_id} not found"}
+
+    cleared_results = clear_dir(
+        VEC_RESULTS_PATH, f"*{doc_id}*.svg", force_deletion=True
+    )
+    cleared_imgs = clear_dir(doc_dir / "images", force_deletion=True)
+    delete_path(doc_dir / "images.json")
+
+    # TODO check if everything is deleted
+
+    return {
+        "cleared_images": cleared_imgs,
+        "cleared_results": cleared_results,
+    }
 
 
 # TODO add clear_doc + clear_old_vectorization routes (see similarity.routes)
