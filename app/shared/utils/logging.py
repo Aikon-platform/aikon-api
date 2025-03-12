@@ -174,7 +174,7 @@ def get_time():
 
 
 def get_color(color=None):
-    return getattr(ConsoleColors, color, "\033[94m")
+    return getattr(ConsoleColors, color or "blue", "\033[94m")
 
 
 base_logger = logging.getLogger("DEMO_API")

@@ -43,7 +43,7 @@ class ComputeVectorization(LoggedTask):
         self.dataset = dataset
         self.model = model
         self.imgs = []
-        self.results = {}
+        self.results_url = []
 
     def check_dataset(self):
         # TODO add more checks
@@ -51,13 +51,28 @@ class ComputeVectorization(LoggedTask):
             return False
         return True
 
+    def store(self, doc):
+        self.create_zip(doc.uid)
+        doc_results = {
+            "doc_id": doc.uid,
+            "result_url": doc.get_results_url(DEMO_NAME)
+        }
+
+        self.results_url.append(doc_results)
+        self.notifier(
+            "PROGRESS",
+            output={
+                "dataset_url": self.dataset.get_absolute_url(),
+                "results_url": [doc_results],
+            },
+        )
+
     def run_task(self):
         if not self.check_dataset():
             self.print_and_log_warning(f"[task.vectorization] No documents to download")
             raise ValueError(f"[task.vectorization] No documents to download")
 
         self.task_update("STARTED")
-
         try:
             model, postprocessors = load_model(get_model(self.model, MODEL_PATH))
             model.eval()
@@ -65,13 +80,11 @@ class ComputeVectorization(LoggedTask):
             for doc in self.jlogger.iterate(
                 self.dataset.documents, "Processing documents"
             ):
-                self.print_and_log(
-                    f"[task.vectorization] Vectorization task triggered for {doc.uid}!"
-                )
+                self.log(f"Vectorization task triggered for {doc.uid}!")
                 try:
                     doc.download()
                     if not doc.has_images():
-                        self.handle_error(f"No images were extracted from {doc.uid}")
+                        self.log_error(f"No images were extracted from {doc.uid}")
                         return False
 
                     output_dir = VEC_RESULTS_PATH / doc.uid
@@ -91,22 +104,18 @@ class ComputeVectorization(LoggedTask):
                             pred_dict=preds,
                             pred_dir=output_dir,
                         )
-                    self.create_zip(doc.uid)
-                    doc_results = {doc.uid: doc.get_results_url(DEMO_NAME)}
-                    self.notifier("PROGRESS", output=doc_results)
-                    self.results.update(doc_results)
+                    self.store(doc)
                 except Exception as e:
                     self.notifier(
                         "ERROR", error=traceback.format_exc(), completed=False
                     )
-                    self.error_list.append(f"{e}")
-
-            self.results.update({"error": self.error_list})
-            return self.results
+                    self.log_error(f"Error when vectorizing {doc.uid}", e)
 
         except Exception as e:
-            self.print_and_log(f"Error when computing vectorization", e=e)
+            self.log_error(f"Error when computing vectorization", e)
             raise e
+
+        return True
 
     def create_zip(self, doc_id):
         """
@@ -117,7 +126,7 @@ class ComputeVectorization(LoggedTask):
         zip_path = output_dir / f"{doc_id}.zip"
 
         try:
-            self.print_and_log(
+            self.log(
                 f"[task.vectorization] Zipping directory {output_dir}", color="blue"
             )
 
@@ -135,14 +144,14 @@ class ComputeVectorization(LoggedTask):
                 return True
 
             except Exception as e:
-                self.print_and_log(
-                    f"[task.vectorization] Failed to create zip file for directory {output_dir}",
+                self.log_error(
+                    f"Failed to create zip file for directory {output_dir}",
                     e,
                 )
                 raise e
 
         except Exception as e:
-            self.print_and_log(
-                f"[task.vectorization] Failed to zip directory {output_dir}", e
+            self.log_error(
+                f"Failed to zip directory {output_dir}", e
             )
             raise e

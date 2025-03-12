@@ -41,7 +41,7 @@ class ExtractRegions(LoggedTask):
         self._extraction_model: Optional[str] = None
 
         self.result_dir = Path()
-        self.result_urls = []
+        self.results_url = []
         self.annotations = {}
         self.extractor = None
         self.extractor_kwargs = EXTRACTOR_POSTPROCESS_KWARGS.get(postprocess, {})
@@ -106,15 +106,33 @@ class ExtractRegions(LoggedTask):
             self.process_img(img, extraction_ref, doc.uid)
         return True
 
+    def store(self, doc, extraction_ref):
+        with open(self.result_dir / f"{extraction_ref}.json", "w") as f:
+            json.dump(self.annotations[f"{doc.uid}@@{extraction_ref}"], f, indent=2)
+
+        doc_results = {
+            "doc_id": doc.uid,
+            "result_url": doc.get_annotations_url(extraction_ref)
+        }
+
+        self.results_url.append(doc_results)
+        self.notifier(
+            "PROGRESS",
+            output={
+                "dataset_url": self.dataset.get_absolute_url(),
+                "results_url": [doc_results],
+            },
+        )
+
     def process_doc(self, doc: Document) -> bool:
         """
         Process a whole document, download it, process all images, save annotations
         """
-        self.print_and_log(f"[task.extract_regions] Downloading {doc.uid}...")
+        self.log(f"Downloading {doc.uid}...")
 
         doc.download()
         if not doc.has_images():
-            self.handle_error(f"No images were extracted from {doc.uid}")
+            self.log_error(f"No images were extracted from {doc.uid}")
             return False
 
         self.result_dir = doc.annotations_path
@@ -131,18 +149,7 @@ class ExtractRegions(LoggedTask):
 
         self.print_and_log(f"DETECTING VISUAL ELEMENTS FOR {doc.uid} 🕵️")
         if self.process_doc_imgs(doc, extraction_id):
-            with open(annotation_file, "w") as f:
-                json.dump(self.annotations[extraction_id], f, indent=2)
-            result_url = doc.get_annotations_url(extraction_ref)
-            self.notifier(
-                # TODO unify to use only results url
-                "PROGRESS",
-                output={
-                    "annotations": self.annotations[extraction_id],
-                    "results_url": [{doc.uid: result_url}],
-                },
-            )
-            self.result_urls.append({doc.uid: result_url})
+            self.store(doc, extraction_ref)
 
     def run_task(self) -> bool:
         """
@@ -158,9 +165,7 @@ class ExtractRegions(LoggedTask):
             return False
 
         self.task_update("STARTED")
-        self.print_and_log(
-            f"[task.extract_regions] Extraction task triggered with {self.model}!"
-        )
+        self.log(f"Extraction task triggered with {self.model}!")
 
         try:
             self.initialize()
@@ -169,9 +174,7 @@ class ExtractRegions(LoggedTask):
             ):
                 self.process_doc(doc)
 
-            self.print_and_log(
-                f"[task.extract_regions] Task completed with status: SUCCESS"
-            )
+            self.log(f"Task completed with status: SUCCESS")
             return True
         except Exception as e:
             self.task_update(

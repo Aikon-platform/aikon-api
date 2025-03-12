@@ -39,7 +39,16 @@ def compute_vectorization(
         notify_url=notify_url,
         notifier=notifier,
     )
-    return vectorization_task.run_task()
+    success = vectorization_task.run_task()
+    if success:
+        return {
+            "dataset_url": dataset.get_absolute_url(),
+            "results_url": vectorization_task.results_url,
+            "error": vectorization_task.error_list,
+        }
+    return {
+        "error": vectorization_task.error_list
+    }
 
 
 @dramatiq.actor

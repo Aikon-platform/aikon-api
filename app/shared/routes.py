@@ -6,6 +6,7 @@ import functools
 import json
 import uuid
 
+import orjson
 from flask import request, send_from_directory, jsonify, Request
 from dramatiq import Actor, Broker
 from dramatiq_abort import abort
@@ -13,12 +14,13 @@ from dramatiq.results import ResultMissing, ResultFailure
 import traceback
 from typing import Tuple, Optional
 
+from .const import DOCUMENTS_PATH, DATASETS_PATH
 from .dataset import Dataset
 from .utils import hash_str
 from .utils.logging import console
 from .. import config
 
-from .utils.fileutils import xaccel_send_from_directory, list_known_models
+from .utils.fileutils import xaccel_send_from_directory, list_known_models, delete_path
 
 
 def error_wrapper(func):
@@ -251,3 +253,27 @@ def models(model_path, default_model_info=None):
         return jsonify(models_info)
     except Exception:
         return jsonify("No models.")
+
+
+def delete(doc_id, to_delete=False):
+    doc_dir = None
+    for folder in DOCUMENTS_PATH.iterdir():
+        if (folder / doc_id).exists():
+            doc_dir = folder / doc_id
+            break
+
+    if not doc_dir:
+        return None, None
+
+    if to_delete:
+        if delete_path(doc_dir):
+            return doc_dir, None
+        return None, None
+
+    for dataset in DATASETS_PATH.iterdir():
+        if (dataset / "info.json").exists():
+            with open(dataset / "info.json", "rb") as f:
+                for doc in orjson.loads(f.read())["documents"]:
+                    if doc["uid"] == doc_id:
+                        return doc_dir, dataset.name
+    return doc_dir, None

@@ -53,8 +53,8 @@ def extract_objects(
         # json to be dispatch to frontend with @notifying
         return {
             "dataset_url": dataset.get_absolute_url(),
-            "annotations": regions_extraction_task.annotations,
-            "results_url": regions_extraction_task.result_urls,
+            "results_url": regions_extraction_task.results_url,
+            "error": regions_extraction_task.error_list,
         }
 
     # json to be dispatch to frontend with @notifying
