@@ -37,6 +37,8 @@ sudo usermod -aG sudo $DOCKER_USER # Add user to sudo group
 sudo -iu $DOCKER_USER # Connect as docker user
 sudo usermod -aG docker $USER # add user to docker group
 su - ${USER} # Reload session for the action to take effect
+
+id -u ${USER} # Get uid
 ```
 
 #### `CUDA_HOME`
