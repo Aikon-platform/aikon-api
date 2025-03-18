@@ -69,6 +69,7 @@ Thumbs.db
 .env.prod
 .env.dev
 .env.backup
+.env.dev.backup
 *.template.hash
 .venv
 env/

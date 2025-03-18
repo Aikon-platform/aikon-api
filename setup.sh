@@ -1,11 +1,9 @@
 #!/bin/bash
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+
+INSTALL_MODE=${INSTALL_MODE:-"full_install"}
 source "$SCRIPT_DIR"/docker/utils.sh
-
-export INSTALL_MODE=${$INSTALL_MODE:-"full_install"}
-
-echo_title "REQUIREMENTS INSTALL"
 
 color_echo yellow "\nInstalling prompt utility fzy..."
 if [ "$OS" = "Linux" ]; then
@@ -36,12 +34,10 @@ answer=$(printf "%s\n" "${options[@]}" | fzy)
 if [ "$answer" = "yes" ]; then
     color_echo yellow "\nAPI virtual env..."
     python3.10 -m venv venv
-    venv/bin/pip install wheel>=0.45.1
+    venv/bin/pip install "wheel>=0.45.1"
     venv/bin/pip install -r requirements-dev.txt
     venv/bin/pip install python-dotenv
 fi
-
-echo_title "ENVIRONMENT VARIABLES"
 
 color_echo blue "\nDo you want to setup environment variable?"
 answer=$(printf "%s\n" "${options[@]}" | fzy)
@@ -52,7 +48,7 @@ if [ "$answer" = "yes" ]; then
 fi
 
 if [ "$TARGET" == "dev" ]; then
-    echo_title "PRE-COMMIT INSTALL"
+    color_echo yellow "\nPre-commit install"
     venv/bin/pip install pre-commit
     pre-commit install
 fi
@@ -83,7 +79,7 @@ fi
 color_echo blue "\nDo you want to init submodules?"
 answer=$(printf "%s\n" "${options[@]}" | fzy)
 if [ "$answer" = "yes" ]; then
-    echo_title "DOWNLOADING SUBMODULES"
+    color_echo yellow "\nSubmodules initialization"
     git submodule init
     git submodule update
 fi

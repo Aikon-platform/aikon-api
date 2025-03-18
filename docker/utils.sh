@@ -65,22 +65,21 @@ prompt_user() {
     current_val="$3"
     desc="$4"
 
-    if [ -n "$current_val" ]; then
-        prompt="Press enter to keep $(color_echo 'cyan' "$current_val")"
-        default_val=$current_val
-    elif [ -n "$default_val" ]; then
+    if [ "$default_val" != "$current_val" ]; then
         prompt="Press enter for $(color_echo 'cyan' "$default_val")"
+    elif [ -n "$current_val" ]; then
+        prompt="Press enter to keep $(color_echo 'cyan' "$current_val")"
     else
-        prompt=""
+        prompt="Enter value"
     fi
 
-    prompt="$prompt, type a space to set empty"
-    read -p "$env_var $desc"$'\n'"$prompt: " value
+    prompt="$prompt / type a space to set empty"
+    read -p "$env_var $desc"$'\n'"$prompt: " value </dev/tty
 
     if [ "$value" = " " ]; then
-        echo ""  # if user entered a space character, return empty value
+        export new_value=""  # if user entered a space character, return empty value
     else
-        echo "${value:-$default_val}"
+        export new_value="${value:-$default_val}"
     fi
 }
 
@@ -168,31 +167,15 @@ get_env_desc() {
 
 get_default_val() {
     local param=$1
-
-    if [ -n "${!param+x}" ]; then
+    if [ -n "${!param}" ]; then
         # if the value is already exported in the current shell, use it as default
         default_val="${!param}"
     elif [[ "$param" =~ ^.*(PASSWORD|SECRET).*$ ]]; then
         default_val="$(generate_random_string)"
-    elif [[ "$param" = "MEDIA_DIR" ]]; then
-        default_val="$FRONT_ROOT"/app/mediafiles
-    elif [ "$param" = "EMAIL_HOST_USER" ]; then
-        app_name=$(get_env_value "APP_NAME" "$FRONT_ENV")
-        app_name=${app_name:-"app"}
-        default_val=$([ -n "$app_name" ] && echo "$app_name@mail.com" || echo "$current_val")
-    elif [ "$param" = "CANTALOUPE_BASE_URI" ]; then
-        default_val="https://"$(get_env_value "PROD_URL" "$FRONT_ENV")
-    elif [ "$param" = "CANTALOUPE_IMG" ]; then
-        default_val=$(get_env_value "MEDIA_DIR" "$FRONT_ENV")"/img"
-    elif [ "$param" = "CANTALOUPE_PORT" ]; then
-        default_val=$(get_env_value "CANTALOUPE_PORT" "$FRONT_ENV")
-    elif [ "$param" = "CANTALOUPE_PORT_HTTPS" ]; then
-        default_val=$(get_env_value "CANTALOUPE_PORT_HTTPS" "$FRONT_ENV")
-    elif [ "$param" = "CANTALOUPE_DIR" ]; then
-        default_val="$FRONT_ROOT"/cantaloupe
+    elif [[ "$param" = "API_URL" ]]; then
+        default_val=${PROD_API_URL:-""}
     else
-        # prompt_user get current_val from env_file
-        default_val=""
+        default_val=$(get_env_value "$param" "$env_file")
     fi
     echo "$default_val"
 }
@@ -213,18 +196,19 @@ update_env() {
             param=$(echo "$line" | cut -d'=' -f1)
             desc=$(get_env_desc "$line" "$prev_line")
             default_val=$(get_default_val $param)
+            current_val=$(get_env_value "$param" "$env_file")
 
             if [ "$INSTALL_MODE" = "full_install" ]; then
                 # For full install, all variables are prompted
-                new_value=$(prompt_user "$param" "$default_val" "" "$desc")
-            elif [ -n "${!param+x}" ]; then
+                prompt_user "$param" "$default_val" "$current_val" "$desc"
+            elif [ -n "${!param}" ]; then
                 # If variable is already set in the current shell, use it as default
                 new_value="${!param}"
             elif is_in_default_params "$param" && [ -n "$default_val" ]; then
                 # If param is in default params, use default value if it exists
                 new_value="$default_val"
             else
-                new_value=$(prompt_user "$param" "$default_val" "" "$desc")
+                prompt_user "$param" "$default_val" "$current_val" "$desc"
             fi
 
             update_env_var "$new_value" "$param" "$env_file"
@@ -233,25 +217,34 @@ update_env() {
     done < "$env_file"
 }
 
+export_env() {
+    set -a # Turn on allexport mode
+    source "$env_file"
+    set +a # Turn off allexport mode
+}
+
 setup_env() {
     local env_file=$1
     local template_file="${env_file}.template"
     local default_params=("${@:2}")  # All arguments after $1 are default params
     DEFAULT_PARAMS=("${default_params[@]}")
+    export INSTALL_MODE=${INSTALL_MODE:-"full_install"}
 
     if [ ! -f "$env_file" ]; then
+        color_echo yellow "\nCreating $env_file"
         cp "$template_file" "$env_file"
     elif ! check_template_hash "$template_file"; then
+        color_echo yellow "\nUpdating $env_file"
         # the env file has already been created, but the template has changed
-        source "$env_file" # source current values to copy them in new env
+        export_env "$env_file" # source current values to copy them in new env
         cp "$env_file" "${env_file}.backup"
         cp "$template_file" "$env_file"
-    fi
-
-    if [ -z "$INSTALL_MODE" ]; then
-        select_install_mode
+    else
+        color_echo yellow "\n$env_file is up-to-date, skipping..."
+        export_env "$env_file"
+        exit 0
     fi
 
     update_env "$env_file"
-    source "$env_file"
+    export_env "$env_file"
 }
