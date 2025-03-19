@@ -172,7 +172,7 @@ get_default_val() {
         default_val="${!param}"
     elif [[ "$param" =~ ^.*(PASSWORD|SECRET).*$ ]]; then
         default_val="$(generate_random_string)"
-    elif [[ "$param" = "API_URL" ]]; then
+    elif [[ "$param" = "PROD_URL" ]]; then
         default_val=${PROD_API_URL:-""}
     else
         default_val=$(get_env_value "$param" "$env_file")
