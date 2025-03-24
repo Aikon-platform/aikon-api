@@ -50,7 +50,8 @@ from flask import request, Blueprint, jsonify
 
 from .tasks import compute_similarity
 from ..shared import routes as shared_routes
-from ..shared.utils.fileutils import clear_dir, list_known_models
+from ..shared.const import DOCUMENTS_PATH, DATASETS_PATH
+from ..shared.utils.fileutils import clear_dir, list_known_models, delete_path
 from .const import (
     SIM_RESULTS_PATH,
     SIM_XACCEL_PREFIX,
@@ -179,6 +180,45 @@ def clear_doc(doc_id: str):
         "cleared_results": clear_dir(
             SIM_RESULTS_PATH, path_to_clear=f"*{doc_id}*.npy", force_deletion=True
         ),
+    }
+
+
+@blueprint.route("<doc_id>/delete", methods=["POST"])
+def delete(doc_id: str):
+    algorithm = request.args.get("algorithm")
+    feat_net = request.args.get("feat_net")
+
+    doc_dir, dataset_id = shared_routes.delete(doc_id)
+    if not doc_dir:
+        return {
+            "error": f"Document {doc_id} not found",
+        }
+
+    res_to_clear = (
+        f"*/{algorithm}*{doc_id}*.json" if algorithm else f"*/*{doc_id}*.json"
+    )
+    cleared_results = clear_dir(SIM_RESULTS_PATH, res_to_clear, force_deletion=True)
+    cleared_imgs = clear_dir(doc_dir / "images", force_deletion=True)
+    delete_path(doc_dir / "images.json")
+
+    if not dataset_id:
+        return {
+            "cleared_images": cleared_imgs,
+            "cleared_results": cleared_results,
+        }
+
+    cleared_results += clear_dir(
+        SIM_RESULTS_PATH, f"*/{dataset_id}-scores.json", force_deletion=True
+    )
+    feat_to_clear = f"{dataset_id}*{feat_net}.pt" if feat_net else "*"
+    cleared_feats = clear_dir(
+        DATASETS_PATH / dataset_id / "features", feat_to_clear, force_deletion=True
+    )
+
+    return {
+        "cleared_images": cleared_imgs,
+        "cleared_results": cleared_results,
+        "cleared_features": cleared_feats,
     }
 
 

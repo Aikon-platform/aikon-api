@@ -450,8 +450,8 @@ class ComputeSimilarity(LoggedTask):
         """
         source_paths = [str(i.path) for i in self.images]
 
-        self.print_and_log(
-            f"[task.similarity] Prepared {len(self.images)} images to be processed"
+        self.log(
+            f"Prepared {len(self.images)} images to be processed"
         )
         topk = self.segswap_n if self.algorithm == "segswap" else self.topk
         features = self.get_features(source_paths)
@@ -468,8 +468,8 @@ class ComputeSimilarity(LoggedTask):
                 source_paths, pairs, cos_topk=topk, device=self.device
             )
 
-        self.print_and_log(
-            f"[task.similarity] Computed similarity scores for {len(pairs)} pairs"
+        self.log(
+            f"Computed similarity scores for {len(pairs)} pairs"
         )
 
         return self.format_results(pairs)
@@ -531,8 +531,8 @@ class ComputeSimilarity(LoggedTask):
         """
         doc_images = self.doc_images
 
-        self.print_and_log(
-            f"[task.similarity] Computing cosine similarity for {len(doc_images)} pairs"
+        self.log(
+            f"Computing cosine similarity for {len(doc_images)} pairs"
         )
 
         all_scores = BlockSimMatrix()
@@ -581,8 +581,8 @@ class ComputeSimilarity(LoggedTask):
         Returns:
             A list of pairs (k_i, k_j, sim, tr_i, tr_j)
         """
-        self.print_and_log(
-            f"[task.similarity] Computing SegSwap similarity for {len(input_pairs.data)} pairs of documents"
+        self.log(
+            f"Computing SegSwap similarity for {len(input_pairs.data)} pairs of documents"
         )
 
         param = torch.load(get_model_path("hard_mining_neg5"), map_location=device)
@@ -660,16 +660,14 @@ class ComputeSimilarity(LoggedTask):
             return
 
         self.task_update("STARTED")
-        self.print_and_log(
-            f"[task.similarity] Similarity task triggered for {self.dataset.uid} with {self.feat_net}!"
+        self.log(
+            f"Similarity task triggered for {self.dataset.uid} with {self.feat_net}!"
         )
 
         scores, experiment_id = self.check_already_computed()
         if scores:
-            # TODO change to use only results_url
             return {
                 "dataset_url": self.dataset.get_absolute_url(),
-                "annotations": scores,
                 "results_url": self.get_results_url(experiment_id),
             }
 
@@ -691,9 +689,7 @@ class ComputeSimilarity(LoggedTask):
                     }
                 )
 
-            self.print_and_log(
-                f"[task.similarity] Successfully computed similarity scores"
-            )
+            self.log(f"Successfully computed similarity scores")
             return True
         except Exception as e:
             self.task_update(

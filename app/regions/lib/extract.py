@@ -252,15 +252,19 @@ class LineExtractor(BaseExtractor):
         from .line_predictor.config.slconfig import SLConfig
 
         self.device = select_device(self.device)
+        checkpoint = torch.load(self.weights, map_location="cpu")
+
         args = SLConfig.fromfile(self.config)
         args.device = self.device
-        model, _, _ = build_model_main(args)
+        for key, tensor in checkpoint["model"].items():
+            if "tgt_embed.weight" in key:
+                # adjust number of queries depending on the checkpoint
+                args.num_queries = tensor.shape[0]
+                break
 
-        # Load model weights from the checkpoint
-        checkpoint = torch.load(self.weights, map_location="cpu")
-        model.load_state_dict(checkpoint["model"])
-        model.eval()
-        return model
+        model, _, _ = build_model_main(args)
+        model.load_state_dict(checkpoint["model"], strict=False)
+        return model.eval()
 
     @staticmethod
     def renorm(
@@ -312,7 +316,7 @@ class LineExtractor(BaseExtractor):
         bboxes = self.poly_to_bbox(scaled_polygons).to(self.device)
         scores = scores.to(self.device)
 
-        # Perform Non-Maximum Suppression (NMS) TODO filter nms on polygons
+        # Perform Non-Maximum Suppression (NMS) TODO filter nms on polygons: https://github.com/WolodjaZ/PolyGoneNMS
         nms_filter = nms(bboxes, scores, iou_threshold=0.8).cpu()
         bboxes = bboxes[nms_filter]
         scores = scores[nms_filter].unsqueeze(1)

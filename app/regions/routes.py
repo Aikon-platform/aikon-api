@@ -51,6 +51,7 @@ Routes:
 
 
 """
+from pathlib import Path
 
 from flask import request, Blueprint
 
@@ -58,6 +59,7 @@ from .tasks import extract_objects
 from ..shared import routes as shared_routes
 from .const import MODEL_PATH, DEFAULT_MODEL_INFOS
 from ..shared.const import DOCUMENTS_PATH, SHARED_XACCEL_PREFIX
+from ..shared.utils.fileutils import delete_path, clear_dir
 
 blueprint = Blueprint("regions", __name__, url_prefix="/regions")
 
@@ -155,4 +157,24 @@ def clear_images():
     # }
     return {
         "cleared_img_dir": 0,
+    }
+
+
+@blueprint.route("<doc_id>/delete", methods=["POST"])
+def delete(doc_id: str):
+    model_name = request.args.get("model_name")
+
+    doc_dir, _ = shared_routes.delete(doc_id, to_delete=bool(model_name))
+    if not doc_dir:
+        return {
+            "error": f"Document {doc_id} not found",
+        }
+
+    if not model_name:
+        return {"cleared_document": 1}
+
+    return {
+        "cleared_annotations": clear_dir(
+            doc_dir / "annotations", f"{model_name}*.json", force_deletion=True
+        ),
     }

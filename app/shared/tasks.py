@@ -69,17 +69,20 @@ class LoggedTask(LoggingTaskMixin):
         if message:
             messages = message if isinstance(message, list) else [message]
             if exception:
-                self.handle_error(messages[0], exception)
+                self.log_error(messages[0], exception)
             message = "\n".join(messages + self.error_list)
 
         if event == "ERROR":
-            # raisong exception will trigger @notifying to send ERROR event to frontend
+            # raising exception will trigger @notifying to send ERROR event to frontend
             raise exception or Exception(
                 f"Task {self.experiment_id} failed with error:\n{message}"
             )
         self.notifier(event, message=message, **kwargs)
 
-    def handle_error(self, message: str, exception: Optional[Exception] = None) -> None:
+    def log(self, message: str, color=None) -> None:
+        self.print_and_log(f"[task.{self.__class__.__name__}] {message}", color=color)
+
+    def log_error(self, message: str, exception: Optional[Exception] = None) -> None:
         exc = exception or Exception(message)
         self.print_and_log_error(f"[task.{self.__class__.__name__}] {message}", e=exc)
         self.error_list.append(f"{exc}")

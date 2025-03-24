@@ -17,12 +17,14 @@ class AllTranspose(Enum):
 
 
 def doc_pairs(doc_ids: list):
+    # NOT USED
     if isinstance(doc_ids, list) and len(doc_ids) > 0:
         return list(combinations_with_replacement(doc_ids, 2))
     raise ValueError("Input must be a non-empty list of ids.")
 
 
 def best_matches(segswap_pairs, q_img, doc_pair):
+    # NOT USED
     """
     segswap_pairs = [[score, img_doc1.jpg, img_doc2.jpg]
                      [score, img_doc1.jpg, img_doc2.jpg]
