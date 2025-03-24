@@ -37,9 +37,9 @@ build_image() {
     docker build --rm -t "$CONTAINER_NAME" -f Dockerfile .. \
         --build-arg USERID=$DEMO_UID \
         --build-arg API_PORT=$API_PORT \
-        --build-arg HTTP_PROXY=${HTTP_PROXY} \
-        --build-arg HTTPS_PROXY=${HTTPS_PROXY} \
-        --build-arg NO_PROXY=${NO_PROXY} \
+        --build-arg HTTP_PROXY=${HTTP_PROXY:-} \
+        --build-arg HTTPS_PROXY=${HTTPS_PROXY:-} \
+        --build-arg NO_PROXY=${NO_PROXY:-} \
         --build-arg HUGGING_FACE_HUB_TOKEN=${HUGGING_FACE_HUB_TOKEN} || {
             color_echo red "\nDocker build failed"
             exit 1;
@@ -59,7 +59,7 @@ start_container() {
     if image_exists; then
         color_echo blue "\nStarting container $CONTAINER_NAME"
         docker run -d --gpus "$DEVICE_NB" --name "$CONTAINER_NAME" \
-           -v "$DATA_FOLDER":/data/ -v "$CUDA_HOME":/cuda/ -p "$CONTAINER_HOST":"$API_PORT":"$API_PORT" \
+           -v "$DATA_FOLDER":/data/ -v "$CUDA_HOME":/cuda/ -p "$CONTAINER_HOST:$API_PORT:$API_PORT" \
            --restart unless-stopped --ipc=host "$CONTAINER_NAME"
     else
         color_echo red "\nImage $CONTAINER_NAME does not exist. Build failed or not yet built."

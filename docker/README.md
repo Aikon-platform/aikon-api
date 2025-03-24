@@ -55,7 +55,7 @@ export PATH=$CUDA_HOME/bin:$PATH
 export LD_LIBRARY_PATH=$CUDA_HOME/lib64:$LD_LIBRARY_PATH
 ```
 
-Depending on your CUDA version, it might be necessary to change: 
+Depending on your CUDA version, it might be necessary to change:
 - [Dockerfile base image](Dockerfile#L2): find the corresponding image [here](https://hub.docker.com/r/nvidia/cuda/tags)
 - [Pytorch version](requirements-dev.txt#L44): find the corresponding requirements [here](https://pytorch.org/get-started/locally/)
 
@@ -234,7 +234,7 @@ sudo cp ~/discover.key /etc/spiped/ # Copy key to spiped folder
 Create service config file for spiped on front machine (`sudo vi /etc/systemd/system/spiped-connect.service`)
 - Get `<gpu-ip>` with `hostname -I` on the machine where is deployed the API.
 
-⚠️ Note to match the output IP (`127.0.0.1:<spiped-port>` in this example) to the `API_URL` in [`front/.env`](../front/.env)
+⚠️ Note to match the output IP (`127.0.0.1:<spiped-port>` in this example) to the `PROD_API_URL` in [`front/.env`](../front/.env)
 
 ```bash
 [Unit]
