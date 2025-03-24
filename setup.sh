@@ -4,6 +4,9 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 INSTALL_MODE=${INSTALL_MODE:-"full_install"}
 source "$SCRIPT_DIR"/docker/utils.sh
+source "../front"
+
+color_echo cyan "Running a $INSTALL_MODE for the API! 🚀"
 
 color_echo yellow "\nInstalling prompt utility fzy..."
 if [ "$OS" = "Linux" ]; then
@@ -43,8 +46,10 @@ color_echo blue "\nDo you want to setup environment variable?"
 answer=$(printf "%s\n" "${options[@]}" | fzy)
 if [ "$answer" = "yes" ]; then
     color_echo yellow "\nSetting up .env files"
-    setup_env "$SCRIPT_DIR"/.env
-    setup_env "$SCRIPT_DIR"/.env.dev
+
+    default_param=("API_PORT" "PROD_URL" "API_DATA_FOLDER" "TARGET" "DOCKER" "YOLO_CONFIG_DIR")
+    setup_env "$SCRIPT_DIR"/.env "${default_params[@]}"
+    setup_env "$SCRIPT_DIR"/.env.dev "${default_params[@]}"
 fi
 
 if [ "$TARGET" == "dev" ]; then
@@ -59,10 +64,10 @@ set_redis() {
     color_echo yellow "\nModifying Redis configuration file $REDIS_CONF ..."
 
     # use the same redis password for api and front
-    $SED_CMD "s~^REDIS_PASSWORD=.*~REDIS_PASSWORD=\"$redis_psw\"~" "../front/app/config/.env"
+    sudo_sed_repl_inplace "s~^REDIS_PASSWORD=.*~REDIS_PASSWORD=\"$redis_psw\"~" "../front/app/config/.env"
 
-    sudo $SED_CMD "s/\nrequirepass [^ ]*/requirepass $redis_psw/" "$REDIS_CONF"
-    sudo $SED_CMD "s/# requirepass [^ ]*/requirepass $redis_psw/" "$REDIS_CONF"
+    sudo_sed_repl_inplace "s/\nrequirepass [^ ]*/requirepass $redis_psw/" "$REDIS_CONF"
+    sudo_sed_repl_inplace "s/# requirepass [^ ]*/requirepass $redis_psw/" "$REDIS_CONF"
 
     if [ "$OS" = "Linux" ]; then
         sudo systemctl restart redis-server

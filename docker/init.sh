@@ -12,15 +12,15 @@ source "$DOCKER_DIR"/utils.sh
 # export PATH=$CUDA_HOME/bin:$PATH
 # export LD_LIBRARY_PATH=$CUDA_HOME/lib64:$LD_LIBRARY_PATH
 
+export INSTALL_MODE="full_install"
+
 if [ ! -f "$API_ROOT"/.env.prod ]; then
-    cp "$API_ROOT"/.env.template "$API_ROOT"/.env.prod
-    update_env "$API_ROOT"/.env.prod
+    setup_env "$API_ROOT"/.env.prod
 fi
 
 # if docker/.env does not exist, create it
 if [ ! -f "$DOCKER_DIR"/.env ]; then
-    cp "$DOCKER_DIR"/.env.template "$DOCKER_DIR"/.env
-    update_env "$DOCKER_DIR"/.env
+    setup_env "$DOCKER_DIR"/.env
 fi
 
 source "$API_ROOT"/.env.prod
@@ -28,14 +28,14 @@ source "$DOCKER_DIR"/.env
 
 if [ ! -f "$DOCKER_DIR"/nginx.conf ]; then
     cp "$DOCKER_DIR"/nginx.conf.template "$DOCKER_DIR"/nginx.conf
-    $SED_CMD "s~API_PORT~${API_PORT:-8001}~" "$DOCKER_DIR"/nginx.conf
+    sed_repl_inplace "s~API_PORT~${API_PORT:-8001}~" "$DOCKER_DIR"/nginx.conf
 fi
 
 if [ ! -f "$DOCKER_DIR"/supervisord.conf ]; then
     cp "$DOCKER_DIR"/supervisord.conf.template "$DOCKER_DIR"/supervisord.conf
-#     $SED_CMD "s~CONTAINER_NAME~$CONTAINER_NAME~" "$DOCKER_DIR"/supervisord.conf
+#     sed_repl_inplace "s~CONTAINER_NAME~$CONTAINER_NAME~" "$DOCKER_DIR"/supervisord.conf
     NB_PROCS=$(echo "${INSTALLED_APPS:-}" | awk -F, '{print NF}')
-    $SED_CMD "s~NB_PROCS~${NB_PROCS:-1}~" "$DOCKER_DIR"/supervisord.conf
+    sed_repl_inplace "s~NB_PROCS~${NB_PROCS:-1}~" "$DOCKER_DIR"/supervisord.conf
 fi
 
 # if $DATA_FOLDER does not exist
