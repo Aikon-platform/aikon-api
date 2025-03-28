@@ -16,6 +16,9 @@ Returns:
 
 - dict: A dictionary containing the result URL of the trained model.
 """
+import json
+import os
+from pathlib import Path
 
 import dramatiq
 from dramatiq.middleware import CurrentMessage
@@ -29,7 +32,36 @@ from .training import (
     run_kmeans_training,
     run_sprites_training,
 )
-from ..shared.utils.logging import notifying, TLogger, LoggerHelper
+from ..shared.dataset import Dataset
+from ..shared.utils.logging import notifying, TLogger, LoggerHelper, console
+
+
+def symlink_dataset(dataset: Dataset, dti_dataset_path: Path):
+    """
+    Create symbolic links from the shared document directory
+    to the expected dataset path for the DTI submodule
+    """
+    dti_dataset_path.mkdir(parents=True, exist_ok=True)
+    ready_file = dti_dataset_path / "ready.meta"
+
+    train_dir = dti_dataset_path / "train"
+    train_dir.mkdir(parents=True, exist_ok=True)
+
+    for i, document in enumerate(dataset.documents):
+        document.download()
+        images = document.list_images()
+
+        for j, image in enumerate(images):
+            target_path = train_dir / f"doc_{document.uid}_{j:04d}{image.path.suffix}"
+
+            if target_path.exists():
+                target_path.unlink()  # Remove existing link if any
+
+            rel_path = os.path.relpath(image.path, target_path.parent)
+            os.symlink(rel_path, target_path)
+
+    ready_file.touch()
+    return dti_dataset_path
 
 
 @dramatiq.actor(
@@ -38,9 +70,9 @@ from ..shared.utils.logging import notifying, TLogger, LoggerHelper
 @notifying
 def train_dti(
     experiment_id: str,
-    dataset_id: str,
-    dataset_url: str,
-    parameters: Optional[dict] = None,
+    dataset_uid: str,
+    parameters: Optional[str] = None,
+    notify_url: Optional[str] = None,
     logger: TLogger = LoggerHelper,
     notifier=None,
     **kwargs,
@@ -51,52 +83,45 @@ def train_dti(
 
     Parameters:
     - experiment_id: the ID of the clustering task
-    - dataset_id: the ID of the dataset
+    - dataset_uid: the ID of the dataset
     - dataset_url: the URL of the zipped dataset to be downloaded
     - parameters: a JSON object containing the training parameters
     - logger: a logger object
     """
 
-    current_task = CurrentMessage.get_current_message()
-    current_task_id = current_task.message_id
+    # current_task = CurrentMessage.get_current_message()
+    # current_task_id = current_task.message_id
 
-    result_file = DTI_RESULTS_PATH / f"{current_task_id}.zip"
+    result_file = DTI_RESULTS_PATH / f"{experiment_id}.zip"
     result_file.parent.mkdir(parents=True, exist_ok=True)
+    parameters = json.loads(parameters)
 
-    # Download and extract dataset to local storage
-    dataset_path = DATASETS_PATH / "generic" / dataset_id
-    dataset_ready_file = dataset_path / "ready.meta"
+    dataset = Dataset(dataset_uid, load=True)
+    dti_dataset_path = DATASETS_PATH / "generic" / dataset.uid
 
-    if not dataset_ready_file.exists():
-        # TODO MODIFY TO USE DATASET FROM shared.routes.receive_task
-        # download_dataset(
-        #     dataset_url,
-        #     datasets_dir_path=DATASETS_PATH,
-        #     dataset_dir_name=f"generic/{dataset_id}",
-        #     sub_dir="train",
-        # )
-
-        # Create ready file
-        dataset_ready_file.touch()
+    if not (dti_dataset_path / "ready.meta").exists():
+        symlink_dataset(dataset, dti_dataset_path)
     else:
         print("Dataset already ready")
-        dataset_ready_file.touch()
+        (dti_dataset_path / "ready.meta").touch()
 
-    # Start training
+    # Start training for dataset_name = generic
     if parameters.get("background_option", "0_dti") == "0_dti":
         # Use DTI clustering
-        output_path = run_kmeans_training(experiment_id, dataset_id, parameters, logger)
+        output_path = run_kmeans_training(
+            experiment_id, dataset_uid, parameters, logger
+        )
     else:
         # Use DTI sprites (1_learn_bg / 2_const_bg / 3_learn_fg)
         output_path = run_sprites_training(
-            experiment_id, dataset_id, parameters, logger
+            experiment_id, dataset_uid, parameters, logger
         )
 
     # zip results to DTI_RESULTS_PATH
     with ZipFile(result_file, "w") as zipObj:
         for file in output_path.glob("**/*"):
-            # if file.suffix == ".pkl": # Don't include the model
-            #    continue
+            if file.suffix == ".pkl":  # Don't include the model
+                continue
 
             if file.suffix == ".png":  # Convert to jpg if not transparent
                 img = Image.open(file)
@@ -106,5 +131,5 @@ def train_dti(
             zipObj.write(file, file.relative_to(output_path))
 
     return {
-        "result_url": f"{BASE_URL}/clustering/{current_task_id}/result",
+        "result_url": f"{BASE_URL}/clustering/{experiment_id}/result",
     }

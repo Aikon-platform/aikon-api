@@ -148,6 +148,13 @@ class Dataset:
             with open(self.crops_path, "wb") as f:
                 f.write(orjson.dumps(self.crops))
 
+    def download(self) -> None:
+        """
+        Download the dataset from the URL
+        """
+        for document in self.documents:
+            document.download()
+
     def load(self) -> None:
         """
         Load the dataset from disk

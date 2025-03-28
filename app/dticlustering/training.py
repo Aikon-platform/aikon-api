@@ -13,6 +13,7 @@ from .lib.src.kmeans_trainer import Trainer as KMeansTrainer
 from .lib.src.sprites_trainer import Trainer as SpritesTrainer
 from .const import RUNS_PATH, CONFIGS_PATH
 from .lib.src.utils.image import convert_to_img
+from ..shared.dataset import Dataset
 
 from ..shared.utils.logging import TLogger, LoggerHelper
 
@@ -186,9 +187,28 @@ class LoggedSpritesTrainer(LoggingTrainerMixin, SpritesTrainer):
         return dist_min_by_sample, argmin_idx
 
 
+def setup_conf(cfg, clustering_id):
+    """
+    Convert a dict to an OmegaConf object
+    """
+    config_file = CONFIGS_PATH / f"{clustering_id}.yml"
+    CONFIGS_PATH.mkdir(parents=True, exist_ok=True)
+    dump(cfg, open(config_file, "w"), Dumper=Dumper)
+
+    # from omegaconf import OmegaConf
+    # try:
+    #     cfg = OmegaConf.create(cfg)
+    # except Exception as e:
+    #     print(f"Error converting to OmegaConf: {e}")
+    #     pass
+
+    return cfg
+
+
 def run_kmeans_training(
     clustering_id: str,
-    dataset_id: str,
+    # dataset: Dataset, dataset (Dataset): The dataset to be processed
+    dataset_uid: str,
     parameters: dict,
     logger: TLogger = LoggerHelper,
 ) -> Path:
@@ -197,10 +217,10 @@ def run_kmeans_training(
 
     Args:
         clustering_id (str): The ID of the clustering task.
-        dataset_id (str): The ID of the dataset.
-        parameters (dict): An object containing the training parameters. 
+        dataset_uid (str): The ID of the dataset.
+        parameters (dict): An object containing the training parameters.
             Expected keys are:
-            
+
             - n_prototypes: Number of prototypes.
             - transformation_sequence: Sequence of transformations.
         logger (TLogger, optional): A logger object. Defaults to LoggerHelper.
@@ -212,7 +232,7 @@ def run_kmeans_training(
     train_config = load(open(KMEANS_CONFIG_FILE), Loader=Loader)
 
     # Set dataset tag and run dir
-    train_config["dataset"]["tag"] = dataset_id
+    train_config["dataset"]["tag"] = dataset_uid
     run_dir = RUNS_PATH / clustering_id
 
     # Set training parameters from parameters
@@ -224,14 +244,13 @@ def run_kmeans_training(
             "transformation_sequence"
         ]
 
-    # Save config to file
-    config_file = CONFIGS_PATH / f"{clustering_id}.yml"
-    CONFIGS_PATH.mkdir(parents=True, exist_ok=True)
-    dump(train_config, open(config_file, "w"), Dumper=Dumper)
+    cfg = setup_conf(train_config, clustering_id)
+    # TODO to remove once hydra is configured
+    cfg = CONFIGS_PATH / f"{clustering_id}.yml"
 
     # Run training
     trainer = LoggedKMeansTrainer(
-        logger, config_file, run_dir, seed=train_config["training"]["seed"]
+        logger, cfg, run_dir, seed=train_config["training"]["seed"]
     )
     trainer.run(seed=train_config["training"]["seed"])
 
@@ -241,18 +260,17 @@ def run_kmeans_training(
 
 def run_sprites_training(
     clustering_id: str,
-    dataset_id: str,
+    dataset_uid: str,
     parameters: dict,
     logger: TLogger = LoggerHelper,
 ) -> Path:
     """
-
     Main function to run DTI sprites training.
 
     Args:
         clustering_id (str): The ID of the clustering task.
-        dataset_id (str): The ID of the dataset.
-        parameters (dict): An object containing the training parameters. 
+        dataset_uid (str): The ID of the dataset.
+        parameters (dict): An object containing the training parameters.
             Expected keys are:
 
             - n_prototypes: Number of prototypes.
@@ -267,7 +285,7 @@ def run_sprites_training(
     train_config = load(open(SPRITES_CONFIG_FILE), Loader=Loader)
 
     # Set dataset tag and run dir
-    train_config["dataset"]["tag"] = dataset_id
+    train_config["dataset"]["tag"] = dataset_uid
     run_dir = RUNS_PATH / clustering_id
 
     # Set background option
@@ -299,14 +317,11 @@ def run_sprites_training(
             "transformation_sequence"
         ]
 
-    # Save config to file
-    config_file = CONFIGS_PATH / f"{clustering_id}.yml"
-    CONFIGS_PATH.mkdir(parents=True, exist_ok=True)
-    dump(train_config, open(config_file, "w"), Dumper=Dumper)
+    cfg = setup_conf(train_config, clustering_id)
 
     # Run training
     trainer = LoggedSpritesTrainer(
-        logger, config_file, run_dir, seed=train_config["training"]["seed"]
+        logger, cfg, run_dir, seed=train_config["training"]["seed"]
     )
     trainer.run(seed=train_config["training"]["seed"])
 

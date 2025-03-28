@@ -24,6 +24,7 @@ model:
 training:
   batch_size: 32
   n_workers: 5
+  optimizer_name: adam
   optimizer:
     name: adam
     lr: 1.0e-3

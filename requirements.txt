@@ -37,6 +37,9 @@ git+https://github.com/cocodataset/panopticapi.git#egg=panopticapi
 
 kornia==0.7.* # TODO update
 
+hydra-core
+fvcore
+
 # Match pytorch with your cuda version / container image: https://pytorch.org/get-started/locally/
 torch>=2.2
 torchvision
