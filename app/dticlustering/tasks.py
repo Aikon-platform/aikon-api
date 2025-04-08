@@ -21,7 +21,6 @@ import os
 from pathlib import Path
 
 import dramatiq
-from dramatiq.middleware import CurrentMessage
 from typing import Optional
 from zipfile import ZipFile
 from PIL import Image
@@ -33,7 +32,7 @@ from .training import (
     run_sprites_training,
 )
 from ..shared.dataset import Dataset
-from ..shared.utils.logging import notifying, TLogger, LoggerHelper, console
+from ..shared.utils.logging import notifying, TLogger, LoggerHelper
 
 
 def symlink_dataset(dataset: Dataset, dti_dataset_path: Path):
@@ -52,7 +51,11 @@ def symlink_dataset(dataset: Dataset, dti_dataset_path: Path):
         images = document.list_images()
 
         for j, image in enumerate(images):
-            target_path = train_dir / f"doc_{document.uid}_{j:04d}{image.path.suffix}"
+            img_name = str(image.path.relative_to(document.path / "images")).replace(
+                "/", "+"
+            )
+            target_path = train_dir / img_name
+            # target_path = train_dir / f"doc_{document.uid}_{j:04d}{image.path.suffix}"
 
             if target_path.exists():
                 target_path.unlink()  # Remove existing link if any
@@ -103,7 +106,7 @@ def train_dti(
         symlink_dataset(dataset, dti_dataset_path)
     else:
         print("Dataset already ready")
-        (dti_dataset_path / "ready.meta").touch()
+        # (dti_dataset_path / "ready.meta").touch()
 
     # Start training for dataset_name = generic
     if parameters.get("background_option", "0_dti") == "0_dti":
