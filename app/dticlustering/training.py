@@ -232,7 +232,14 @@ class LoggingTrainerMixin:
                     cluster_path / f"cluster{idx}" / f"{k_image}_raw.png"
                 )
 
-                convert_to_img(tsf_imgs[b, idx]).save(
+                # trick for non-RGB images
+                tsf_idx = min(idx, tsf_imgs.shape[1] - 1)
+                try:
+                    tsf_img = tsf_imgs[b, tsf_idx]
+                except IndexError:
+                    tsf_img = tsf_imgs[b]
+
+                convert_to_img(tsf_img).save(
                     cluster_path / f"cluster{idx}" / f"{k_image}_tsf.png"
                 )
 
@@ -322,6 +329,149 @@ class LoggedSpritesTrainer(LoggingTrainerMixin, SpritesTrainer):
         return dist_min_by_sample, argmin_idx
 
 
+def set_transformation_sequence(cfg, tsf_seq, sprites=False):
+    """
+    Set the transformation sequence for the model
+
+    Args:
+        cfg: The configuration object.
+        tsf_seq: The transformation sequence to set. eg: "identity_affine_morpho_tps".
+        sprites: Whether the model is for sprites or not.
+
+    Transformations can be:
+    # COARSE (should be applied early on during training)
+    "id": IdentityModule, (first)
+    "identity": IdentityModule, (first)
+    "col": ColorModule,
+    "color": ColorModule,
+    "linearcolor": LinearColorModule,
+
+    # SPATIAL
+    "aff": AffineModule,
+    "affine": AffineModule,
+    "pos": PositionModule,
+    "position": PositionModule,
+    "proj": ProjectiveModule,
+    "projective": ProjectiveModule,
+    "homography": ProjectiveModule,
+    "sim": SimilarityModule,
+    "similarity": SimilarityModule,
+    "rotation": RotationModule,
+    "tps": TPSModule,
+    "thinplatespline": TPSModule,
+    "translation": TranslationModule,
+
+    # MORPHOLOGICAL
+    "morpho": MorphologicalModule,
+    "morphological": MorphologicalModule,
+
+    TODO reorder transforms?
+    """
+    cfg.model.transformation_sequence = tsf_seq
+    if sprites:
+        cfg.model.transformation_sequence_bkg = tsf_seq
+
+    if cfg.model.curriculum_learning:
+        n_tsf = len(tsf_seq.split("_"))
+        epochs = cfg.training.n_epochs
+
+        # Set the number of epochs for each transformation
+        milestones = {
+            1: [int(epochs * 0.1)],
+            2: [int(epochs * 0.1), int(epochs * 0.3)],
+            3: [int(epochs * 0.1), int(epochs * 0.3), int(epochs * 0.5)],
+            4: [
+                int(epochs * 0.1),
+                int(epochs * 0.2),
+                int(epochs * 0.3),
+                int(epochs * 0.5),
+            ],
+            5: [
+                int(epochs * 0.1),
+                int(epochs * 0.2),
+                int(epochs * 0.3),
+                int(epochs * 0.4),
+                int(epochs * 0.5),
+            ],
+            6: [
+                int(epochs * 0.1),
+                int(epochs * 0.2),
+                int(epochs * 0.3),
+                int(epochs * 0.4),
+                int(epochs * 0.5),
+                int(epochs * 0.6),
+            ],
+        }[
+            n_tsf - 1
+        ]  # len(curriculum_learning) == self.n_tsf - 1
+
+        cfg.model.curriculum_learning = milestones
+
+        if sprites:
+            cfg.model.curriculum_learning_bkg = milestones
+        # see if reconstruction decrease
+    return cfg
+
+
+def set_scheduler_milestones(cfg):
+    """
+    Set the scheduler milestones depending on number of epochs
+    """
+    cfg.training.scheduler.milestones = [
+        int(cfg.training.n_epochs * 0.85),
+    ]
+    return cfg
+
+
+def run_training(
+    clustering_id: str,
+    dataset_uid: str,
+    parameters: dict,
+    logger: TLogger = LoggerHelper,
+    sprites: bool = False,
+):
+    base_cfg = OmegaConf.load(BASE_CONFIG_FILE)
+    specific_cfg = OmegaConf.load(
+        SPRITES_CONFIG_FILE if sprites else KMEANS_CONFIG_FILE
+    )
+    cfg = OmegaConf.merge(base_cfg, specific_cfg)
+
+    cfg.dataset.tag = dataset_uid
+
+    bkg_opt = parameters.get("background_option", "1_learn_bg")
+    # bkg_opt = "0_dti" ==> DTI kmeans
+    if bkg_opt == "2_const_bg":
+        # Data parameters are respectively [foreground, background, masks]
+        cfg.model.prototype.data.freeze = [False, True, False]
+        cfg.model.prototype.data.init = ["constant", "constant", "gaussian"]
+        cfg.model.prototype.data.value = [0.1, 0.1, 0.0]
+    elif bkg_opt == "3_learn_fg":
+        cfg.model.prototype.data.freeze = [True, True, False]
+        cfg.model.prototype.data.init = ["constant", "constant", "gaussian"]
+        cfg.model.prototype.data.value = [0.1, 0.9, 0.0]
+
+    # Set training parameters from parameters
+    if n_proto := parameters.get("n_prototypes"):
+        if sprites:
+            cfg.model.n_sprites = n_proto
+        else:
+            cfg.model.n_prototypes = parameters["n_proto"]
+
+    if tsf_seq := parameters.get("transformation_sequence"):
+        cfg = set_transformation_sequence(cfg, tsf_seq, sprites=sprites)
+
+    cfg = set_scheduler_milestones(cfg)
+
+    CONFIGS_PATH.mkdir(parents=True, exist_ok=True)
+    OmegaConf.save(cfg, CONFIGS_PATH / f"{clustering_id}.yml")
+
+    run_dir = RUNS_PATH / clustering_id
+    trainer_class = LoggedSpritesTrainer if sprites else LoggedKMeansTrainer
+    run_trainer(logger=logger, cfg=cfg, trainer_class=trainer_class, run_dir=run_dir)
+
+    return run_dir
+
+
 def run_kmeans_training(
     clustering_id: str,
     dataset_uid: str,
@@ -344,28 +494,13 @@ def run_kmeans_training(
     Returns:
         Path: The path to the output directory.
     """
-    base_cfg = OmegaConf.load(BASE_CONFIG_FILE)
-    kmeans_cfg = OmegaConf.load(KMEANS_CONFIG_FILE)
-    cfg = OmegaConf.merge(base_cfg, kmeans_cfg)
-
-    cfg.dataset.tag = dataset_uid
-
-    # Set training parameters from parameters
-    if "n_prototypes" in parameters:
-        cfg.model.n_prototypes = parameters["n_prototypes"]
-
-    if "transformation_sequence" in parameters:
-        cfg.model.transformation_sequence = parameters["transformation_sequence"]
-
-    CONFIGS_PATH.mkdir(parents=True, exist_ok=True)
-    OmegaConf.save(cfg, CONFIGS_PATH / f"{clustering_id}.yml")
-
-    run_dir = RUNS_PATH / clustering_id
-    run_trainer(
-        logger=logger, cfg=cfg, trainer_class=LoggedKMeansTrainer, run_dir=run_dir
+    return run_training(
+        clustering_id=clustering_id,
+        dataset_uid=dataset_uid,
+        parameters=parameters,
+        logger=logger,
+        sprites=False,
     )
-
-    return run_dir
 
 
 def run_sprites_training(
@@ -391,37 +526,10 @@ def run_sprites_training(
     Returns:
         Path: The path to the output directory.
     """
-    base_cfg = OmegaConf.load(BASE_CONFIG_FILE)
-    kmeans_cfg = OmegaConf.load(SPRITES_CONFIG_FILE)
-    cfg = OmegaConf.merge(base_cfg, kmeans_cfg)
-
-    cfg.dataset.tag = dataset_uid
-
-    bkg_opt = parameters.get("background_option", "1_learn_bg")
-    if bkg_opt == "2_const_bg":
-        # Data parameters are respectively [foreground, background, masks]
-        cfg.model.prototype.data.freeze = [False, True, False]
-        cfg.model.prototype.data.init = ["constant", "constant", "gaussian"]
-        cfg.model.prototype.data.value = [0.1, 0.1, 0.0]
-    elif bkg_opt == "3_learn_fg":
-        cfg.model.prototype.data.freeze = [True, True, False]
-        cfg.model.prototype.data.init = ["constant", "constant", "gaussian"]
-        cfg.model.prototype.data.value = [0.1, 0.9, 0.0]
-
-    if "n_prototypes" in parameters:
-        cfg.model.n_sprites = parameters["n_prototypes"]
-
-    if "transformation_sequence" in parameters:
-        cfg.model.transformation_sequence = parameters["transformation_sequence"]
-        cfg.model.transformation_sequence_bkg = parameters["transformation_sequence"]
-
-    CONFIGS_PATH.mkdir(parents=True, exist_ok=True)
-    OmegaConf.save(cfg, CONFIGS_PATH / f"{clustering_id}.yml")
-
-    run_dir = RUNS_PATH / clustering_id
-    run_trainer(
-        logger=logger, cfg=cfg, trainer_class=LoggedSpritesTrainer, run_dir=run_dir
+    return run_training(
+        clustering_id=clustering_id,
+        dataset_uid=dataset_uid,
+        parameters=parameters,
+        logger=logger,
+        sprites=True,
     )
-
-    # Return output directory
-    return run_dir

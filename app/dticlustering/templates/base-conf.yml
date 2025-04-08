@@ -24,6 +24,7 @@ model:
 
 training:
   seed: 32903
+  n_epochs: 40
   batch_size: 16
   n_workers: 5
   optimizer_name: adam
@@ -32,12 +33,10 @@ training:
   transformer_optimizer:
     weight_decay: 1.0e-6
   scheduler_name: multi_step
+  scheduler_update_range: epoch
   scheduler:
     gamma: 0.1
     milestones: [35]
-    update_range: epoch
-  n_epochs: 40
-  n_epoches: 40 # TODO to remove later
   eval_with_bkg: True
   eval_semantic: True
   visualizer_port:
