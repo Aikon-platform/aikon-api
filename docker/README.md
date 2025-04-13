@@ -57,7 +57,7 @@ export PATH=$CUDA_HOME/bin:$PATH
 export LD_LIBRARY_PATH=$CUDA_HOME/lib64:$LD_LIBRARY_PATH
 ```
 
-Depending on your CUDA version, it might be necessary to change: 
+Depending on your CUDA version, it might be necessary to change:
 - [Dockerfile base image](Dockerfile#L2): find the corresponding image [here](https://hub.docker.com/r/nvidia/cuda/tags)
 - [Pytorch version](requirements-dev.txt#L44): find the corresponding requirements [here](https://pytorch.org/get-started/locally/)
 
@@ -83,7 +83,7 @@ This script will:
    1. Install packages
    2. Download dependencies (if requirements have changed)
    3. Create tmp directories for various dependencies
-   4. Compile CUDA operators for `vectorization` and `regions` (if in `INSTALLED_APPS`)
+   4. Compile CUDA operators for `vectorization` and `regions` (if in `INSTALLED_APPS`): check if successful with `docker logs aikonapi`
 
 <details>
   <summary>
