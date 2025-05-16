@@ -616,7 +616,7 @@ class ComputeSimilarity(LoggedTask):
                 for (_, rel_i), (_, rel_j), *_ in batch:
                     i = doc1.range[rel_i]
                     j = doc2.range[rel_j]
-                    print(("i", rel_i, i, "j", rel_j, j, last_img_idx))
+                    # print(("i", rel_i, i, "j", rel_j, j, last_img_idx))
 
                     # Reuse tensor if same image index (assumes sorted pairs)
                     if last_img_idx != i:

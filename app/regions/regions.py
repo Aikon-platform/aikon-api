@@ -112,7 +112,7 @@ class ExtractRegions(LoggedTask):
 
         doc_results = {
             "doc_id": doc.uid,
-            "result_url": doc.get_annotations_url(extraction_ref)
+            "result_url": doc.get_annotations_url(extraction_ref),
         }
 
         self.results_url.append(doc_results)
@@ -150,6 +150,7 @@ class ExtractRegions(LoggedTask):
         self.print_and_log(f"DETECTING VISUAL ELEMENTS FOR {doc.uid} 🕵️")
         if self.process_doc_imgs(doc, extraction_id):
             self.store(doc, extraction_ref)
+        return True
 
     def run_task(self) -> bool:
         """
@@ -185,3 +186,4 @@ class ExtractRegions(LoggedTask):
             return False
         finally:
             self.terminate()
+            return True
