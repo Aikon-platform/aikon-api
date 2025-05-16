@@ -51,6 +51,13 @@ download_model_if_not(
     },
     MODEL_PATH / "fasterrcnn_watermark_extraction.pth",
 )
+# download_model_if_not(
+#     {
+#         "repo_id": "seglinglin/Historical-Illustration-Extraction",
+#         "filename": "character_line_extraction.pth",
+#     },
+#     MODEL_PATH / "character_line_extraction.pth",
+# )
 DEFAULT_MODEL = "illustration_extraction.pt"
 
 DEFAULT_MODEL_INFOS = {
@@ -74,4 +81,9 @@ DEFAULT_MODEL_INFOS = {
         "model": "line_extraction",
         "desc": "DINO-DETR model trained to extract line from historical documents.",
     },
+    # "character_line_extraction": {
+    #     "name": "Character line extraction",
+    #     "model": "character_line_extraction",
+    #     "desc": "⚠️ Will work only if used with cropped lines as input (from Line extraction model).",
+    # },
 }

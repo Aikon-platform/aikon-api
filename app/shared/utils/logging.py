@@ -82,7 +82,7 @@ def notifying(func: Optional[Callable[..., Any]] = None) -> Callable[..., Any]:
             except Exception as e:
                 logger.error(f"Error in task {fct.__name__}", exception=e)
                 try:
-                    notify("ERROR", error=traceback.format_exc(), completed=True)
+                    notify("ERROR", error=exc_str(e), completed=True)
                 except Exception as e:
                     logger.error("Error while notifying", exception=e)
 
