@@ -16,6 +16,8 @@ source "$DOCKER_DIR"/utils.sh
 source "$DOCKER_DIR"/.env
 source "$API_ROOT"/.env.prod
 
+echo $HTTP_PROXY
+
 container_exists() {
     docker ps -a --format '{{.Names}}' | grep -Eq "$CONTAINER_NAME"
 }
@@ -61,6 +63,7 @@ start_container() {
         docker run -d --gpus "$DEVICE_NB" --name "$CONTAINER_NAME" \
            -v "$DATA_FOLDER":/data/ -v "$CUDA_HOME":/cuda/ -p "$CONTAINER_HOST":"$API_PORT":"$API_PORT" \
            --restart unless-stopped --ipc=host "$CONTAINER_NAME"
+	docker network connect aikondemo_demo_network aikonapi || true
     else
         color_echo red "\nImage $CONTAINER_NAME does not exist. Build failed or not yet built."
         exit 1
