@@ -140,10 +140,8 @@ def delete(doc_id: str):
     if not doc_dir:
         return {"error": f"Document {doc_id} not found"}
 
-    cleared_results = clear_dir(
-        VEC_RESULTS_PATH, f"*{doc_id}*.svg", force_deletion=True
-    )
-    cleared_imgs = clear_dir(doc_dir / "images", force_deletion=True)
+    cleared_results = clear_dir(VEC_RESULTS_PATH, f"*{doc_id}*.svg", delete_anyway=True)
+    cleared_imgs = clear_dir(doc_dir / "images", delete_anyway=True)
     delete_path(doc_dir / "images.json")
 
     # TODO check if everything is deleted

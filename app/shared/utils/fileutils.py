@@ -149,7 +149,7 @@ def clear_dir(
     parent_dir: TPath,
     path_to_clear: str = "*",
     file_to_check: str = None,
-    force_deletion: bool = False,
+    delete_anyway: bool = False,
 ) -> int:
     """
     Clear a directory of files older than a default number of days
@@ -159,7 +159,7 @@ def clear_dir(
         parent_dir: The parent directory to clear
         path_to_clear: The path to clear (default: "*")
         file_to_check: The file in the directory whose age is checked (default: None)
-        force_deletion: If False, only delete files older than a default number of days (default: False)
+        delete_anyway: If False, only delete files older than a default number of days (default: False)
     """
     cleared = 0
     if not parent_dir:
@@ -170,9 +170,56 @@ def clear_dir(
         if path.is_dir():
             file = path / file_to_check if file_to_check else next(path.iterdir())
 
-        if force_deletion or is_too_old(file):
+        if delete_anyway or is_too_old(file):
             cleared += 1 if delete_path(path) else 0
     return cleared
+
+
+def delete_empty_dirs(
+    parent_dir: TPath, path_to_clear: str = "*", recursive: bool = False
+) -> int:
+    """
+    Delete all empty directories in a given directory.
+
+    Args:
+        parent_dir: The parent directory to search for empty directories
+        path_to_clear: The path pattern to match directories
+        recursive: If True, recursively check subdirectories before parent directories
+
+    Returns:
+        int: Number of empty directories deleted
+    """
+    deleted_count = 0
+
+    if not parent_dir or not parent_dir.exists():
+        return deleted_count
+
+    # glob pattern to list of paths
+    paths = list(parent_dir.glob(path_to_clear))
+
+    # Sort paths by depth (deepest first) if recursive
+    if recursive:
+        paths.sort(key=lambda p: len(p.parts), reverse=True)
+
+    for path in paths:
+        if not path.is_dir():
+            continue
+
+        # A directory is empty if it contains no files and no non-empty directories
+        is_empty = True
+        for item in path.iterdir():
+            if item.is_file():
+                is_empty = False
+                break
+            if item.is_dir() and any(item.iterdir()):
+                is_empty = False
+                break
+
+        if is_empty:
+            if delete_path(path):
+                deleted_count += 1
+
+    return deleted_count
 
 
 def get_file_ext(filepath: TPath) -> str:
