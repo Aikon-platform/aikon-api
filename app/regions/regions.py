@@ -3,10 +3,10 @@ import json
 import os
 import torch
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict
 
-from .const import DEFAULT_MODEL, MODEL_PATH
-from .lib.extract import YOLOExtractor, FasterRCNNExtractor, LineExtractor
+from .const import DEFAULT_MODEL, MODEL_PATH, DEFAULT_MODEL_INFOS
+from .lib.extract import YOLOExtractor, FasterRCNNExtractor, LineExtractor, DtlrExtractor
 from ..shared.tasks import LoggedTask
 from ..shared.dataset import Document, Dataset, Image as DImage
 from ..shared.utils.fileutils import get_model
@@ -18,6 +18,20 @@ EXTRACTOR_POSTPROCESS_KWARGS = {
     },
 }
 
+# add the extractor model class to DEFAULT_MODEL_INFOS.
+def extend_with_model_class(model_key:str, model_infos: Dict) -> Dict:
+    return {
+        "model_class": (
+        LineExtractor if model_key=="line_extraction"
+        else DtlrExtractor if model_key=="character_line_extraction"
+        else FasterRCNNExtractor if model_key=="fasterrcnn_watermark_extraction"
+        else YOLOExtractor  # last use case: `illustration_extraction`
+        ),
+        **model_infos
+    }
+
+MODEL_MAPPER = { k: extend_with_model_class(k,v) for k,v in DEFAULT_MODEL_INFOS.copy().items() }
+print(">>>>>>>>>>>>>>>>", MODEL_MAPPER)
 
 class ExtractRegions(LoggedTask):
     """
@@ -50,12 +64,13 @@ class ExtractRegions(LoggedTask):
         """
         Initialize the extractor, based on the model's name
         """
-        if "rcnn" in self.model:
-            self.extractor = FasterRCNNExtractor(self.weights, **self.extractor_kwargs)
-        elif "line" in self.model:
-            self.extractor = LineExtractor(self.weights, **self.extractor_kwargs)
-        else:
-            self.extractor = YOLOExtractor(self.weights, **self.extractor_kwargs)
+        # if "rcnn" in self.model:
+        #     self.extractor = FasterRCNNExtractor(self.weights, **self.extractor_kwargs)
+        # elif "line" in self.model:
+        #     self.extractor = LineExtractor(self.weights, **self.extractor_kwargs)
+        # else:
+        #     self.extractor = YOLOExtractor(self.weights, **self.extractor_kwargs)
+        self.extractor = MODEL_MAPPER[self.model]["model_class"]
 
     def terminate(self):
         """

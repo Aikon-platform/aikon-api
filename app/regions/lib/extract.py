@@ -285,6 +285,7 @@ class LineExtractor(BaseExtractor):
         img_renorm = img_res.permute(*permutation)
         return img_renorm.permute(1, 2, 0)
 
+    #TODO fix bbox extraction on finetuned model
     @staticmethod
     def poly_to_bbox(poly):
         x0, y0, x1, y1 = poly[:, 0], poly[:, 1], poly[:, -4], poly[:, -1]
@@ -357,6 +358,25 @@ class LineExtractor(BaseExtractor):
             ):
                 break
         return writer.annotations
+
+class DtlrExtractor(BaseExtractor):
+    """
+    ------------------------------------------------------------------------
+    Line Predictor
+    Copyright (c) 2024 Raphaël Baena (Imagine team - LIGM)
+    Licensed under the Apache License, Version 2.0 [see LICENSE for details]
+    Copied from DTLR (https://github.com/raphael-baena/DTLR)
+
+    @article{baena2024DTLR,
+        title={General Detection-based Text Line Recognition},
+        author={Raphael Baena and Syrine Kalleli and Mathieu Aubry},
+        booktitle={NeurIPS},
+        year={2024}},
+        url={https://arxiv.org/abs/2409.17095},
+    }
+    ------------------------------------------------------------------------
+    """
+    #TODO
 
 
 class YOLOExtractor(BaseExtractor):
