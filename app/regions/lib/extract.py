@@ -24,7 +24,7 @@ from .yolov5.utils.general import (
 from .yolov5.utils.augmentations import letterbox
 from .yolov5.utils.torch_utils import select_device, smart_inference_mode
 
-from .const import MODEL_PATH
+from ..const import MODEL_PATH
 from ...shared.utils import get_device
 from ...shared.utils.fileutils import TPath
 from ...shared.dataset import Image as DImage
@@ -238,13 +238,15 @@ class OcrMixin:
     from .ocr.datasets import transforms
 
     T = transforms
-    transform = self.T.Compose(
-        [
-            self.T.RandomResize([800], max_size=1333),
-            self.T.ToTensor(),
-            self.T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-        ]
-    )
+
+    def transform(self):
+        return self.T.Compose(
+            [
+                self.T.RandomResize([800], max_size=1333),
+                self.T.ToTensor(),
+                self.T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+            ]
+        )
 
     def prepare_image(self, img: DImage):
         image, _ = self.transform(img, None)
@@ -406,7 +408,6 @@ class DtlrExtractor(OcrMixin, BaseExtractor):
         model, _, postprocessors = build_model_main(args)
         model.load_state_dict(checkpoint["model"], strict=False)
 
-        #TODO + is it necessary ?
         with open(self.labels, mode="rb") as fh:
             labels_content = pickle.load(fh)
         charset = labels_content["charset"]["all_multi"]
@@ -446,72 +447,80 @@ class DtlrExtractor(OcrMixin, BaseExtractor):
     #NOTE each image is a single line region extracted using `LineExtractor`
     @smart_inference_mode()
     def extract_one(self, img: DImage, save_img: bool = False):
-        #TODO move to `OcrMixin` ?
+        #TODO move to `OcrMixin` ? (until `tensor_img = self.prepare_image(self.resize(orig_img, size))` included)
         source = setup_source(img.path)
         orig_img = Image.open(source).convert("RGB")
         orig_w, orig_h = orig_img.size
         writer = ImageAnnotator(img, img_w=orig_w, img_h=orig_h)
 
-        tensor_img = self.prepare_image(orig_img)
-        tensor_w, tensor_h = tensor_img.shape[2], tensor_img.shape[1]
+        for size in self.input_sizes:
 
-        output = model.cuda()(tensor_img[None].cuda())
+            tensor_img = self.prepare_image(self.resize(orig_img, size))
+            tensor_w, tensor_h = tensor_img.shape[2], tensor_img.shape[1]
 
-        #NOTE I assume this is NMS ?
-        postprocessors['bbox'].nms_iou_threshold = 0.2
-        output = self.postprocessors['bbox'](output, torch.Tensor([[1.0, 1.0]]).cuda())[0]
+            output = model.cuda()(tensor_img[None].cuda())
 
-        # boxes = all character bounding boxes in `bbox`
-        boxes = output['boxes']
-        scores = output['scores']
-        labels = output['labels']
-        select_mask: torch.BoolTensor = scores > 0.1
+            #NOTE I assume this is NMS ?
+            postprocessors['bbox'].nms_iou_threshold = 0.2
+            output = self.postprocessors['bbox'](output, torch.Tensor([[1.0, 1.0]]).cuda())[0]
 
-        boxes_xyxy = boxes.clone()
-        # each box is now represented in cxcywh
-        boxes = box_ops.box_xyxy_to_cxcywh(boxes)
-        boxes = boxes[select_mask]
-        scores = scores[select_mask]
+            # boxes = all character bounding boxes in `bbox`
+            boxes = output['boxes']
+            scores = output['scores']
+            labels = output['labels']
+            select_mask: torch.BoolTensor = scores > 0.1
 
-        # extract a list of labels for characters in `bbox` and convert to utf-8
-        #TODO checkpoint is not yet loaded
-        labels = labels[select_mask]
-        box_label = [
-            bytes(self.charset[i], "utf-8").decode("unicode_escape")
-            for i in labels
-        ]
+            boxes_xyxy = boxes.clone()
+            # each box is now represented in cxcywh
+            boxes = box_ops.box_xyxy_to_cxcywh(boxes)
+            boxes = boxes[select_mask]
+            scores = scores[select_mask]
 
-        # remove bounding boxes whose label is `" "` (aka, don't detect spaces)
-        #NOTE this also deletes a good amount to other characters so we disable
-        #NOTE there is probably an issue with label detection (many chars labels as spaces when they are not spaces)
-        # idx_no_spaces = []        # array of indexes to keep
-        # box_label_no_spaces = []  # clean labels
-        # for i, char in enumerate(box_label):
-        #     if char != " ":
-        #         idx_no_spaces.append(i)
-        #         box_label_no_spaces.append(char)
-        # boxes = boxes[idx_no_spaces]
-        # box_label = box_label_no_spaces
+            # extract a list of labels for characters in `bbox` and convert to utf-8
+            labels = labels[select_mask]
+            box_label = [
+                bytes(self.charset[i], "utf-8").decode("unicode_escape")
+                for i in labels
+            ]
 
-        # shift bounding boxes from tensor dimension to the OG image's dimension
-        ratios_h, ratios_w = tuple(
-            float(sz_img) / float(sz_tensor)
-            for sz_img, sz_tensor
-            in zip((orig_w, orig_h), (tensor_w, tensor_h))
-        )
-        final_bboxes = boxes.cpu() * torch.tensor([tensor_w, tensor_h, tensor_w, tensor_h])
-        final_bboxes[:, :2] -= final_bboxes[:, 2:] / 2
-        final_bboxes *= torch.Tensor([ratios_w, ratios_h, ratios_w, ratios_h])
+            # remove bounding boxes whose label is `" "` (aka, don't detect spaces)
+            #NOTE this also deletes a good amount to other characters so we disable
+            #NOTE there is probably an issue with label detection (many chars labels as spaces when they are not spaces)
+            # idx_no_spaces = []        # array of indexes to keep
+            # box_label_no_spaces = []  # clean labels
+            # for i, char in enumerate(box_label):
+            #     if char != " ":
+            #         idx_no_spaces.append(i)
+            #         box_label_no_spaces.append(char)
+            # boxes = boxes[idx_no_spaces]
+            # box_label = box_label_no_spaces
 
-        if self.process_detections(
-            detections=final_bboxes,
-            image_tensor=tensor_img.unsqueeze(0).to(self.device),
-            original_image=np.array(orig_img),
-            save_img=save_img,
-            source=source,
-            writer=writer,
-        ):
-            break
+            #NOTE actually done in `process_detections`
+            # shift bounding boxes from tensor dimension to the OG image's dimension
+            # ratios_h, ratios_w = tuple(
+            #     float(sz_img) / float(sz_tensor)
+            #     for sz_img, sz_tensor
+            #     in zip((orig_w, orig_h), (tensor_w, tensor_h))
+            # )
+            # final_bboxes = boxes.cpu() * torch.tensor([tensor_w, tensor_h, tensor_w, tensor_h])
+            # final_bboxes[:, :2] -= final_bboxes[:, 2:] / 2
+            # final_bboxes *= torch.Tensor([ratios_w, ratios_h, ratios_w, ratios_h])
+
+            #TODO find out if LineExtractor.cleanup_detection should be used here (performs NMS + the below code)
+            preds = torch.cat(
+                [bboxes, scores, labels],
+                dim=1,
+            )
+
+            if self.process_detections(
+                detections=preds, #final_bboxes,
+                image_tensor=tensor_img.unsqueeze(0).to(self.device),
+                original_image=np.array(orig_img),
+                save_img=save_img,
+                source=source,
+                writer=writer,
+            ):
+                break
         return writer.annotations
 
 

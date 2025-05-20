@@ -53,7 +53,7 @@ download_model_if_not(
 )
 download_model_if_not(
     {
-        "repo_id": "seglinglin/Historical-Illustration-Extraction",
+        "repo_id": "seglinglin/Line-Extraction",
         "filename": "labels_icdar.pkl",
     },
     MODEL_PATH / "labels_icdar.pkl",
