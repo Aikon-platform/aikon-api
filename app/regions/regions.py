@@ -31,7 +31,6 @@ def extend_with_model_class(model_key:str, model_infos: Dict) -> Dict:
     }
 
 MODEL_MAPPER = { k: extend_with_model_class(k,v) for k,v in DEFAULT_MODEL_INFOS.copy().items() }
-print(">>>>>>>>>>>>>>>>", MODEL_MAPPER)
 
 class ExtractRegions(LoggedTask):
     """

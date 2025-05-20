@@ -54,6 +54,13 @@ download_model_if_not(
 download_model_if_not(
     {
         "repo_id": "seglinglin/Historical-Illustration-Extraction",
+        "filename": "labels_icdar.pkl",
+    },
+    MODEL_PATH / "labels_icdar.pkl",
+)
+download_model_if_not(
+    {
+        "repo_id": "seglinglin/Historical-Illustration-Extraction",
         "filename": "fasterrcnn_watermark_extraction.pth",
     },
     MODEL_PATH / "fasterrcnn_watermark_extraction.pth",

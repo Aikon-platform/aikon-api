@@ -24,6 +24,7 @@ from .yolov5.utils.general import (
 from .yolov5.utils.augmentations import letterbox
 from .yolov5.utils.torch_utils import select_device, smart_inference_mode
 
+from .const import MODEL_PATH
 from ...shared.utils import get_device
 from ...shared.utils.fileutils import TPath
 from ...shared.dataset import Image as DImage
@@ -171,6 +172,7 @@ class BaseExtractor:
         writer: ImageAnnotator,
         class_names_examples: str = "abc",
     ) -> bool:
+        """extract detections and write them"""
         annotator = (
             Annotator(original_image, line_width=2, example=str(class_names_examples))
             if save_img
@@ -232,7 +234,25 @@ class BaseExtractor:
         return True
 
 
-class LineExtractor(BaseExtractor):
+class OcrMixin:
+    from .ocr.datasets import transforms
+
+    T = transforms
+    transform = self.T.Compose(
+        [
+            self.T.RandomResize([800], max_size=1333),
+            self.T.ToTensor(),
+            self.T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+        ]
+    )
+
+    def prepare_image(self, img: DImage):
+        image, _ = self.transform(img, None)
+        return image
+
+
+
+class LineExtractor(OcrMixin, BaseExtractor):
     """
     ------------------------------------------------------------------------
     Line Predictor
@@ -241,15 +261,11 @@ class LineExtractor(BaseExtractor):
     Copied from LinePredictor (https://github.com/raphael-baena/LinePredictor)
     ------------------------------------------------------------------------
     """
-
-    from .line_predictor.datasets import transforms
-
-    config = LIB_ROOT / "line_predictor" / "config" / "DINO_4scale.py"
-    T = transforms
+    config = LIB_ROOT / "ocr" / "config" / "DINO_4scale.py"
 
     def get_model(self):
-        from .line_predictor import build_model_main
-        from .line_predictor.config.slconfig import SLConfig
+        from .ocr import build_model_main
+        from .ocr.config.slconfig import SLConfig
 
         self.device = select_device(self.device)
         checkpoint = torch.load(self.weights, map_location="cpu")
@@ -266,6 +282,7 @@ class LineExtractor(BaseExtractor):
         model.load_state_dict(checkpoint["model"], strict=False)
         return model.eval()
 
+    #NOTE move to OcrMixin ?
     @staticmethod
     def renorm(
         img: torch.FloatTensor, mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
@@ -285,6 +302,7 @@ class LineExtractor(BaseExtractor):
         img_renorm = img_res.permute(*permutation)
         return img_renorm.permute(1, 2, 0)
 
+    #NOTE could be moved to Mixin ?
     #TODO fix bbox extraction on finetuned model
     @staticmethod
     def poly_to_bbox(poly):
@@ -293,17 +311,6 @@ class LineExtractor(BaseExtractor):
         x_min, x_max = torch.min(x0, x1), torch.max(x0, x1)
         y_min, y_max = torch.min(y0, y1), torch.max(y0, y1)
         return torch.stack([x_min, y_min, x_max, y_max], dim=1)
-
-    def prepare_image(self, img: DImage):
-        transform = self.T.Compose(
-            [
-                self.T.RandomResize([800], max_size=1333),
-                self.T.ToTensor(),
-                self.T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-            ]
-        )
-        image, _ = transform(img, None)
-        return image
 
     @staticmethod
     def scale(poly, w, h):
@@ -359,10 +366,11 @@ class LineExtractor(BaseExtractor):
                 break
         return writer.annotations
 
-class DtlrExtractor(BaseExtractor):
+
+class DtlrExtractor(OcrMixin, BaseExtractor):
     """
     ------------------------------------------------------------------------
-    Line Predictor
+    General Detection-based Text Line Recognition (DTLR)
     Copyright (c) 2024 Raphaël Baena (Imagine team - LIGM)
     Licensed under the Apache License, Version 2.0 [see LICENSE for details]
     Copied from DTLR (https://github.com/raphael-baena/DTLR)
@@ -376,7 +384,135 @@ class DtlrExtractor(BaseExtractor):
     }
     ------------------------------------------------------------------------
     """
-    #TODO
+    config = LIB_ROOT / "ocr" / "config" / "HWDB_FULL.py"
+    labels = MODEL_PATH / "labels_icdar.pkl"
+
+    postprocessors = None  # defined in get_model
+    charset = None    # defined in get_model
+
+    def get_model(self):
+        from .ocr import build_model_main
+        from .ocr.config.slconfig import SLConfig
+
+        self.device = select_device(self.device)
+        checkpoint = torch.load(self.weights, map_location="cpu")
+
+        args = SLConfig.fromfile(self.config)
+        args.device = self.device
+        args.CTC_training = False
+        args.CTC_loss_coef = 0.25
+        args.fix_size = False
+
+        model, _, postprocessors = build_model_main(args)
+        model.load_state_dict(checkpoint["model"], strict=False)
+
+        #TODO + is it necessary ?
+        with open(self.labels, mode="rb") as fh:
+            labels_content = pickle.load(fh)
+        charset = labels_content["charset"]["all_multi"]
+        args.charset = charset
+        charset_size = len(args.charset)
+
+        features_dim = model.class_embed[0].weight.data.shape[1]
+
+        # 2nd `new_class_embed` is nn.Linear (a linear transform)
+        new_class_embed = nn.Linear(features_dim, charset_size, )
+        new_decoder_class_embed = nn.Linear(features_dim, charset_size, )
+        new_enc_out_class_embed = nn.Linear(features_dim, charset_size, )
+
+        # always true in our case => redefines `new_class_embed`
+        if model.dec_pred_class_embed_share:
+            class_embed_layerlist = [
+                new_class_embed
+                for i in range(model.transformer.num_decoder_layers)
+            ]
+
+        # 2nd  `new_class_embed` is nn.ModuleList (6 linear layers, stacked)
+        new_class_embed = nn.ModuleList(class_embed_layerlist)
+
+        model.class_embed = new_class_embed.to(device)
+        model.transformer.decoder.class_embed = new_decoder_class_embed.to(device)
+        model.transformer.enc_out_class_embed = new_enc_out_class_embed.to(device)
+
+        model.label_enc = nn.Embedding(charset_size + 1, features_dim).to(device)
+        model.load_state_dict(checkpoint['model'])
+        model.to(device)
+
+        self.postprocessors = postprocessors
+        self.charset = charset
+        return model.eval()
+
+
+    #NOTE each image is a single line region extracted using `LineExtractor`
+    @smart_inference_mode()
+    def extract_one(self, img: DImage, save_img: bool = False):
+        #TODO move to `OcrMixin` ?
+        source = setup_source(img.path)
+        orig_img = Image.open(source).convert("RGB")
+        orig_w, orig_h = orig_img.size
+        writer = ImageAnnotator(img, img_w=orig_w, img_h=orig_h)
+
+        tensor_img = self.prepare_image(orig_img)
+        tensor_w, tensor_h = tensor_img.shape[2], tensor_img.shape[1]
+
+        output = model.cuda()(tensor_img[None].cuda())
+
+        #NOTE I assume this is NMS ?
+        postprocessors['bbox'].nms_iou_threshold = 0.2
+        output = self.postprocessors['bbox'](output, torch.Tensor([[1.0, 1.0]]).cuda())[0]
+
+        # boxes = all character bounding boxes in `bbox`
+        boxes = output['boxes']
+        scores = output['scores']
+        labels = output['labels']
+        select_mask: torch.BoolTensor = scores > 0.1
+
+        boxes_xyxy = boxes.clone()
+        # each box is now represented in cxcywh
+        boxes = box_ops.box_xyxy_to_cxcywh(boxes)
+        boxes = boxes[select_mask]
+        scores = scores[select_mask]
+
+        # extract a list of labels for characters in `bbox` and convert to utf-8
+        #TODO checkpoint is not yet loaded
+        labels = labels[select_mask]
+        box_label = [
+            bytes(self.charset[i], "utf-8").decode("unicode_escape")
+            for i in labels
+        ]
+
+        # remove bounding boxes whose label is `" "` (aka, don't detect spaces)
+        #NOTE this also deletes a good amount to other characters so we disable
+        #NOTE there is probably an issue with label detection (many chars labels as spaces when they are not spaces)
+        # idx_no_spaces = []        # array of indexes to keep
+        # box_label_no_spaces = []  # clean labels
+        # for i, char in enumerate(box_label):
+        #     if char != " ":
+        #         idx_no_spaces.append(i)
+        #         box_label_no_spaces.append(char)
+        # boxes = boxes[idx_no_spaces]
+        # box_label = box_label_no_spaces
+
+        # shift bounding boxes from tensor dimension to the OG image's dimension
+        ratios_h, ratios_w = tuple(
+            float(sz_img) / float(sz_tensor)
+            for sz_img, sz_tensor
+            in zip((orig_w, orig_h), (tensor_w, tensor_h))
+        )
+        final_bboxes = boxes.cpu() * torch.tensor([tensor_w, tensor_h, tensor_w, tensor_h])
+        final_bboxes[:, :2] -= final_bboxes[:, 2:] / 2
+        final_bboxes *= torch.Tensor([ratios_w, ratios_h, ratios_w, ratios_h])
+
+        if self.process_detections(
+            detections=final_bboxes,
+            image_tensor=tensor_img.unsqueeze(0).to(self.device),
+            original_image=np.array(orig_img),
+            save_img=save_img,
+            source=source,
+            writer=writer,
+        ):
+            break
+        return writer.annotations
 
 
 class YOLOExtractor(BaseExtractor):
