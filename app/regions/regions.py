@@ -117,7 +117,6 @@ class ExtractRegions(LoggedTask):
         """
         self.annotations[extraction_ref] = []
         for img in self.jlogger.iterate(doc.list_images(), "Analyzing images"):
-            print(img)
             self.process_img(img, extraction_ref, doc.uid)
         return True
 

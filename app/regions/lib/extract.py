@@ -254,7 +254,7 @@ class OcrMixin:
 
 
 
-class LineExtractor(OcrMixin, BaseExtractor):
+class LineExtractor(BaseExtractor, OcrMixin):
     """
     ------------------------------------------------------------------------
     Line Predictor
@@ -369,7 +369,7 @@ class LineExtractor(OcrMixin, BaseExtractor):
         return writer.annotations
 
 
-class DtlrExtractor(OcrMixin, BaseExtractor):
+class DtlrExtractor(BaseExtractor, OcrMixin):
     """
     ------------------------------------------------------------------------
     General Detection-based Text Line Recognition (DTLR)
@@ -446,7 +446,9 @@ class DtlrExtractor(OcrMixin, BaseExtractor):
 
     #NOTE each image is a single line region extracted using `LineExtractor`
     @smart_inference_mode()
-    def extract_one(self, img: DImage, save_img: bool = False):
+    def extract_one(self, img: DImage = None, save_img: bool = False):
+        console(f"......................... {self}, {img}")
+
         #TODO move to `OcrMixin` ? (until `tensor_img = self.prepare_image(self.resize(orig_img, size))` included)
         source = setup_source(img.path)
         orig_img = Image.open(source).convert("RGB")
