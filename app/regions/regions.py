@@ -69,7 +69,7 @@ class ExtractRegions(LoggedTask):
         #     self.extractor = LineExtractor(self.weights, **self.extractor_kwargs)
         # else:
         #     self.extractor = YOLOExtractor(self.weights, **self.extractor_kwargs)
-        self.extractor = MODEL_MAPPER[self.model]["model_class"]
+        self.extractor = MODEL_MAPPER[self.model]["model_class"](self.weights, **self.extractor_kwargs)
 
     def terminate(self):
         """

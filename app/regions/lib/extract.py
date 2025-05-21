@@ -234,11 +234,13 @@ class BaseExtractor:
         return True
 
 
-class OcrMixin:
+class OcrExtractor(BaseExtractor):
+    """all shared data and methods between `LineExtractor` and `DtlrExtractor`"""
     from .ocr.datasets import transforms
 
     T = transforms
 
+    @property
     def transform(self):
         return self.T.Compose(
             [
@@ -253,8 +255,7 @@ class OcrMixin:
         return image
 
 
-
-class LineExtractor(BaseExtractor, OcrMixin):
+class LineExtractor(OcrExtractor):
     """
     ------------------------------------------------------------------------
     Line Predictor
@@ -346,10 +347,11 @@ class LineExtractor(BaseExtractor, OcrMixin):
 
         for size in self.input_sizes:
             image = self.prepare_image(self.resize(orig_img, size))
-            curr_h, curr_w = image.shape[1:]
+            curr_h, curr_w = image.shape[1:] #list(image.shape[2:])
             # h_ratio, w_ratio = float(curr_h) / float(orig_h), float(curr_w) / float(orig_w)
 
             output = self.model.to(self.device)(image[None].to(self.device))
+            #error here
             mask = output["pred_logits"].sigmoid().max(-1)[0] > 0.3
             polygons = output["pred_boxes"][mask].cpu().detach()
             # polygons = self.scale(output["pred_boxes"][mask].cpu().detach(), curr_w, curr_h)
@@ -369,7 +371,7 @@ class LineExtractor(BaseExtractor, OcrMixin):
         return writer.annotations
 
 
-class DtlrExtractor(BaseExtractor, OcrMixin):
+class DtlrExtractor(OcrExtractor):
     """
     ------------------------------------------------------------------------
     General Detection-based Text Line Recognition (DTLR)
