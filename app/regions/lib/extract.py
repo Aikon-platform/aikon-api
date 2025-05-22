@@ -253,6 +253,49 @@ class OcrExtractor(BaseExtractor):
         image, _ = self.transform(img, None)
         return image
 
+    #NOTE could be moved to Mixin ?
+    #TODO fix bbox extraction on finetuned model
+    @staticmethod
+    def poly_to_bbox(poly):
+        x0, y0, x1, y1 = poly[:, 0], poly[:, 1], poly[:, -4], poly[:, -1]
+        # return torch.stack([x0, y0, x1, y1], dim=1)
+        x_min, x_max = torch.min(x0, x1), torch.max(x0, x1)
+        y_min, y_max = torch.min(y0, y1), torch.max(y0, y1)
+        return torch.stack([x_min, y_min, x_max, y_max], dim=1)
+
+    @staticmethod
+    def scale(poly, w, h):
+        return poly * torch.tensor([w, h]).repeat(10)
+
+    def cleanup_detections(
+        self,
+        polygons: torch.Tensor,
+        scores: torch.Tensor,
+        curr_size: Tuple[float,float],
+        labels: torch.Tensor|None=None
+    ) -> torch.Tensor:
+        curr_w, curr_h = curr_size
+        # scaled_polygons = self.scale(polygons, w_ratio, h_ratio)
+        scaled_polygons = self.scale(polygons, curr_w, curr_h)
+
+        bboxes = self.poly_to_bbox(scaled_polygons).to(self.device)
+        scores = scores.to(self.device)
+
+        # Perform Non-Maximum Suppression (NMS) TODO filter nms on polygons: https://github.com/WolodjaZ/PolyGoneNMS
+        nms_filter = nms(bboxes, scores, iou_threshold=0.8).cpu()
+        bboxes = bboxes[nms_filter]
+        scores = scores[nms_filter].unsqueeze(1)
+
+        # DtlrExtractor provides labels, while LineExtractor does not.
+        if labels is None:
+            labels = torch.zeros(len(scores), 1, device=self.device)
+
+        return torch.cat(
+            [bboxes, scores, labels],
+            dim=1,
+        )
+
+
 
 class LineExtractor(OcrExtractor):
     """
@@ -307,38 +350,15 @@ class LineExtractor(OcrExtractor):
         img_renorm = img_res.permute(*permutation)
         return img_renorm.permute(1, 2, 0)
 
-    #NOTE could be moved to Mixin ?
-    #TODO fix bbox extraction on finetuned model
-    @staticmethod
-    def poly_to_bbox(poly):
-        x0, y0, x1, y1 = poly[:, 0], poly[:, 1], poly[:, -4], poly[:, -1]
-        # return torch.stack([x0, y0, x1, y1], dim=1)
-        x_min, x_max = torch.min(x0, x1), torch.max(x0, x1)
-        y_min, y_max = torch.min(y0, y1), torch.max(y0, y1)
-        return torch.stack([x_min, y_min, x_max, y_max], dim=1)
-
-    @staticmethod
-    def scale(poly, w, h):
-        return poly * torch.tensor([w, h]).repeat(10)
-
-    def cleanup_detections(self, polygons, scores, curr_size):
-        curr_w, curr_h = curr_size
-        # scaled_polygons = self.scale(polygons, w_ratio, h_ratio)
-        scaled_polygons = self.scale(polygons, curr_w, curr_h)
-
-        bboxes = self.poly_to_bbox(scaled_polygons).to(self.device)
-        scores = scores.to(self.device)
-
-        # Perform Non-Maximum Suppression (NMS) TODO filter nms on polygons: https://github.com/WolodjaZ/PolyGoneNMS
-        nms_filter = nms(bboxes, scores, iou_threshold=0.8).cpu()
-        bboxes = bboxes[nms_filter]
-        scores = scores[nms_filter].unsqueeze(1)
-        labels = torch.zeros(len(scores), 1, device=self.device)
-
-        return torch.cat(
-            [bboxes, scores, labels],
-            dim=1,
-        )
+    # #NOTE could be moved to Mixin ?
+    # #TODO fix bbox extraction on finetuned model
+    # @staticmethod
+    # def poly_to_bbox(poly):
+    #     x0, y0, x1, y1 = poly[:, 0], poly[:, 1], poly[:, -4], poly[:, -1]
+    #     # return torch.stack([x0, y0, x1, y1], dim=1)
+    #     x_min, x_max = torch.min(x0, x1), torch.max(x0, x1)
+    #     y_min, y_max = torch.min(y0, y1), torch.max(y0, y1)
+    #     return torch.stack([x_min, y_min, x_max, y_max], dim=1)
 
     @smart_inference_mode()
     def extract_one(self, img: DImage, save_img: bool = False):
@@ -359,7 +379,8 @@ class LineExtractor(OcrExtractor):
             # polygons = self.scale(output["pred_boxes"][mask].cpu().detach(), curr_w, curr_h)
             scores = output["pred_logits"][mask].sigmoid().max(-1)[0].cpu()
 
-            preds = self.cleanup_detections(polygons, scores, (curr_w, curr_h))
+            preds = self.cleanup_detections(polygons, scores, curr_size=(curr_w, curr_h), labels=None)
+            print("....................preds", preds, preds.shape)
 
             if self.process_detections(
                 detections=preds,
@@ -390,7 +411,7 @@ class DtlrExtractor(OcrExtractor):
     }
     ------------------------------------------------------------------------
     """
-    from .line_predictor.datasets import transforms
+    from .dtlr.datasets import transforms
 
     config = LIB_ROOT / "dtlr" / "config" / "HWDB_full.py"
     labels = MODEL_PATH / "labels_icdar.pkl"
@@ -467,6 +488,7 @@ class DtlrExtractor(OcrExtractor):
     #NOTE each image is a single line region extracted using `LineExtractor`
     @smart_inference_mode()
     def extract_one(self, img: DImage = None, save_img: bool = False):
+        from .dtlr.util import box_ops
 
         #TODO move to `OcrMixin` ? (until `tensor_img = self.prepare_image(self.resize(orig_img, size))` included)
         source = setup_source(img.path)
@@ -483,18 +505,18 @@ class DtlrExtractor(OcrExtractor):
             output = self.model.cuda()(tensor_img[None].cuda())
 
             #NOTE I assume this is NMS ?
-            postprocessors['bbox'].nms_iou_threshold = 0.2
+            self.postprocessors['bbox'].nms_iou_threshold = 0.2
             output = self.postprocessors['bbox'](output, torch.Tensor([[1.0, 1.0]]).cuda())[0]
 
             # boxes = all character bounding boxes in `bbox`
             boxes = output['boxes']
             scores = output['scores']
             labels = output['labels']
-            select_mask: torch.BoolTensor = scores > 0.1
+            select_mask = scores > 0.1
 
-            boxes_xyxy = boxes.clone()
-            # each box is now represented in cxcywh
-            boxes = box_ops.box_xyxy_to_cxcywh(boxes)
+            # BaseExtractor.process_detections expects boxes in `xyxy`, not `xycwch`
+            # boxes_xyxy = boxes.clone()
+            # boxes = box_ops.box_xyxy_to_cxcywh(boxes)
             boxes = boxes[select_mask]
             scores = scores[select_mask]
 
@@ -528,11 +550,20 @@ class DtlrExtractor(OcrExtractor):
             # final_bboxes[:, :2] -= final_bboxes[:, 2:] / 2
             # final_bboxes *= torch.Tensor([ratios_w, ratios_h, ratios_w, ratios_h])
 
-            #TODO find out if LineExtractor.cleanup_detection should be used here (performs NMS + the below code)
-            preds = torch.cat(
-                [bboxes, scores, labels],
-                dim=1,
-            )
+            print("....................boxes",   boxes, boxes.shape)
+            print("....................scores", scores, scores.shape)
+            print("....................labels", labels, labels.shape)
+
+            # #TODO find out if LineExtractor.cleanup_detection should be used here (performs NMS + the below code)
+            # somehow that works ?
+            preds = torch.cat([
+                boxes,
+                scores.unsqueeze(1),
+                labels.unsqueeze(1)
+            ], dim=1)
+            # preds = self.cleanup_detections(boxes, scores, (tensor_w, tensor_h), labels)
+
+            print("....................preds", preds, preds.shape)
 
             if self.process_detections(
                 detections=preds, #final_bboxes,
