@@ -236,9 +236,8 @@ class BaseExtractor:
 
 class OcrExtractor(BaseExtractor):
     """all shared data and methods between `LineExtractor` and `DtlrExtractor`"""
-    from .ocr.datasets import transforms
 
-    T = transforms
+    T = None  # defined in sub-classes
 
     @property
     def transform(self):
@@ -264,6 +263,9 @@ class LineExtractor(OcrExtractor):
     Copied from LinePredictor (https://github.com/raphael-baena/LinePredictor)
     ------------------------------------------------------------------------
     """
+    from .line_predictor.datasets import transforms
+
+    T = transforms
     config = LIB_ROOT / "ocr" / "config" / "DINO_4scale.py"
 
     def get_model(self):
@@ -388,27 +390,31 @@ class DtlrExtractor(OcrExtractor):
     }
     ------------------------------------------------------------------------
     """
-    config = LIB_ROOT / "ocr" / "config" / "HWDB_FULL.py"
+    config = LIB_ROOT / "ocr" / "config" / "HWDB_full.py"
     labels = MODEL_PATH / "labels_icdar.pkl"
 
     postprocessors = None  # defined in get_model
-    charset = None    # defined in get_model
+    charset = None         # defined in get_model
 
     def get_model(self):
+        import pickle
+        from torch import nn
         from .ocr import build_model_main
         from .ocr.config.slconfig import SLConfig
 
-        self.device = select_device(self.device)
-        checkpoint = torch.load(self.weights, map_location="cpu")
+        # 1 - define config
 
+        self.device = select_device(self.device)
         args = SLConfig.fromfile(self.config)
         args.device = self.device
         args.CTC_training = False
         args.CTC_loss_coef = 0.25
         args.fix_size = False
 
+        # 2 - load model, checpoint and charset
+
         model, _, postprocessors = build_model_main(args)
-        model.load_state_dict(checkpoint["model"], strict=False)
+        checkpoint = torch.load(self.weights, map_location="cpu")
 
         with open(self.labels, mode="rb") as fh:
             labels_content = pickle.load(fh)
@@ -416,9 +422,12 @@ class DtlrExtractor(OcrExtractor):
         args.charset = charset
         charset_size = len(args.charset)
 
-        features_dim = model.class_embed[0].weight.data.shape[1]
+        # 3 - define class embeddigs
+        #NOTE `new_class_embed` is defined twicem 1st as a single linear layer
+        # (`nn.Linear`), then as an nn.ModuleList (6 stacked linear layers)
+        #  1st `new_class_embed` is nn.Linear (a linear transform)
 
-        # 2nd `new_class_embed` is nn.Linear (a linear transform)
+        features_dim = model.class_embed[0].weight.data.shape[1]
         new_class_embed = nn.Linear(features_dim, charset_size, )
         new_decoder_class_embed = nn.Linear(features_dim, charset_size, )
         new_enc_out_class_embed = nn.Linear(features_dim, charset_size, )
@@ -429,17 +438,26 @@ class DtlrExtractor(OcrExtractor):
                 new_class_embed
                 for i in range(model.transformer.num_decoder_layers)
             ]
-
-        # 2nd  `new_class_embed` is nn.ModuleList (6 linear layers, stacked)
+        else: raise ValueError("NOPE")
         new_class_embed = nn.ModuleList(class_embed_layerlist)
 
-        model.class_embed = new_class_embed.to(device)
-        model.transformer.decoder.class_embed = new_decoder_class_embed.to(device)
-        model.transformer.enc_out_class_embed = new_enc_out_class_embed.to(device)
+        model.class_embed = new_class_embed.to(self.device)
+        model.transformer.decoder.class_embed = new_decoder_class_embed.to(self.device)
+        model.transformer.enc_out_class_embed = new_enc_out_class_embed.to(self.device)
+        model.label_enc = nn.Embedding(charset_size + 1, features_dim).to(self.device)
 
-        model.label_enc = nn.Embedding(charset_size + 1, features_dim).to(device)
-        model.load_state_dict(checkpoint['model'])
-        model.to(device)
+        # 4 - load state dict and fix mismatches. see: https://stackoverflow.com/a/76154523
+        model_state_dict = model.state_dict()
+        checkpoint_state_dict = checkpoint["model"]
+        fixed_state_dict={
+            k:v
+            if v.size()==model_state_dict[k].size()
+            else model_state_dict[k]
+            for k,v in zip(model_state_dict.keys(), checkpoint_state_dict.values())
+        }
+
+        model.load_state_dict(fixed_state_dict, strict=False)  # `strict=False` => skip layers with key mismatches in the checkpoint. see: https://stackoverflow.com/a/76154523
+        model.to(self.device)
 
         self.postprocessors = postprocessors
         self.charset = charset
@@ -449,7 +467,6 @@ class DtlrExtractor(OcrExtractor):
     #NOTE each image is a single line region extracted using `LineExtractor`
     @smart_inference_mode()
     def extract_one(self, img: DImage = None, save_img: bool = False):
-        console(f"......................... {self}, {img}")
 
         #TODO move to `OcrMixin` ? (until `tensor_img = self.prepare_image(self.resize(orig_img, size))` included)
         source = setup_source(img.path)
@@ -461,8 +478,9 @@ class DtlrExtractor(OcrExtractor):
 
             tensor_img = self.prepare_image(self.resize(orig_img, size))
             tensor_w, tensor_h = tensor_img.shape[2], tensor_img.shape[1]
+            print(orig_w, orig_h, tensor_w, tensor_h, tensor_img.shape, type(tensor_img))
 
-            output = model.cuda()(tensor_img[None].cuda())
+            output = self.model.cuda()(tensor_img[None].cuda())
 
             #NOTE I assume this is NMS ?
             postprocessors['bbox'].nms_iou_threshold = 0.2
