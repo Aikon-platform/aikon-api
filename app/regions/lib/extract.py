@@ -390,10 +390,11 @@ class DtlrExtractor(OcrExtractor):
     }
     ------------------------------------------------------------------------
     """
-    #TODO fix paths
+    from .line_predictor.datasets import transforms
+
     config = LIB_ROOT / "dtlr" / "config" / "HWDB_full.py"
     labels = MODEL_PATH / "labels_icdar.pkl"
-
+    T = transforms
     postprocessors = None  # defined in get_model
     charset = None         # defined in get_model
 
@@ -401,7 +402,7 @@ class DtlrExtractor(OcrExtractor):
         import pickle
         from torch import nn
         from .dtlr import build_model_main
-        from .dtlr.config.slconfig import SLConfig
+        from .dtlr.util.slconfig import SLConfig
 
         # 1 - define config
 
@@ -424,9 +425,8 @@ class DtlrExtractor(OcrExtractor):
         charset_size = len(args.charset)
 
         # 3 - define class embeddigs
-        #NOTE `new_class_embed` is defined twicem 1st as a single linear layer
+        #NOTE `new_class_embed` is defined twice: 1st as a single linear layer
         # (`nn.Linear`), then as an nn.ModuleList (6 stacked linear layers)
-        #  1st `new_class_embed` is nn.Linear (a linear transform)
 
         features_dim = model.class_embed[0].weight.data.shape[1]
         new_class_embed = nn.Linear(features_dim, charset_size, )
@@ -439,7 +439,6 @@ class DtlrExtractor(OcrExtractor):
                 new_class_embed
                 for i in range(model.transformer.num_decoder_layers)
             ]
-        else: raise ValueError("NOPE")
         new_class_embed = nn.ModuleList(class_embed_layerlist)
 
         model.class_embed = new_class_embed.to(self.device)
