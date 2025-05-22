@@ -266,11 +266,11 @@ class LineExtractor(OcrExtractor):
     from .line_predictor.datasets import transforms
 
     T = transforms
-    config = LIB_ROOT / "ocr" / "config" / "DINO_4scale.py"
+    config = LIB_ROOT / "line_predictor" / "config" / "DINO_4scale.py"
 
     def get_model(self):
-        from .ocr import build_model_main
-        from .ocr.config.slconfig import SLConfig
+        from .line_predictor import build_model_main
+        from .line_predictor.config.slconfig import SLConfig
 
         self.device = select_device(self.device)
         checkpoint = torch.load(self.weights, map_location="cpu")
@@ -390,7 +390,8 @@ class DtlrExtractor(OcrExtractor):
     }
     ------------------------------------------------------------------------
     """
-    config = LIB_ROOT / "ocr" / "config" / "HWDB_full.py"
+    #TODO fix paths
+    config = LIB_ROOT / "dtlr" / "config" / "HWDB_full.py"
     labels = MODEL_PATH / "labels_icdar.pkl"
 
     postprocessors = None  # defined in get_model
@@ -399,8 +400,8 @@ class DtlrExtractor(OcrExtractor):
     def get_model(self):
         import pickle
         from torch import nn
-        from .ocr import build_model_main
-        from .ocr.config.slconfig import SLConfig
+        from .dtlr import build_model_main
+        from .dtlr.config.slconfig import SLConfig
 
         # 1 - define config
 
