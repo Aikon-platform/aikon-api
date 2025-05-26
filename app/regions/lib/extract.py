@@ -188,6 +188,7 @@ class BaseExtractor:
         detections[:, :4] = scale_boxes(
             image_tensor.shape[2:], detections[:, :4], original_image.shape
         ).round()
+        print(">>> detections", detections)
 
         # Write results
         for *xyxy, conf, cls in reversed(detections):
@@ -311,7 +312,6 @@ class LineExtractor(OcrExtractor):
         model.load_state_dict(checkpoint["model"], strict=False)
         return model.eval()
 
-    #NOTE move to OcrMixin ?
     @staticmethod
     def renorm(
         img: torch.FloatTensor, mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
@@ -335,7 +335,6 @@ class LineExtractor(OcrExtractor):
     @staticmethod
     def poly_to_bbox(poly):
         x0, y0, x1, y1 = poly[:, 0], poly[:, 1], poly[:, -4], poly[:, -1]
-        # return torch.stack([x0, y0, x1, y1], dim=1)
         x_min, x_max = torch.min(x0, x1), torch.max(x0, x1)
         y_min, y_max = torch.min(y0, y1), torch.max(y0, y1)
         return torch.stack([x_min, y_min, x_max, y_max], dim=1)
@@ -379,8 +378,8 @@ class LineExtractor(OcrExtractor):
             scores = output["pred_logits"][mask].sigmoid().max(-1)[0].cpu()
 
             bboxes = self.scale_and_bbox(polygons, curr_w, curr_h)
+            print(">>> line extraction bboxes", bboxes)
             preds = self.cleanup_detections(bboxes, scores, labels=None)
-            print("....................preds", preds, preds.shape)
 
             if self.process_detections(
                 detections=preds,
@@ -540,29 +539,29 @@ class DtlrExtractor(OcrExtractor):
             # boxes = boxes[idx_no_spaces]
             # box_label = box_label_no_spaces
 
-            #NOTE actually done in `process_detections`
+            #NOTE actually done in `process_detections` ?
+
+            # SOLUTION A
             # shift bounding boxes from tensor dimension to the OG image's dimension
-            # ratios_h, ratios_w = tuple(
-            #     float(sz_img) / float(sz_tensor)
-            #     for sz_img, sz_tensor
-            #     in zip((orig_w, orig_h), (tensor_w, tensor_h))
-            # )
-            # final_bboxes = boxes.cpu() * torch.tensor([tensor_w, tensor_h, tensor_w, tensor_h])
-            # final_bboxes[:, :2] -= final_bboxes[:, 2:] / 2
-            # final_bboxes *= torch.Tensor([ratios_w, ratios_h, ratios_w, ratios_h])
-
+            ratios_h, ratios_w = tuple(
+                float(sz_img) / float(sz_tensor)
+                for sz_img, sz_tensor
+                in zip((orig_w, orig_h), (tensor_w, tensor_h))
+            )
+            final_bboxes = boxes * torch.tensor([tensor_w, tensor_h, tensor_w, tensor_h]).cuda()
+            final_bboxes[:, :2] -= final_bboxes[:, 2:] / 2
+            final_bboxes *= torch.Tensor([ratios_w, ratios_h, ratios_w, ratios_h]).cuda()
+            print(">>> img_dimensions", (orig_w, orig_h))
+            print(">>> final_bboxes", final_bboxes)
             # #TODO find out if LineExtractor.cleanup_detection should be used here (performs NMS + the below code)
-            # preds = torch.cat([
-            #     boxes,
-            #     scores.unsqueeze(1),
-            #     labels.unsqueeze(1)
-            # ], dim=1)
-            preds = self.cleanup_detections(boxes, scores, labels)
+            preds = torch.cat([
+                final_bboxes,
+                scores.unsqueeze(1),
+                labels.unsqueeze(1)
+            ], dim=1)
 
-            print("....................boxes",   boxes, boxes.shape)
-            print("....................scores", scores, scores.shape)
-            print("....................labels", labels, labels.shape)
-            print("....................preds", preds, preds.shape)
+            # SOLUTION B
+            # preds = self.cleanup_detections(boxes, scores, labels)
 
             if self.process_detections(
                 detections=preds, #final_bboxes,
