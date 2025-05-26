@@ -188,7 +188,6 @@ class BaseExtractor:
         detections[:, :4] = scale_boxes(
             image_tensor.shape[2:], detections[:, :4], original_image.shape
         ).round()
-        print(">>> detections", detections)
 
         # Write results
         for *xyxy, conf, cls in reversed(detections):
@@ -211,8 +210,8 @@ class BaseExtractor:
             h = min(h, img_h)
             x = min(max(0, x), img_w - w)
             y = min(max(0, y), img_h - h)
-
             x, y, w, h = int(x), int(y), int(w), int(h)
+
             writer.add_region(x, y, w, h, float(conf))
 
             if save_img:
@@ -378,8 +377,8 @@ class LineExtractor(OcrExtractor):
             scores = output["pred_logits"][mask].sigmoid().max(-1)[0].cpu()
 
             bboxes = self.scale_and_bbox(polygons, curr_w, curr_h)
-            print(">>> line extraction bboxes", bboxes)
             preds = self.cleanup_detections(bboxes, scores, labels=None)
+            print(">>> line extraction bboxes", bboxes)
 
             if self.process_detections(
                 detections=preds,
@@ -498,16 +497,21 @@ class DtlrExtractor(OcrExtractor):
 
         for size in self.input_sizes:
 
-            tensor_img = self.prepare_image(self.resize(orig_img, size))
+            # 1 - resize image, convert resized image to tensor
+            img_resize = self.resize(orig_img, size)
+            resize_w, resize_h = img_resize.size
+            tensor_img = self.prepare_image(img_resize)
             tensor_w, tensor_h = tensor_img.shape[2], tensor_img.shape[1]
             print(orig_w, orig_h, tensor_w, tensor_h, tensor_img.shape, type(tensor_img))
 
+            # 2 - inference
             output = self.model.cuda()(tensor_img[None].cuda())
 
             #NOTE I assume this is NMS ?
             self.postprocessors['bbox'].nms_iou_threshold = self.iou_threshold
             output = self.postprocessors['bbox'](output, torch.Tensor([[1.0, 1.0]]).cuda())[0]
 
+            # 3 - extract relevant boxes
             # boxes = all character bounding boxes in `bbox`
             boxes = output['boxes']
             scores = output['scores']
@@ -520,7 +524,8 @@ class DtlrExtractor(OcrExtractor):
             boxes = boxes[select_mask]
             scores = scores[select_mask]
 
-            # extract a list of labels for characters in `bbox` and convert to utf-8
+            # 4 - extract labels
+            # create a list of labels for characters in `bbox` and convert to utf-8
             labels = labels[select_mask]
             box_label = [
                 bytes(self.charset[i], "utf-8").decode("unicode_escape")
@@ -539,29 +544,42 @@ class DtlrExtractor(OcrExtractor):
             # boxes = boxes[idx_no_spaces]
             # box_label = box_label_no_spaces
 
+            # 5 - convert bboxes in tensor coordinates back to image cpoordinates
             #NOTE actually done in `process_detections` ?
 
+            #NOTE possible solutions:
+            # - solution A,  `cleanup_detections`: all images are 1x1px
+            # - solution B: no resize> all bounding boxes are 1x1px, errors retrieving the images
+            # - solution C, the resize using block below
+            #   - if ratios_(h|w) calculated using `orig_w, orig_h`, parts of lines (larger than 1 character) are returned
+            #   - if ratios are calculated using `resize_w, resize_h`, bounding boxes are off (all are concentrated in the top-left quarter of the image => shifting error)
+            # => best solution so far is C, but there's still an error in bbox extraction
+
             # SOLUTION A
-            # shift bounding boxes from tensor dimension to the OG image's dimension
+            # preds = self.cleanup_detections(boxes, scores, labels)
+
+            # SOLUTION B
+            # preds = torch.cat([ boxes, scores.unsqueeze(1), labels.unsqueeze(1) ], dim=1)
+
+            # SOLUTION C
+            # shift bounding boxes from tensor dimension to the resized image´s dimensions
+            # (shifting to the original imageś dimensions is done in `process_detections`)
             ratios_h, ratios_w = tuple(
-                float(sz_img) / float(sz_tensor)
-                for sz_img, sz_tensor
-                in zip((orig_w, orig_h), (tensor_w, tensor_h))
+                float(sz) / float(sz_orig)
+                for sz, sz_orig
+                # in zip((orig_w, orig_h), (tensor_w, tensor_h))    # resize to original image dimensions
+                in zip((resize_w, resize_h), (tensor_w, tensor_h))  # resize to resized image dimensions
             )
             final_bboxes = boxes * torch.tensor([tensor_w, tensor_h, tensor_w, tensor_h]).cuda()
             final_bboxes[:, :2] -= final_bboxes[:, 2:] / 2
             final_bboxes *= torch.Tensor([ratios_w, ratios_h, ratios_w, ratios_h]).cuda()
             print(">>> img_dimensions", (orig_w, orig_h))
             print(">>> final_bboxes", final_bboxes)
-            # #TODO find out if LineExtractor.cleanup_detection should be used here (performs NMS + the below code)
             preds = torch.cat([
                 final_bboxes,
                 scores.unsqueeze(1),
                 labels.unsqueeze(1)
             ], dim=1)
-
-            # SOLUTION B
-            # preds = self.cleanup_detections(boxes, scores, labels)
 
             if self.process_detections(
                 detections=preds, #final_bboxes,
