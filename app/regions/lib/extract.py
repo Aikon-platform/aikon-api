@@ -378,7 +378,6 @@ class LineExtractor(OcrExtractor):
 
             bboxes = self.scale_and_bbox(polygons, curr_w, curr_h)
             preds = self.cleanup_detections(bboxes, scores, labels=None)
-            print(">>> line extraction bboxes", bboxes)
 
             if self.process_detections(
                 detections=preds,
@@ -567,9 +566,11 @@ class DtlrExtractor(OcrExtractor):
             ratios_h, ratios_w = tuple(
                 float(sz) / float(sz_orig)
                 for sz, sz_orig
-                # in zip((orig_w, orig_h), (tensor_w, tensor_h))    # resize to original image dimensions
-                in zip((resize_w, resize_h), (tensor_w, tensor_h))  # resize to resized image dimensions
+                in zip((orig_w, orig_h), (tensor_w, tensor_h))    # resize to original image dimensions
+                # in zip((resize_w, resize_h), (tensor_w, tensor_h))  # resize to resized image dimensions
             )
+            # ratios_h = orig_h / tensor_h
+            # ratios_w = orig_w / tensor_w
             final_bboxes = boxes * torch.tensor([tensor_w, tensor_h, tensor_w, tensor_h]).cuda()
             final_bboxes[:, :2] -= final_bboxes[:, 2:] / 2
             final_bboxes *= torch.Tensor([ratios_w, ratios_h, ratios_w, ratios_h]).cuda()
