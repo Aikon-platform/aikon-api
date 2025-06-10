@@ -14,8 +14,10 @@ from sklearn.metrics.cluster import normalized_mutual_info_score
 from omegaconf import OmegaConf
 
 from .lib.src.abstract_trainer import run_trainer
-from .lib.src.kmeans_trainer import Trainer as KMeansTrainer
-from .lib.src.sprites_trainer import Trainer as SpritesTrainer
+from .lib.src.Akmeans_trainer import Trainer as KMeansTrainer
+from .lib.src.kmeans_trainer import Trainer as _KMeansTrainer
+from .lib.src.Asprites_trainer import Trainer as SpritesTrainer
+from .lib.src.sprites_trainer import Trainer as _SpritesTrainer
 from .const import RUNS_PATH, CONFIGS_PATH
 from .lib.src.utils.image import convert_to_img
 
@@ -38,9 +40,15 @@ class LoggingTrainerMixin:
         self.jlogger = logger
         super().__init__(*args, **kwargs)
 
+    def setup_logging(self):
+        self.logger = self.jlogger
+        self.print_and_log_info(
+            f"Trainer initialisation: run directory is {self.run_dir}"
+        )
+
     def print_and_log_info(self, string: str) -> None:
         self.jlogger.info(string)
-        self.logger.info(string)
+        # self.logger.info(string)
 
     def run(self, *args, **kwargs):
         # Log epoch progress start
@@ -126,6 +134,8 @@ class LoggingTrainerMixin:
 
         # confusion_matrix = folder_to_cluster.copy()
 
+        # hungarian matching
+
         metrics_by_folder = {}
         for folder in folders:
             if folder not in folder_to_cluster.index:
@@ -170,6 +180,7 @@ class LoggingTrainerMixin:
         # Precision: of all images in a cluster, how many are from the best matching folder
         # Recall: of all images in a folder, how many are in the best matching cluster
         results = {
+            "dataset": self.dataset_name,
             "purity": purity,
             "nmi": nmi,
             "avg_precision": avg_precision,
@@ -295,7 +306,7 @@ class LoggingTrainerMixin:
         raise NotImplementedError()
 
 
-class LoggedKMeansTrainer(LoggingTrainerMixin, KMeansTrainer):
+class LoggedKMeansTrainer(LoggingTrainerMixin, _KMeansTrainer):
     """
     A KMeansTrainer with hooks to track training progress
     """
@@ -311,7 +322,7 @@ class LoggedKMeansTrainer(LoggingTrainerMixin, KMeansTrainer):
         return dist_min_by_sample, argmin_idx
 
 
-class LoggedSpritesTrainer(LoggingTrainerMixin, SpritesTrainer):
+class LoggedSpritesTrainer(LoggingTrainerMixin, _SpritesTrainer):
     """
     A SpritesTrainer with hooks to track training progress
     """
@@ -340,30 +351,21 @@ def set_transformation_sequence(cfg, tsf_seq, sprites=False):
 
     Transformations can be:
     # COARSE (should be applied early on during training)
-    "id": IdentityModule, (first)
-    "identity": IdentityModule, (first)
-    "col": ColorModule,
-    "color": ColorModule,
+    "id"|"identity": IdentityModule, (first)
+    "col"|"color": ColorModule,
     "linearcolor": LinearColorModule,
 
     # SPATIAL
-    "aff": AffineModule,
-    "affine": AffineModule,
-    "pos": PositionModule,
-    "position": PositionModule,
-    "proj": ProjectiveModule,
-    "projective": ProjectiveModule,
-    "homography": ProjectiveModule,
-    "sim": SimilarityModule,
-    "similarity": SimilarityModule,
+    "aff"|"affine": AffineModule,
+    "pos"|"position": PositionModule,
+    "proj"|"projective"|"homography": ProjectiveModule,
+    "sim"|"similarity": SimilarityModule,
     "rotation": RotationModule,
-    "tps": TPSModule,
-    "thinplatespline": TPSModule,
     "translation": TranslationModule,
+    "tps"|"thinplatespline": TPSModule,
 
     # MORPHOLOGICAL
-    "morpho": MorphologicalModule,
-    "morphological": MorphologicalModule,
+    "morpho"|"morphological": MorphologicalModule,
 
     TODO reorder transforms?
     """
@@ -376,39 +378,28 @@ def set_transformation_sequence(cfg, tsf_seq, sprites=False):
         epochs = cfg.training.n_epochs
 
         # Set the number of epochs for each transformation
+        m1, m2, m3, m4, m5, m6 = (
+            int(epochs * 0.1),
+            int(epochs * 0.2),
+            int(epochs * 0.3),
+            int(epochs * 0.4),
+            int(epochs * 0.5),
+            int(epochs * 0.6),
+        )
         milestones = {
-            1: [int(epochs * 0.1)],
-            2: [int(epochs * 0.1), int(epochs * 0.3)],
-            3: [int(epochs * 0.1), int(epochs * 0.3), int(epochs * 0.5)],
-            4: [
-                int(epochs * 0.1),
-                int(epochs * 0.2),
-                int(epochs * 0.3),
-                int(epochs * 0.5),
-            ],
-            5: [
-                int(epochs * 0.1),
-                int(epochs * 0.2),
-                int(epochs * 0.3),
-                int(epochs * 0.4),
-                int(epochs * 0.5),
-            ],
-            6: [
-                int(epochs * 0.1),
-                int(epochs * 0.2),
-                int(epochs * 0.3),
-                int(epochs * 0.4),
-                int(epochs * 0.5),
-                int(epochs * 0.6),
-            ],
-        }[
-            n_tsf - 1
-        ]  # len(curriculum_learning) == self.n_tsf - 1
+            1: [m1],
+            2: [m1, m3],
+            3: [m1, m3, m5],
+            4: [m1, m2, m3, m5],
+            5: [m1, m2, m3, m4, m5],
+            6: [m1, m2, m3, m4, m5, m6],
+        }
+        # len(curriculum_learning) == self.n_tsf - 1
+        cfg.model.curriculum_learning = milestones[n_tsf - 1]
 
-        cfg.model.curriculum_learning = milestones
+        # if sprites:
+        #     cfg.model.curriculum_learning_bkg = milestones[n_tsf - 1]
 
-        if sprites:
-            cfg.model.curriculum_learning_bkg = milestones
         # see if reconstruction decrease
     return cfg
 
@@ -455,7 +446,7 @@ def run_training(
         if sprites:
             cfg.model.n_sprites = n_proto
         else:
-            cfg.model.n_prototypes = parameters["n_proto"]
+            cfg.model.n_prototypes = n_proto
 
     if tsf_seq := parameters.get("transformation_sequence"):
         cfg = set_transformation_sequence(cfg, tsf_seq, sprites=sprites)

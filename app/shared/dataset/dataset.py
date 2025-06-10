@@ -155,6 +155,8 @@ class Dataset:
         for document in self.documents:
             document.download()
 
+        # TODO if failed cancel task
+
     def load(self) -> None:
         """
         Load the dataset from disk

@@ -6,3 +6,6 @@ model:
     data:
       init: gaussian
       gaussian_weights_std: 25
+
+training:
+  sprite_optimizer_name:

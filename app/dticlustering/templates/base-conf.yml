@@ -10,7 +10,7 @@ model:
   encoder_name: resnet20
   transformation_sequence: identity_affine_morpho_tps
   transformation_sequence_bkg: identity
-  curriculum_learning: [5, 15, 20]
+  curriculum_learning: [10, 50, 100]
   curriculum_learning_bkg: False
   input_alpha_as_weight: True
   freq_weight: 0.0
@@ -24,8 +24,8 @@ model:
 
 training:
   seed: 32903
-  n_epochs: 40
-  batch_size: 16
+  n_epochs: 200
+  batch_size: 32
   n_workers: 5
   optimizer_name: adam
   optimizer:
@@ -36,7 +36,7 @@ training:
   scheduler_update_range: epoch
   scheduler:
     gamma: 0.1
-    milestones: [35]
+    milestones: [175]
   eval_with_bkg: True
   eval_semantic: True
   visualizer_port:
@@ -45,6 +45,6 @@ training:
   save: True
   cont: False
 
-  train_stat_interval: 1000 # USED?
-  val_stat_interval: 2000 # USED?
-  check_cluster_interval: 250 # USED?
+  train_stat_interval: 1000
+  val_stat_interval: 2000
+  check_cluster_interval: 250

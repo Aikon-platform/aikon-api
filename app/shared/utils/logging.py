@@ -74,6 +74,7 @@ def notifying(func: Optional[Callable[..., Any]] = None) -> Callable[..., Any]:
 
             try:
                 notify("STARTED")
+                # TODO if failed, cancel task
                 result = fct(*args, **kwargs, logger=logger, notifier=notify)
                 # dispatch result to frontend
                 notify("SUCCESS", success=True, output=result)
