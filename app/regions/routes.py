@@ -77,7 +77,7 @@ def start_regions_extraction():
         {
             ...(tasking.routes.receive_task request)...
             "model": "model.pt",
-            "postprocess": "none",
+            "postprocess": "none",  # string? (if empty string, no postprocessing. else, postprocessing type)
         }
 
     :return: The tracking_id of the task
@@ -90,7 +90,7 @@ def start_regions_extraction():
     ) = shared_routes.receive_task(request, use_crops=False)
 
     model = param.get("model")
-    postprocess = param.get("postprocess", None)
+    postprocess = param.get("postprocess", "")
 
     return shared_routes.start_task(
         extract_objects,

@@ -14,8 +14,12 @@ from ..shared.utils.fileutils import get_model
 EXTRACTOR_POSTPROCESS_KWARGS = {
     "watermarks": {
         "squarify": True,
-        "margin": 0.05,
+        "margin": 0.05,      # same margin for all sides
     },
+    "character_line_extraction": {
+        "squarify": False,
+        "margin": [0.1, 0.3]  # [<hztl margins>, <vertical margins>]
+    }
 }
 
 # add the extractor model class to DEFAULT_MODEL_INFOS.
