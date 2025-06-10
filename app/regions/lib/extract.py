@@ -190,6 +190,7 @@ class BaseExtractor:
         ).round()
 
         # Write results
+        #NOTE process_detections ecxpects top left + bottom right
         for *xyxy, conf, cls in reversed(detections):
             # Extract coordinates
             x, y, w, h = (xyxy[0], xyxy[1], xyxy[2] - xyxy[0], xyxy[3] - xyxy[1])
@@ -205,6 +206,11 @@ class BaseExtractor:
                 y -= h * self.margin
                 w += 2 * self.margin * w
                 h += 2 * self.margin * h
+
+            # x -= w * 0.1
+            # y -= h * 0.3
+            # w += 2 * 0.1 * w
+            # h += 2 * 0.3 * h
 
             w = min(w, img_w)
             h = min(h, img_h)
@@ -506,7 +512,7 @@ class DtlrExtractor(OcrExtractor):
             # 2 - inference
             output = self.model.cuda()(tensor_img[None].cuda())
 
-            #NOTE I assume this is NMS ?
+            # perform NMS
             self.postprocessors['bbox'].nms_iou_threshold = self.iou_threshold
             output = self.postprocessors['bbox'](output, torch.Tensor([[1.0, 1.0]]).cuda())[0]
 
@@ -515,6 +521,9 @@ class DtlrExtractor(OcrExtractor):
             boxes = output['boxes']
             scores = output['scores']
             labels = output['labels']
+            print("debug::::", type(output), boxes.shape, scores.shape, labels.shape)
+            print(boxes)
+
             select_mask = scores > 0.1
 
             # BaseExtractor.process_detections expects boxes in `xyxy`, not `xycwch`
@@ -523,6 +532,7 @@ class DtlrExtractor(OcrExtractor):
             boxes = boxes[select_mask]
             scores = scores[select_mask]
 
+            #NOTE : scores and labels are useless for now
             # 4 - extract labels
             # create a list of labels for characters in `bbox` and convert to utf-8
             labels = labels[select_mask]
@@ -563,17 +573,20 @@ class DtlrExtractor(OcrExtractor):
             # SOLUTION C
             # shift bounding boxes from tensor dimension to the resized image´s dimensions
             # (shifting to the original imageś dimensions is done in `process_detections`)
-            ratios_h, ratios_w = tuple(
-                float(sz) / float(sz_orig)
-                for sz, sz_orig
-                in zip((orig_w, orig_h), (tensor_w, tensor_h))    # resize to original image dimensions
-                # in zip((resize_w, resize_h), (tensor_w, tensor_h))  # resize to resized image dimensions
-            )
+            # ratios_h, ratios_w = tuple(
+            #     float(sz) / float(sz_orig)
+            #     for sz, sz_orig
+            #     in zip((orig_w, orig_h), (tensor_w, tensor_h))    # resize to original image dimensions
+            #     # in zip((resize_w, resize_h), (tensor_w, tensor_h))  # resize to resized image dimensions
+            # )
             # ratios_h = orig_h / tensor_h
             # ratios_w = orig_w / tensor_w
+
+            # tensor dims (on multiplie la !e et #e ol par W, la @e et $e par W)
             final_bboxes = boxes * torch.tensor([tensor_w, tensor_h, tensor_w, tensor_h]).cuda()
-            final_bboxes[:, :2] -= final_bboxes[:, 2:] / 2
-            final_bboxes *= torch.Tensor([ratios_w, ratios_h, ratios_w, ratios_h]).cuda()
+
+            # final_bboxes[:, :2] -= final_bboxes[:, 2:] / 2
+            # final_bboxes *= torch.Tensor([ratios_w, ratios_h, ratios_w, ratios_h]).cuda()
             print(">>> img_dimensions", (orig_w, orig_h))
             print(">>> final_bboxes", final_bboxes)
             preds = torch.cat([
