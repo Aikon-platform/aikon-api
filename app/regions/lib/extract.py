@@ -499,7 +499,6 @@ class DtlrExtractor(OcrExtractor):
             resize_w, resize_h = img_resize.size
             tensor_img = self.prepare_image(img_resize)
             tensor_w, tensor_h = tensor_img.shape[2], tensor_img.shape[1]
-            print(orig_w, orig_h, tensor_w, tensor_h, tensor_img.shape, type(tensor_img))
 
             # 2 - inference
             #NOTE the model outputs bounding boxes in `xyxy` format, in a 0..1 range (0 = horizontal or vertical start of line)
@@ -514,39 +513,27 @@ class DtlrExtractor(OcrExtractor):
             boxes = output['boxes']
             scores = output['scores']
             labels = output['labels']
-            print("debug::::", type(output), boxes.shape, scores.shape, labels.shape)
-            print(boxes)
 
             select_mask = scores > 0.1
-
-            # BaseExtractor.process_detections expects boxes in `xyxy`, not `xycwch`
-            # boxes_xyxy = boxes.clone()
-            # boxes = box_ops.box_xyxy_to_cxcywh(boxes)
             boxes = boxes[select_mask]
             scores = scores[select_mask]
 
-            #NOTE : scores and labels are useless for now
             # 4 - extract labels
             # create a list of labels for characters in `bbox` and convert to utf-8
             labels = labels[select_mask]
-            box_label = [
+            labels_chars = np.array([
                 bytes(self.charset[i], "utf-8").decode("unicode_escape")
                 for i in labels
-            ]
+            ])
 
-            # remove bounding boxes whose label is `" "` (aka, don't detect spaces)
-            #NOTE this also deletes a good amount to other characters so we disable
-            #NOTE there is probably an issue with label detection (many chars labels as spaces when they are not spaces)
-            # idx_no_spaces = []        # array of indexes to keep
-            # box_label_no_spaces = []  # clean labels
-            # for i, char in enumerate(box_label):
-            #     if char != " ":
-            #         idx_no_spaces.append(i)
-            #         box_label_no_spaces.append(char)
-            # boxes = boxes[idx_no_spaces]
-            # box_label = box_label_no_spaces
+            # remove bounding boxes whose label is `" "` (aka, don't detect spaces) (and also remove their scores and labels)
+            #NOTE there are errors in assigned labels (`o` detected as `e`...), but spaces are detected correctly (with sonme errors)
+            idx_no_spaces = np.where(labels_chars!=" ")[0]
+            boxes = boxes[idx_no_spaces]
+            scores = scores[idx_no_spaces]
+            labels = labels[idx_no_spaces]
 
-            # 5 - convert bounding boxces from 0..1 coordinates to tensor coordinates. reshaping to image coordinates is done in `process_detections`
+            # 5 - convert bounding boxces from 0..1 space to tensor space. reshaping to pixel space is done in `process_detections`
             final_bboxes = boxes * torch.tensor([tensor_w, tensor_h, tensor_w, tensor_h]).cuda()
 
             # concat to fit the data model expected by `process_detections`
@@ -557,7 +544,7 @@ class DtlrExtractor(OcrExtractor):
             ], dim=1)
 
             if self.process_detections(
-                detections=preds, #final_bboxes,
+                detections=preds,
                 image_tensor=tensor_img.unsqueeze(0).to(self.device),
                 original_image=np.array(orig_img),
                 save_img=save_img,
