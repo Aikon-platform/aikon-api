@@ -2,6 +2,8 @@
 
 DOCKER_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 API_ROOT="$(dirname "$DOCKER_DIR")"
+API_ENV="$API_ROOT/.env"
+DOCKER_ENV="$DOCKER_DIR/.env"
 
 get_os() {
     unameOut="$(uname -s)"
@@ -99,9 +101,9 @@ sudo_sed_repl_inplace() {
     file="$2"
 
     if [ "$OS" = "Linux" ]; then
-        sudo sed -i -e "$sed_expr" "$file"
+        [ -n "$SUDO_PSW" ] && echo "$SUDO_PSW" | sudo -S sed -i -e "$sed_expr" "$file" || sudo sed -i -e "$sed_expr" "$file"
     else
-        sudo sed -i "" -e "$sed_expr" "$file"
+        [ -n "$SUDO_PSW" ] && echo "$SUDO_PSW" | sudo -S sed -i "" -e "$sed_expr" "$file" || sudo sed -i "" -e "$sed_expr" "$file"
     fi
 }
 
@@ -167,13 +169,31 @@ get_env_desc() {
 
 get_default_val() {
     local param=$1
-    if [ -n "${!param}" ]; then
+    if [[ "$param" = "PROD_URL" ]]; then
+        default_val=${PROD_API_URL:-""}
+    elif [ -n "${!param}" ]; then
         # if the value is already exported in the current shell, use it as default
         default_val="${!param}"
     elif [[ "$param" =~ ^.*(PASSWORD|SECRET).*$ ]]; then
         default_val="$(generate_random_string)"
-    elif [[ "$param" = "PROD_URL" ]]; then
-        default_val=${PROD_API_URL:-""}
+    elif [[ "$param" = "DOCKER" ]]; then
+        if [[ "$(get_env_value "TARGET" "$API_ENV")" = "prod" ]]; then
+            default_val="True"
+        else
+            default_val="False"
+        fi
+    elif [[ "$param" = "API_DATA_FOLDER" ]]; then
+        if [[ "$(get_env_value "DOCKER" "$API_ENV")" = "True" ]]; then
+            default_val="/data/"
+        else
+            default_val="data/"
+        fi
+    elif [[ "$param" = "YOLO_CONFIG_DIR" ]]; then
+        if [[ "$(get_env_value "DOCKER" "$API_ENV")" = "True" ]]; then
+            default_val="/data/yolotmp/"
+        else
+            default_val="data/yolotmp/"
+        fi
     else
         default_val=$(get_env_value "$param" "$env_file")
     fi
@@ -204,7 +224,7 @@ update_env() {
             elif [ -n "${!param}" ]; then
                 # If variable is already set in the current shell, use it as default
                 new_value="${!param}"
-            elif is_in_default_params "$param" && [ -n "$default_val" ]; then
+            elif is_in_default_params "$param"; then
                 # If param is in default params, use default value if it exists
                 new_value="$default_val"
             else
@@ -228,7 +248,6 @@ setup_env() {
     local template_file="${env_file}.template"
     local default_params=("${@:2}")  # All arguments after $1 are default params
     DEFAULT_PARAMS=("${default_params[@]}")
-    export INSTALL_MODE=${INSTALL_MODE:-"full_install"}
 
     if [ ! -f "$env_file" ]; then
         color_echo yellow "\nCreating $env_file"
@@ -240,9 +259,22 @@ setup_env() {
         cp "$env_file" "${env_file}.backup"
         cp "$template_file" "$env_file"
     else
-        color_echo yellow "\n$env_file is up-to-date, skipping..."
-        export_env "$env_file"
+        options=("yes" "no")
+
+        color_echo yellow "\n$env_file is up-to-date. Do you want to regenerate it again?"
+        answer=$(printf "%s\n" "${options[@]}" | fzy)
+        if [ "$answer" = "yes" ]; then
+            rm "${template_file}.hash"
+            setup_env $env_file
+            exit 0
+        fi
+        color_echo yellow "\nSkipping..."
+        export_env "$env_file" "${DEFAULT_PARAMS[@]}"
         exit 0
+    fi
+
+    if [ -z "$INSTALL_MODE" ]; then
+        select_install_mode
     fi
 
     update_env "$env_file"
