@@ -89,8 +89,8 @@ DEFAULT_MODEL_INFOS = {
         "desc": "DINO-DETR model trained to extract line from historical documents.",
     },
     "character_line_extraction": {
-        "name": "Character line extraction",
+        "name": "Character extraction",
         "model": "character_line_extraction",
-        "desc": "DINO-DETR model trained to extract characters from historical documents. ⚠️ Will work only if used with cropped lines as input (from Line extraction model).",
+        "desc": "DINO-DETR model trained to extract characters from historical documents. ⚠️ Will work only if used with cropped lines as input. Lines can be extracted using the Line extraction model.",
     },
 }

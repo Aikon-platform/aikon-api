@@ -542,7 +542,7 @@ class DtlrExtractor(OcrExtractor):
             ])
 
             # remove bounding boxes whose label is `" "` (aka, don't detect spaces) (and also remove their scores and labels)
-            #NOTE there are errors in assigned labels (`o` detected as `e`...), but spaces are detected correctly (with sonme errors)
+            # there are errors in assigned labels (`o` detected as `e`...), but spaces are detected correctly (with some rare errors)
             idx_no_spaces = np.where(labels_chars!=" ")[0]
             boxes = boxes[idx_no_spaces]
             scores = scores[idx_no_spaces]
