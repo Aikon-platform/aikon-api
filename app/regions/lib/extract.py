@@ -188,44 +188,59 @@ class BaseExtractor:
 
         img_h, img_w = original_image.shape[:2]
 
-        # rescale boxes from tensor size to image size
+        # rescale boxes from tensor space to pixel space
         detections[:, :4] = scale_boxes(
             image_tensor.shape[2:], detections[:, :4], original_image.shape
         ).round()
 
-        # Write results
-        for *xyxy, conf, cls in reversed(detections):
-            # Extract coordinates
-            #NOTE process_detections expects xyxy (top left + bottom right points of the bbox)
-            x, y, w, h = (xyxy[0], xyxy[1], xyxy[2] - xyxy[0], xyxy[3] - xyxy[1])
+        detections = detections.cpu()  # move to cpu is necessary to perform numpy operations
 
-            if self.squarify:
-                s = min(max(w, h), img_w, img_h)
-                x -= (s - w) // 2
-                y -= (s - h) // 2
-                w = h = s
+        # convert to xywh, squarify and add margins if necessary
+        #NOTE the original, non-numpy version of those conversions can be found here: https://github.com/Aikon-platform/aikon-api/blob/80b7b6cc71c425778c693ccf0d0d66a8f188532e/app/regions/lib/extract.py
+        xywh = np.transpose(np.array([
+            detections[:, 0],
+            detections[:, 1],
+            detections[:, 2] - detections[:, 0],
+            detections[:, 3] - detections[:, 1]
+        ]))
 
-            # apply margins. `self.margin` is a percentage, expressed either as `int|float` (same margin for all sides) or `[int|float, int|float]` (hztl margin, vertical margin)
-            if self.squarify or isinstance(self.margin, (int, float)) and self.margin > 0:
-                x -= w * self.margin
-                y -= h * self.margin
-                w += 2 * self.margin * w
-                h += 2 * self.margin * h
-            elif isinstance(self.margin, list) and all(isinstance(_, (int, float)) for _ in self.margin) and len(self.margin) == 2:
-                mx, my = self.margin
-                x -= w * mx
-                y -= h * my
-                w += 2 * mx * w
-                h += 2 * my * h
+        if self.squarify:
+            square_dims = lambda arr: min(max(arr[2], arr[3]), img_w, img_h)
+            xywh = np.c_[ xywh, np.apply_along_axis(square_dims, 1, xywh) ]  # add the square dimensions as a temporary last column
+            xywh[:, 0] -= (xywh[:, -1] - xywh[:, 2]) // 2
+            xywh[:, 1] -= (xywh[:, -1] - xywh[:, 3]) // 2
+            xywh[:, 2] = xywh[:, -1]
+            xywh[:, 3] = xywh[:, -1]
+            xywh = xywh[:, :-1]  # remove last column that contains the outputs of `square_dims`
 
-            w = min(w, img_w)
-            h = min(h, img_h)
-            x = min(max(0, x), img_w - w)
-            y = min(max(0, y), img_h - h)
-            x, y, w, h = int(x), int(y), int(w), int(h)
+        if self.squarify or isinstance(self.margin, (int, float)) and self.margin > 0:
+            xywh[:, 0] -= xywh[:, 2] * self.margin
+            xywh[:, 1] -= xywh[:, 3] * self.margin
+            xywh[:, 2] += xywh[:, 2] * self.margin * 2
+            xywh[:, 3] += xywh[:, 3] * self.margin * 2
 
+        elif  isinstance(self.margin, list) and all(isinstance(_, (int, float)) for _ in self.margin) and len(self.margin) == 2:
+            mx, my = self.margin
+            xywh[:, 0] -= xywh[:, 2] * mx
+            xywh[:, 1] -= xywh[:, 3] * my
+            xywh[:, 2] += xywh[:, 2] * mx * 2
+            xywh[:, 3] += xywh[:, 3] * my * 2
+
+        get_w = np.vectorize(lambda w: min(w, img_w))
+        get_h = np.vectorize(lambda h: min(h, img_h))
+        get_x = lambda arr: min(max(0, arr[0]), img_w - arr[2])
+        get_y = lambda arr: min(max(0, arr[1]), img_h - arr[3])
+        to_int = np.vectorize(int)
+        xywh[:, 2] = get_w(xywh[:, 2])
+        xywh[:, 3] = get_h(xywh[:, 3])
+        xywh[:, 0] = np.apply_along_axis(get_x, 1, xywh)
+        xywh[:, 1] = np.apply_along_axis(get_y, 1, xywh)
+        xywh = to_int(xywh)
+
+        detections = np.concatenate((xywh, detections[:, -2:].numpy()), axis=1)
+
+        for x,y,w,h,conf,cls in reversed(detections):
             writer.add_region(x, y, w, h, float(conf))
-
             if save_img:
                 c = int(cls)
                 label = (
