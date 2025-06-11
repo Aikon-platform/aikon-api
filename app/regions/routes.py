@@ -175,6 +175,6 @@ def delete(doc_id: str):
 
     return {
         "cleared_annotations": clear_dir(
-            doc_dir / "annotations", f"{model_name}*.json", force_deletion=True
+            doc_dir / "annotations", f"{model_name}*.json", delete_anyway=True
         ),
     }

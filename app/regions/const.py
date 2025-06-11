@@ -65,6 +65,13 @@ download_model_if_not(
     },
     MODEL_PATH / "fasterrcnn_watermark_extraction.pth",
 )
+# download_model_if_not(
+#     {
+#         "repo_id": "seglinglin/Historical-Illustration-Extraction",
+#         "filename": "character_line_extraction.pth",
+#     },
+#     MODEL_PATH / "character_line_extraction.pth",
+# )
 DEFAULT_MODEL = "illustration_extraction.pt"
 
 DEFAULT_MODEL_INFOS = {

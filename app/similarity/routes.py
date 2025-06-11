@@ -50,8 +50,8 @@ from flask import request, Blueprint, jsonify
 
 from .tasks import compute_similarity
 from ..shared import routes as shared_routes
-from ..shared.const import DOCUMENTS_PATH, DATASETS_PATH
-from ..shared.utils.fileutils import clear_dir, list_known_models, delete_path
+from ..shared.const import DATASETS_PATH
+from ..shared.utils.fileutils import clear_dir, delete_path, delete_empty_dirs
 from .const import (
     SIM_RESULTS_PATH,
     SIM_XACCEL_PREFIX,
@@ -172,13 +172,13 @@ def clear_doc(doc_id: str):
 
     return {
         # "cleared_img_dir": clear_dir(
-        #     IMG_PATH, path_to_clear=f"*{doc_id}*", force_deletion=True
+        #     IMG_PATH, path_to_clear=f"*{doc_id}*", delete_anyway=True
         # ),
         # "cleared features": clear_dir(
-        #     FEATS_PATH, path_to_clear=f"*{doc_id}*.pt", force_deletion=True
+        #     FEATS_PATH, path_to_clear=f"*{doc_id}*.pt", delete_anyway=True
         # ),
         "cleared_results": clear_dir(
-            SIM_RESULTS_PATH, path_to_clear=f"*{doc_id}*.npy", force_deletion=True
+            SIM_RESULTS_PATH, path_to_clear=f"*{doc_id}*.npy", delete_anyway=True
         ),
     }
 
@@ -197,27 +197,33 @@ def delete(doc_id: str):
     res_to_clear = (
         f"*/{algorithm}*{doc_id}*.json" if algorithm else f"*/*{doc_id}*.json"
     )
-    cleared_results = clear_dir(SIM_RESULTS_PATH, res_to_clear, force_deletion=True)
-    cleared_imgs = clear_dir(doc_dir / "images", force_deletion=True)
+    cleared_results = clear_dir(SIM_RESULTS_PATH, res_to_clear, delete_anyway=True)
+    # delete empty directory of results
+    cleared_res_dir = delete_empty_dirs(SIM_RESULTS_PATH)
+
+    cleared_imgs = clear_dir(doc_dir / "images", delete_anyway=True)
     delete_path(doc_dir / "images.json")
+    delete_path(doc_dir / "metadata.json")
 
     if not dataset_id:
         return {
             "cleared_images": cleared_imgs,
             "cleared_results": cleared_results,
+            "cleared_result_directories": cleared_res_dir,
         }
 
     cleared_results += clear_dir(
-        SIM_RESULTS_PATH, f"*/{dataset_id}-scores.json", force_deletion=True
+        SIM_RESULTS_PATH, f"*/{dataset_id}-scores.json", delete_anyway=True
     )
     feat_to_clear = f"{dataset_id}*{feat_net}.pt" if feat_net else "*"
     cleared_feats = clear_dir(
-        DATASETS_PATH / dataset_id / "features", feat_to_clear, force_deletion=True
+        DATASETS_PATH / dataset_id / "features", feat_to_clear, delete_anyway=True
     )
 
     return {
         "cleared_images": cleared_imgs,
         "cleared_results": cleared_results,
+        "cleared_result_directories": cleared_res_dir,
         "cleared_features": cleared_feats,
     }
 
