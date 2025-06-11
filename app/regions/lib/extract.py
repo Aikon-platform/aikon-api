@@ -1,7 +1,7 @@
 import os
 import sys
 from pathlib import Path
-from typing import Tuple
+from typing import Tuple, List, Any
 
 import torch
 from torchvision import transforms
@@ -79,7 +79,12 @@ class ImageAnnotator:
             "crops": [],
         }
 
-    def add_region(self, x: int, y: int, w: int, h: int, conf: float):
+    def add_region(self, x: int, y: int, w: int, h: int, conf: float, class_info: Tuple[Any, Any] | None = None):
+        """
+        add a region to the Annotator. if the extraction algorithm also provides classification/labelling, the class and class name of the bounding box can be passed using the `class_info` tuple. in that case, an extra "class" field will be added
+
+        :param class_info: a tuple of `(<class_id>, <class_label>)`
+        """
         img_w = self.annotations["width"]
         img_h = self.annotations["height"]
 
@@ -117,6 +122,8 @@ class ImageAnnotator:
                 },
             }
         )
+        if class_info is not None and len(class_info):
+            self.annotations["crops"][-1]["class"] = { "id": class_info[0], "label": class_info[1] }
 
 
 class BaseExtractor:
@@ -170,7 +177,8 @@ class BaseExtractor:
         save_img: bool,
         source: TPath,
         writer: ImageAnnotator,
-        class_names_examples: str = "abc",
+        class_names: str | List = "abc",
+        save_class: bool=False
     ) -> bool:
         """
         extract detections and write them
@@ -178,7 +186,7 @@ class BaseExtractor:
         :param detections: a tensor of shape [x, 6] where the first 4 cols are a bounding box in xyxy (topleft + bottomright coordinates), 5th column is the scores, 6th column is the labels
         """
         annotator = (
-            Annotator(original_image, line_width=2, example=str(class_names_examples))
+            Annotator(original_image, line_width=2, example=str(class_names))
             if save_img
             else None
         )
@@ -240,19 +248,24 @@ class BaseExtractor:
         detections = np.concatenate((xywh, detections[:, -2:].numpy()), axis=1)
 
         for x,y,w,h,conf,cls in reversed(detections):
-            writer.add_region(x, y, w, h, float(conf))
+            cls = int(cls)
+            writer.add_region(
+                x, y, w, h,
+                float(conf),
+                ( int(cls), class_names[int(cls)] ) if save_class else None  # if `save_class`, pass the class ID and class name to `add_region`
+            )
+
             if save_img:
-                c = int(cls)
                 label = (
                     None
                     if HIDE_LABEL
                     else (
-                        class_names_examples[c]
+                        class_names[cls]
                         if HIDE_CONF
-                        else f"{class_names_examples[c]} {conf:.2f}"
+                        else f"{class_names[cls]} {conf:.2f}"
                     )
                 )
-                annotator.box_label(xyxy, label, color=colors(c, True))
+                annotator.box_label(xyxy, label, color=colors(cls, True))
 
         if save_img:
             output_path = str(Path(source).parent / f"extracted_{Path(source).name}")
@@ -362,11 +375,8 @@ class LineExtractor(OcrExtractor):
         bboxes = bboxes[nms_filter]
         scores = scores[nms_filter].unsqueeze(1)
 
-        # DtlrExtractor provides labels, while LineExtractor does not.
         if labels is None:
             labels = torch.zeros(len(scores), 1, device=self.device)
-        else:
-            labels = labels[nms_filter].unsqueeze(1)
 
         return torch.cat(
             [bboxes, scores, labels],
@@ -535,11 +545,10 @@ class DtlrExtractor(OcrExtractor):
 
             # 4 - extract labels
             # create a list of labels for characters in `bbox` and convert to utf-8
+            to_utf8 = np.vectorize(lambda x: bytes(x, "utf-8").decode("unicode_escape"))
             labels = labels[select_mask]
-            labels_chars = np.array([
-                bytes(self.charset[i], "utf-8").decode("unicode_escape")
-                for i in labels
-            ])
+            full_charset = to_utf8(np.array(self.charset))  # the entire character set in utf8
+            labels_chars = full_charset[labels.cpu()]       # the characters in each bounding box, ordered
 
             # remove bounding boxes whose label is `" "` (aka, don't detect spaces) (and also remove their scores and labels)
             # there are errors in assigned labels (`o` detected as `e`...), but spaces are detected correctly (with some rare errors)
@@ -565,6 +574,8 @@ class DtlrExtractor(OcrExtractor):
                 save_img=save_img,
                 source=source,
                 writer=writer,
+                class_names=full_charset,
+                save_class=True
             ):
                 break
         return writer.annotations
@@ -610,7 +621,7 @@ class YOLOExtractor(BaseExtractor):
                 save_img=save_img,
                 source=source,
                 writer=writer,
-                class_names_examples=names,
+                class_names=names,
             ):
                 break
 
