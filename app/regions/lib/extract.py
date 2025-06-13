@@ -178,12 +178,20 @@ class BaseExtractor:
         source: TPath,
         writer: ImageAnnotator,
         class_names: str | List = "abc",
-        save_class: bool=False
+        save_class: bool = False
     ) -> bool:
         """
         extract detections and write them
 
-        :param detections: a tensor of shape [x, 6] where the first 4 cols are a bounding box in xyxy (topleft + bottomright coordinates), 5th column is the scores, 6th column is the labels
+        :param detections: a tensor of shape [x, 6] where the first 4 cols are a bounding box in xyxy
+            (top_left + bottom_right coordinates), 5th column is the scores, 6th column is the labels
+        :param image_tensor
+        :param original_image
+        :param save_img
+        :param source
+        :param writer
+        :param class_names
+        :param save_class
         """
         annotator = (
             Annotator(original_image, line_width=2, example=str(class_names))
@@ -201,69 +209,63 @@ class BaseExtractor:
             image_tensor.shape[2:], detections[:, :4], original_image.shape
         ).round()
 
-        detections = detections.cpu()  # move to cpu is necessary to perform numpy operations
+        # NOTE the original, non-numpy version of those conversions can be found here: https://github.com/Aikon-platform/aikon-api/blob/80b7b6cc71c425778c693ccf0d0d66a8f188532e/app/regions/lib/extract.py
 
-        # convert to xywh, squarify and add margins if necessary
-        #NOTE the original, non-numpy version of those conversions can be found here: https://github.com/Aikon-platform/aikon-api/blob/80b7b6cc71c425778c693ccf0d0d66a8f188532e/app/regions/lib/extract.py
-        xywh = np.transpose(np.array([
-            detections[:, 0],
-            detections[:, 1],
-            detections[:, 2] - detections[:, 0],
-            detections[:, 3] - detections[:, 1]
-        ]))
+        detections = detections.cpu().numpy()  # move to cpu is necessary to perform numpy operations
 
+        # convert xyxy to xywh
+        xywh = np.column_stack([
+            detections[:, 0],  # x
+            detections[:, 1],  # y
+            detections[:, 2] - detections[:, 0],  # w
+            detections[:, 3] - detections[:, 1]  # h
+        ])
+
+        # squarify and add margins if necessary
         if self.squarify:
-            square_dims = lambda arr: min(max(arr[2], arr[3]), img_w, img_h)
-            xywh = np.c_[ xywh, np.apply_along_axis(square_dims, 1, xywh) ]  # add the square dimensions as a temporary last column
-            xywh[:, 0] -= (xywh[:, -1] - xywh[:, 2]) // 2
-            xywh[:, 1] -= (xywh[:, -1] - xywh[:, 3]) // 2
-            xywh[:, 2] = xywh[:, -1]
-            xywh[:, 3] = xywh[:, -1]
-            xywh = xywh[:, :-1]  # remove last column that contains the outputs of `square_dims`
+            square_dim = np.minimum(np.maximum(xywh[:, 2], xywh[:, 3]), min(img_w, img_h)) # min(max(w, h), min(img_w, img_h))
+            xywh[:, 0] -= (square_dim - xywh[:, 2]) // 2 # x -= (square_dim - w) / 2
+            xywh[:, 1] -= (square_dim - xywh[:, 3]) // 2 # y -= (square_dim - h) / 2
+            xywh[:, 2:4] = square_dim[:, None] # w = h = square_dim
 
-        if self.squarify or isinstance(self.margin, (int, float)) and self.margin > 0:
-            xywh[:, 0] -= xywh[:, 2] * self.margin
-            xywh[:, 1] -= xywh[:, 3] * self.margin
-            xywh[:, 2] += xywh[:, 2] * self.margin * 2
-            xywh[:, 3] += xywh[:, 3] * self.margin * 2
+        has_margin = isinstance(self.margin, (int, float)) and self.margin > 0
+        has_margins = isinstance(self.margin, list) and len(self.margin) == 2 and all(isinstance(_, (int, float)) for _ in self.margin)
 
-        elif  isinstance(self.margin, list) and all(isinstance(_, (int, float)) for _ in self.margin) and len(self.margin) == 2:
-            mx, my = self.margin
-            xywh[:, 0] -= xywh[:, 2] * mx
-            xywh[:, 1] -= xywh[:, 3] * my
-            xywh[:, 2] += xywh[:, 2] * mx * 2
-            xywh[:, 3] += xywh[:, 3] * my * 2
+        if has_margin or has_margins:
+            # NOTE if squarify and self.margin = 0 it doesnt matter, so squarify should not be needed right?
+            if has_margins:
+                mx, my = self.margin
+            else:
+                mx, my = self.margin, self.margin
 
-        get_w = np.vectorize(lambda w: min(w, img_w))
-        get_h = np.vectorize(lambda h: min(h, img_h))
-        get_x = lambda arr: min(max(0, arr[0]), img_w - arr[2])
-        get_y = lambda arr: min(max(0, arr[1]), img_h - arr[3])
-        to_int = np.vectorize(int)
-        xywh[:, 2] = get_w(xywh[:, 2])
-        xywh[:, 3] = get_h(xywh[:, 3])
-        xywh[:, 0] = np.apply_along_axis(get_x, 1, xywh)
-        xywh[:, 1] = np.apply_along_axis(get_y, 1, xywh)
-        xywh = to_int(xywh)
+            xywh[:, 0] -= xywh[:, 2] * mx      # left
+            xywh[:, 1] -= xywh[:, 3] * my      # top
+            xywh[:, 2] += xywh[:, 2] * mx * 2  # right
+            xywh[:, 3] += xywh[:, 3] * my * 2  # bottom
 
-        detections = np.concatenate((xywh, detections[:, -2:].numpy()), axis=1)
 
-        for x,y,w,h,conf,cls in reversed(detections):
+        xywh[:, 2] = np.minimum(xywh[:, 2], img_w)  # w cannot be > img_w
+        xywh[:, 3] = np.minimum(xywh[:, 3], img_h)  # h cannot be > img_h
+        xywh[:, 0] = np.clip(xywh[:, 0], 0, img_w - xywh[:, 2])  # x must be >= 0 + box can't exceed right limit
+        xywh[:, 1] = np.clip(xywh[:, 1], 0, img_h - xywh[:, 3])  # y must be >= 0 + box can't exceed bottom limit
+
+        detections = np.column_stack([xywh.astype(int), detections[:, -2:]])
+
+        for x, y, w, h, conf, cls in reversed(detections):
             cls = int(cls)
             writer.add_region(
                 x, y, w, h,
                 float(conf),
-                ( int(cls), class_names[int(cls)] ) if save_class else None  # if `save_class`, pass the class ID and class name to `add_region`
+                ( cls, class_names[cls] ) if save_class else None
+                # if `save_class`, pass the class ID and class name to `add_region`
             )
 
             if save_img:
+                xyxy = [x, y, x + w, y + h]
                 label = (
-                    None
-                    if HIDE_LABEL
-                    else (
-                        class_names[cls]
-                        if HIDE_CONF
-                        else f"{class_names[cls]} {conf:.2f}"
-                    )
+                    None if HIDE_LABEL else
+                    class_names[cls] if HIDE_CONF else
+                    f"{class_names[cls]} {conf:.2f}"
                 )
                 annotator.box_label(xyxy, label, color=colors(cls, True))
 
