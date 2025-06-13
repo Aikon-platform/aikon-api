@@ -9,3 +9,4 @@
 [submodule "app/regions/lib/dtlr"]
 	path = app/regions/lib/dtlr
 	url = git@github.com:paulhectork/DTLR.git
+	branch = aikon-api
