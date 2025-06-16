@@ -26,9 +26,9 @@ EXTRACTOR_POSTPROCESS_KWARGS = {
 def extend_with_model_class(model_key:str, model_infos: Dict) -> Dict:
     return {
         "model_class": (
-            LineExtractor if model_key=="line_extraction"
-            else DtlrExtractor if model_key=="character_line_extraction"
-            else FasterRCNNExtractor if model_key=="fasterrcnn_watermark_extraction"
+            LineExtractor if model_key == "line_extraction"
+            else DtlrExtractor if model_key == "character_line_extraction"
+            else FasterRCNNExtractor if model_key == "fasterrcnn_watermark_extraction" # if "rcnn" in model_key
             else YOLOExtractor  # last use case: `illustration_extraction`
         ),
         **model_infos
