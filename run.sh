@@ -108,6 +108,7 @@ FLASK_PID=$!
 PIDS+=($FLASK_PID)
 
 venv/bin/dramatiq app.main -t 1 -p 1 &
+#venv/bin/dramatiq app.main -t 1 -p 1 --watch . &
 DRAMATIQ_PID=$!
 PIDS+=($DRAMATIQ_PID)
 

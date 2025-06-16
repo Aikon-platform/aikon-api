@@ -137,6 +137,6 @@ def clear_task(tracking_id: str):
         "cleared_results": clear_dir(
             WATERMARKS_RESULTS_FOLDER,
             file_to_check=f"{tracking_id}.json",
-            force_deletion=True,
+            delete_anyway=True,
         ),
     }

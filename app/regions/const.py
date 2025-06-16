@@ -47,10 +47,31 @@ download_model_if_not(
 download_model_if_not(
     {
         "repo_id": "seglinglin/Historical-Illustration-Extraction",
+        "filename": "character_line_extraction.pth",
+    },
+    MODEL_PATH / "character_line_extraction.pth",
+)
+download_model_if_not(
+    {
+        "repo_id": "seglinglin/Line-Extraction",
+        "filename": "labels_icdar.pkl",
+    },
+    MODEL_PATH / "labels_icdar.pkl",
+)
+download_model_if_not(
+    {
+        "repo_id": "seglinglin/Historical-Illustration-Extraction",
         "filename": "fasterrcnn_watermark_extraction.pth",
     },
     MODEL_PATH / "fasterrcnn_watermark_extraction.pth",
 )
+# download_model_if_not(
+#     {
+#         "repo_id": "seglinglin/Historical-Illustration-Extraction",
+#         "filename": "character_line_extraction.pth",
+#     },
+#     MODEL_PATH / "character_line_extraction.pth",
+# )
 DEFAULT_MODEL = "illustration_extraction.pt"
 
 DEFAULT_MODEL_INFOS = {
@@ -73,5 +94,10 @@ DEFAULT_MODEL_INFOS = {
         "name": "Line extraction",
         "model": "line_extraction",
         "desc": "DINO-DETR model trained to extract line from historical documents.",
+    },
+    "character_line_extraction": {
+        "name": "Character extraction",
+        "model": "character_line_extraction",
+        "desc": "DINO-DETR model trained to extract characters from historical documents. ⚠️ Will work only if used with cropped lines as input. Lines can be extracted using the Line extraction model.",
     },
 }

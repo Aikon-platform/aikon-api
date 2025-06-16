@@ -7,17 +7,14 @@ import functools
 import json
 import logging
 import os
-
 import time
+import requests
+
+import traceback
+from tqdm import tqdm
+from torch import Tensor
 from enum import Enum
 from pathlib import Path
-
-import dramatiq
-from tqdm import tqdm
-from dramatiq.middleware import CurrentMessage
-from dramatiq.results import Results, ResultBackend
-import traceback
-from torch import Tensor
 from typing import (
     Any,
     Callable,
@@ -28,7 +25,10 @@ from typing import (
     TypeVar,
     Union,
 )
-import requests
+
+import dramatiq
+from dramatiq.middleware import CurrentMessage
+from dramatiq.results import Results, ResultBackend
 
 
 T = TypeVar("T")
@@ -83,7 +83,7 @@ def notifying(func: Optional[Callable[..., Any]] = None) -> Callable[..., Any]:
             except Exception as e:
                 logger.error(f"Error in task {fct.__name__}", exception=e)
                 try:
-                    notify("ERROR", error=traceback.format_exc(), completed=True)
+                    notify("ERROR", error=exc_str(e), completed=True)
                 except Exception as e:
                     logger.error("Error while notifying", exception=e)
 
@@ -627,17 +627,3 @@ class LoggingTaskMixin:
     def run_task(self, *args, **kwargs):
         result = super().run_task(*args, **kwargs)
         return result
-
-
-# def send_update(experiment_id, tracking_url, event, message):
-#     # TODO delete
-#     response = requests.post(
-#         url=tracking_url,  # TODO delete
-#         data={
-#             "experiment_id": experiment_id,
-#             "event": event,
-#             "message": message or "",
-#         },
-#     )
-#     response.raise_for_status()
-#     return True

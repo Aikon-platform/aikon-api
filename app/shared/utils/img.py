@@ -5,34 +5,20 @@ Many of the functions in this module are deprecated, better use the Document/Dat
 """
 
 from pathlib import Path
-from typing import Optional, List
+from typing import List
 
 import requests
 import shutil
 
 from PIL import Image
 
+from . import get_json
 from .fileutils import get_all_files, TPath
 from ..const import UTILS_DIR
 from .logging import console
 import warnings
 
 MAX_SIZE = 244
-
-
-def get_json(url: str) -> Optional[dict]:
-    """
-    Get JSON content from a URL
-    """
-    try:
-        response = requests.get(url)
-        if response.ok:
-            return response.json()
-        else:
-            response.raise_for_status()
-    except requests.exceptions.RequestException:
-        console(f"Error getting JSON for {url}")
-        return None
 
 
 def save_img(
@@ -78,7 +64,11 @@ def save_img(
 
 
 def download_image(
-    img_url: str, target_dir: TPath, target_filename: str, max_dim: int = MAX_SIZE
+    img_url: str,
+    target_dir: TPath,
+    target_filename: str,
+    max_dim: int = MAX_SIZE,
+    save_placeholder: bool = False,
 ) -> None:
     """
     Download an image from a URL and save it to a target file
@@ -97,19 +87,21 @@ def download_image(
             save_img(img, target_filename, target_dir, max_dim)
 
     except requests.exceptions.RequestException as e:
-        shutil.copyfile(
-            f"{UTILS_DIR}/img/placeholder.jpg",
-            f"{target_dir}/{target_filename}",
-        )
+        if save_placeholder:
+            shutil.copyfile(
+                f"{UTILS_DIR}/img/placeholder.jpg",
+                f"{target_dir}/{target_filename}",
+            )
         # log_failed_img(f"{doc_dir}/{img_name}", img_url)
-        console(f"[download_img] {img_url} is not a valid img file", e=e)
+        console(f"[download_image] {img_url} is not a valid img file", e=e)
     except Exception as e:
-        shutil.copyfile(
-            f"{UTILS_DIR}/img/placeholder.jpg",
-            f"{target_dir}/{target_filename}",
-        )
+        if save_placeholder:
+            shutil.copyfile(
+                f"{UTILS_DIR}/img/placeholder.jpg",
+                f"{target_dir}/{target_filename}",
+            )
         # log_failed_img(f"{doc_dir}/{img_name}", img_url)
-        console(f"[download_img] {img_url} image was not downloaded", e=e)
+        console(f"[download_image] {img_url} image was not downloaded", e=e)
 
 
 def download_img(img_url, doc_id, img_name, img_path, max_dim=MAX_SIZE):
