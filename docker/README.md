@@ -83,7 +83,7 @@ This script will:
    1. Install packages
    2. Download dependencies (if requirements have changed)
    3. Create tmp directories for various dependencies
-   4. Compile CUDA operators for `vectorization` and `regions` (if in `INSTALLED_APPS`)
+   4. Compile CUDA operators for `vectorization` and `regions` (if in `INSTALLED_APPS`): check if successful with `docker logs aikonapi`
 
 <details>
   <summary>

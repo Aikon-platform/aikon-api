@@ -15,20 +15,24 @@ from iiif_download import IIIFManifest
 from ... import config
 from ..const import DOCUMENTS_PATH
 from ..utils.fileutils import sanitize_str, check_if_file
-from ..utils.img import MAX_SIZE, download_image, get_img_paths, get_json
+from ..utils.img import MAX_SIZE, download_image, get_img_paths
 from ..utils.logging import console, serializer
+from ..utils import get_json
 from .utils import Image, pdf_to_img
 from ...config import BASE_URL
 
 ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".json", ".tiff", ".pdf"}
 
+DocType = Literal["zip", "pdf", "img", "url_list", "iiif"]
+
 
 class DocDict(TypedDict):
     uid: str
-    type: Literal["zip", "pdf", "img", "url_list", "iiif"]
+    type: DocType
     src: str
     url: NotRequired[str]
     download: NotRequired[str]
+    metadata: NotRequired[dict]
 
 
 def get_file_url(demo_name, filename):
@@ -68,7 +72,7 @@ class Document:
     def __init__(
         self,
         uid: str = None,
-        dtype: str = "zip",
+        dtype: DocType = "zip",
         path: Path | str = None,
         src: Optional[str] = None,
     ):

@@ -84,7 +84,7 @@ def _extend_from_dense_scores(
     """
     Get top-k matches between two documents. Updates the output matrix with the best matches.
     """
-    tops = np.argsort(-scores, axis=1)[:, :topk]  # Negative for descending order
+    tops = np.argsort(-scores, axis=1)[:, : int(topk)]  # Negative for descending order
 
     for i, row in enumerate(tops):
         for j in row:
@@ -285,13 +285,13 @@ class ComputeSimilarity(LoggedTask):
         self.doc_images = group_by_documents(self.images)
 
         self.feat_net = parameters.get("feat_net", FEAT_NET) if parameters else FEAT_NET
-        self.topk = parameters.get("topk", COS_TOPK)
+        self.topk = int(parameters.get("topk", COS_TOPK))
         self.algorithm = parameters.get("algorithm", "cosine")
 
         # Whether to perform pre-filter using cosine similarity to keep only best matches before running segswap
         self.segswap_prefilter = parameters.get("segswap_prefilter", True)
         # If so, how many best matches should be kept
-        self.segswap_n = parameters.get("segswap_n", COS_TOPK)
+        self.segswap_n = int(parameters.get("segswap_n", COS_TOPK))
 
         self.raw_transpositions: List[str] = parameters.get("transpositions", ["none"])
         self.transpositions = [
@@ -450,9 +450,7 @@ class ComputeSimilarity(LoggedTask):
         """
         source_paths = [str(i.path) for i in self.images]
 
-        self.log(
-            f"Prepared {len(self.images)} images to be processed"
-        )
+        self.log(f"Prepared {len(self.images)} images to be processed")
         topk = self.segswap_n if self.algorithm == "segswap" else self.topk
         features = self.get_features(source_paths)
 
@@ -468,9 +466,7 @@ class ComputeSimilarity(LoggedTask):
                 source_paths, pairs, cos_topk=topk, device=self.device
             )
 
-        self.log(
-            f"Computed similarity scores for {len(pairs)} pairs"
-        )
+        self.log(f"Computed similarity scores for {len(pairs)} pairs")
 
         return self.format_results(pairs)
 
@@ -531,9 +527,7 @@ class ComputeSimilarity(LoggedTask):
         """
         doc_images = self.doc_images
 
-        self.log(
-            f"Computing cosine similarity for {len(doc_images)} pairs"
-        )
+        self.log(f"Computing cosine similarity for {len(doc_images)} pairs")
 
         all_scores = BlockSimMatrix()
         for doc1 in doc_images:
@@ -622,7 +616,7 @@ class ComputeSimilarity(LoggedTask):
                 for (_, rel_i), (_, rel_j), *_ in batch:
                     i = doc1.range[rel_i]
                     j = doc2.range[rel_j]
-                    print(("i", rel_i, i, "j", rel_j, j, last_img_idx))
+                    # print(("i", rel_i, i, "j", rel_j, j, last_img_idx))
 
                     # Reuse tensor if same image index (assumes sorted pairs)
                     if last_img_idx != i:

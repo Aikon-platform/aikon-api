@@ -88,6 +88,13 @@ runs/
 # Webpack builds
 node_modules/
 
+# DINO: compiled operators
+app/regions/lib/line_predictor/MultiScaleDeformableAttention.egg-info/
+app/regions/lib/line_predictor/build/
+app/regions/lib/line_predictor/dist/
+
+
+
 .idea/
 yolotmp/
 
