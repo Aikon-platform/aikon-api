@@ -10,37 +10,37 @@
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=a746c00c" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=354aac6f" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=302659d7" />
-    
-    
+
+
 
 
 <style>
   body {
     --color-code-background: #f8f8f8;
   --color-code-foreground: black;
-  
+
   }
   @media not print {
     body[data-theme="dark"] {
       --color-code-background: #202020;
   --color-code-foreground: #d0d0d0;
-  
+
     }
     @media (prefers-color-scheme: dark) {
       body:not([data-theme="light"]) {
         --color-code-background: #202020;
   --color-code-foreground: #d0d0d0;
-  
+
       }
     }
   }
 </style></head>
   <body>
-    
+
     <script>
       document.body.dataset.theme = localStorage.getItem("theme") || "auto";
     </script>
-    
+
 
 <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
   <symbol id="svg-toc" viewBox="0 0 24 24">
@@ -186,12 +186,12 @@
   </header>
   <aside class="sidebar-drawer">
     <div class="sidebar-container">
-      
+
       <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
-  
-  
+
+
   <span class="sidebar-brand-text">Discover-demo API  documentation</span>
-  
+
 </a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
   <input type="hidden" name="check_keywords" value="yes">
@@ -287,7 +287,7 @@
 </div>
 
       </div>
-      
+
     </div>
   </aside>
   <div class="main">
@@ -333,7 +333,7 @@
 
 <dl class="py function">
 <dt class="sig sig-object py" id="app.shared.utils.fileutils.clear_dir">
-<span class="sig-prename descclassname"><span class="pre">app.shared.utils.fileutils.</span></span><span class="sig-name descname"><span class="pre">clear_dir</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">PathLike</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path_to_clear</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'*'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_to_check</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force_deletion</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#app.shared.utils.fileutils.clear_dir" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">app.shared.utils.fileutils.</span></span><span class="sig-name descname"><span class="pre">clear_dir</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">PathLike</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path_to_clear</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'*'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_to_check</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delete_anyway</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#app.shared.utils.fileutils.clear_dir" title="Link to this definition">¶</a></dt>
 <dd><p>Clear a directory of files older than a default number of days
 For folders, the first file (or file_to_check) is checked for age</p>
 <dl class="field-list simple">
@@ -342,7 +342,7 @@ For folders, the first file (or file_to_check) is checked for age</p>
 <li><p><strong>parent_dir</strong> – The parent directory to clear</p></li>
 <li><p><strong>path_to_clear</strong> – The path to clear (default: “*”)</p></li>
 <li><p><strong>file_to_check</strong> – The file in the directory whose age is checked (default: None)</p></li>
-<li><p><strong>force_deletion</strong> – If False, only delete files older than a default number of days (default: False)</p></li>
+<li><p><strong>delete_anyway</strong> – If False, only delete files older than a default number of days (default: False)</p></li>
 </ul>
 </dd>
 </dl>
@@ -464,7 +464,7 @@ For folders, the first file (or file_to_check) is checked for age</p>
         </article>
       </div>
       <footer>
-        
+
         <div class="related-pages">
           <a class="next-page" href="app.shared.utils.iiif.html">
               <div class="page-info">
@@ -481,9 +481,9 @@ For folders, the first file (or file_to_check) is checked for age</p>
                 <div class="context">
                   <span>Previous</span>
                 </div>
-                
+
                 <div class="title">app.shared.utils.download</div>
-                
+
               </div>
             </a>
         </div>
@@ -493,20 +493,20 @@ For folders, the first file (or file_to_check) is checked for age</p>
                 Copyright &#169; 2024, Ségolène Albouy, Robin Champenois
             </div>
             Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
-            
+
             <a href="https://github.com/pradyunsg/furo">Furo</a>
-            
+
           </div>
           <div class="right-details">
-            
+
           </div>
         </div>
-        
+
       </footer>
     </div>
     <aside class="toc-drawer">
-      
-      
+
+
       <div class="toc-sticky toc-scroll">
         <div class="toc-title-container">
           <span class="toc-title">
@@ -540,8 +540,8 @@ For folders, the first file (or file_to_check) is checked for age</p>
           </div>
         </div>
       </div>
-      
-      
+
+
     </aside>
   </div>
 </div><script src="../_static/documentation_options.js?v=5929fcd5"></script>

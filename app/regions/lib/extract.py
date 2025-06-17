@@ -1,7 +1,7 @@
 import os
 import sys
 from pathlib import Path
-from typing import Tuple
+from typing import Tuple, List, Any
 
 import torch
 from torchvision import transforms
@@ -24,6 +24,7 @@ from .yolov5.utils.general import (
 from .yolov5.utils.augmentations import letterbox
 from .yolov5.utils.torch_utils import select_device, smart_inference_mode
 
+from ..const import MODEL_PATH
 from ...shared.utils import get_device
 from ...shared.utils.fileutils import TPath
 from ...shared.dataset import Image as DImage
@@ -78,7 +79,12 @@ class ImageAnnotator:
             "crops": [],
         }
 
-    def add_region(self, x: int, y: int, w: int, h: int, conf: float):
+    def add_region(self, x: int, y: int, w: int, h: int, conf: float, class_info: Tuple[Any, Any] | None = None):
+        """
+        add a region to the Annotator. if the extraction algorithm also provides classification/labelling, the class and class name of the bounding box can be passed using the `class_info` tuple. in that case, an extra "class" field will be added
+
+        :param class_info: a tuple of `(<class_id>, <class_label>)`
+        """
         img_w = self.annotations["width"]
         img_h = self.annotations["height"]
 
@@ -116,6 +122,8 @@ class ImageAnnotator:
                 },
             }
         )
+        if class_info is not None and len(class_info):
+            self.annotations["crops"][-1]["class"] = { "id": class_info[0], "label": class_info[1] }
 
 
 class BaseExtractor:
@@ -169,10 +177,24 @@ class BaseExtractor:
         save_img: bool,
         source: TPath,
         writer: ImageAnnotator,
-        class_names_examples: str = "abc",
+        class_names: str | List = "abc",
+        save_class: bool = False
     ) -> bool:
+        """
+        extract detections and write them
+
+        :param detections: a tensor of shape [x, 6] where the first 4 cols are a bounding box in xyxy
+            (top_left + bottom_right coordinates), 5th column is the scores, 6th column is the labels
+        :param image_tensor
+        :param original_image
+        :param save_img
+        :param source
+        :param writer
+        :param class_names
+        :param save_class
+        """
         annotator = (
-            Annotator(original_image, line_width=2, example=str(class_names_examples))
+            Annotator(original_image, line_width=2, example=str(class_names))
             if save_img
             else None
         )
@@ -182,48 +204,70 @@ class BaseExtractor:
 
         img_h, img_w = original_image.shape[:2]
 
-        # Rescale boxes from img_size to im0 size
+        # rescale boxes from tensor space to pixel space
         detections[:, :4] = scale_boxes(
             image_tensor.shape[2:], detections[:, :4], original_image.shape
         ).round()
 
-        # Write results
-        for *xyxy, conf, cls in reversed(detections):
-            # Extract coordinates
-            x, y, w, h = (xyxy[0], xyxy[1], xyxy[2] - xyxy[0], xyxy[3] - xyxy[1])
+        # NOTE the original, non-numpy version of those conversions can be found here: https://github.com/Aikon-platform/aikon-api/blob/80b7b6cc71c425778c693ccf0d0d66a8f188532e/app/regions/lib/extract.py
 
-            if self.squarify:
-                s = min(max(w, h), img_w, img_h)
-                x -= (s - w) // 2
-                y -= (s - h) // 2
-                w = h = s
+        detections = detections.cpu().numpy()  # move to cpu is necessary to perform numpy operations
 
-            if self.margin > 0 or self.squarify:
-                x -= w * self.margin
-                y -= h * self.margin
-                w += 2 * self.margin * w
-                h += 2 * self.margin * h
+        # convert xyxy to xywh
+        xywh = np.column_stack([
+            detections[:, 0],  # x
+            detections[:, 1],  # y
+            detections[:, 2] - detections[:, 0],  # w
+            detections[:, 3] - detections[:, 1]  # h
+        ])
 
-            w = min(w, img_w)
-            h = min(h, img_h)
-            x = min(max(0, x), img_w - w)
-            y = min(max(0, y), img_h - h)
+        # squarify and add margins if necessary
+        if self.squarify:
+            square_dim = np.minimum(np.maximum(xywh[:, 2], xywh[:, 3]), min(img_w, img_h)) # min(max(w, h), min(img_w, img_h))
+            xywh[:, 0] -= (square_dim - xywh[:, 2]) // 2 # x -= (square_dim - w) / 2
+            xywh[:, 1] -= (square_dim - xywh[:, 3]) // 2 # y -= (square_dim - h) / 2
+            xywh[:, 2:4] = square_dim[:, None] # w = h = square_dim
 
-            x, y, w, h = int(x), int(y), int(w), int(h)
-            writer.add_region(x, y, w, h, float(conf))
+        has_margin = isinstance(self.margin, (int, float)) and self.margin > 0
+        has_margins = isinstance(self.margin, list) and len(self.margin) == 2 and all(isinstance(_, (int, float)) for _ in self.margin)
+
+        if has_margin or has_margins:
+            # NOTE if squarify and self.margin = 0 it doesnt matter, so squarify should not be needed right?
+            if has_margins:
+                mx, my = self.margin
+            else:
+                mx, my = self.margin, self.margin
+
+            xywh[:, 0] -= xywh[:, 2] * mx      # left
+            xywh[:, 1] -= xywh[:, 3] * my      # top
+            xywh[:, 2] += xywh[:, 2] * mx * 2  # right
+            xywh[:, 3] += xywh[:, 3] * my * 2  # bottom
+
+
+        xywh[:, 2] = np.minimum(xywh[:, 2], img_w)  # w cannot be > img_w
+        xywh[:, 3] = np.minimum(xywh[:, 3], img_h)  # h cannot be > img_h
+        xywh[:, 0] = np.clip(xywh[:, 0], 0, img_w - xywh[:, 2])  # x must be >= 0 + box can't exceed right limit
+        xywh[:, 1] = np.clip(xywh[:, 1], 0, img_h - xywh[:, 3])  # y must be >= 0 + box can't exceed bottom limit
+
+        detections = np.column_stack([xywh.astype(int), detections[:, -2:]])
+
+        for x, y, w, h, conf, cls in reversed(detections):
+            cls = int(cls)
+            writer.add_region(
+                x, y, w, h,
+                float(conf),
+                ( cls, class_names[cls] ) if save_class else None
+                # if `save_class`, pass the class ID and class name to `add_region`
+            )
 
             if save_img:
-                c = int(cls)
+                xyxy = [x, y, x + w, y + h]
                 label = (
-                    None
-                    if HIDE_LABEL
-                    else (
-                        class_names_examples[c]
-                        if HIDE_CONF
-                        else f"{class_names_examples[c]} {conf:.2f}"
-                    )
+                    None if HIDE_LABEL else
+                    class_names[cls] if HIDE_CONF else
+                    f"{class_names[cls]} {conf:.2f}"
                 )
-                annotator.box_label(xyxy, label, color=colors(c, True))
+                annotator.box_label(xyxy, label, color=colors(cls, True))
 
         if save_img:
             output_path = str(Path(source).parent / f"extracted_{Path(source).name}")
@@ -232,7 +276,28 @@ class BaseExtractor:
         return True
 
 
-class LineExtractor(BaseExtractor):
+class OcrExtractor(BaseExtractor):
+    """all shared data and methods between `LineExtractor` and `DtlrExtractor`"""
+
+    T = None  # defined in sub-classes
+    iou_threshold = None
+
+    @property
+    def transform(self):
+        return self.T.Compose(
+            [
+                self.T.RandomResize([800], max_size=1333),
+                self.T.ToTensor(),
+                self.T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+            ]
+        )
+
+    def prepare_image(self, img: DImage):
+        image, _ = self.transform(img, None)
+        return image
+
+
+class LineExtractor(OcrExtractor):
     """
     ------------------------------------------------------------------------
     Line Predictor
@@ -241,11 +306,11 @@ class LineExtractor(BaseExtractor):
     Copied from LinePredictor (https://github.com/raphael-baena/LinePredictor)
     ------------------------------------------------------------------------
     """
-
     from .line_predictor.datasets import transforms
 
-    config = LIB_ROOT / "line_predictor" / "config" / "DINO_4scale.py"
     T = transforms
+    config = LIB_ROOT / "line_predictor" / "config" / "DINO_4scale.py"
+    iou_threshold = 0.8
 
     def get_model(self):
         from .line_predictor import build_model_main
@@ -285,42 +350,35 @@ class LineExtractor(BaseExtractor):
         img_renorm = img_res.permute(*permutation)
         return img_renorm.permute(1, 2, 0)
 
+    #TODO fix bbox extraction on finetuned model
     @staticmethod
     def poly_to_bbox(poly):
         x0, y0, x1, y1 = poly[:, 0], poly[:, 1], poly[:, -4], poly[:, -1]
-        # return torch.stack([x0, y0, x1, y1], dim=1)
         x_min, x_max = torch.min(x0, x1), torch.max(x0, x1)
         y_min, y_max = torch.min(y0, y1), torch.max(y0, y1)
         return torch.stack([x_min, y_min, x_max, y_max], dim=1)
-
-    def prepare_image(self, img: DImage):
-        transform = self.T.Compose(
-            [
-                self.T.RandomResize([800], max_size=1333),
-                self.T.ToTensor(),
-                self.T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-            ]
-        )
-        image, _ = transform(img, None)
-        return image
 
     @staticmethod
     def scale(poly, w, h):
         return poly * torch.tensor([w, h]).repeat(10)
 
-    def cleanup_detections(self, polygons, scores, curr_size):
-        curr_w, curr_h = curr_size
-        # scaled_polygons = self.scale(polygons, w_ratio, h_ratio)
+    def scale_and_bbox(self, polygons, curr_w, curr_h):
         scaled_polygons = self.scale(polygons, curr_w, curr_h)
-
         bboxes = self.poly_to_bbox(scaled_polygons).to(self.device)
+        return bboxes
+
+    # bboxes: tensor of shape [x, 4]
+    def cleanup_detections(self, bboxes: torch.Tensor, scores: torch.Tensor, labels: torch.Tensor|None=None) -> torch.Tensor:
         scores = scores.to(self.device)
 
-        # Perform Non-Maximum Suppression (NMS) TODO filter nms on polygons: https://github.com/WolodjaZ/PolyGoneNMS
-        nms_filter = nms(bboxes, scores, iou_threshold=0.8).cpu()
+        # Perform Non-Maximum Suppression (NMS)
+        # TODO filter nms on polygons: https://github.com/WolodjaZ/PolyGoneNMS
+        nms_filter = nms(bboxes, scores, iou_threshold=self.iou_threshold).cpu()
         bboxes = bboxes[nms_filter]
         scores = scores[nms_filter].unsqueeze(1)
-        labels = torch.zeros(len(scores), 1, device=self.device)
+
+        if labels is None:
+            labels = torch.zeros(len(scores), 1, device=self.device)
 
         return torch.cat(
             [bboxes, scores, labels],
@@ -336,16 +394,18 @@ class LineExtractor(BaseExtractor):
 
         for size in self.input_sizes:
             image = self.prepare_image(self.resize(orig_img, size))
-            curr_h, curr_w = image.shape[1:]
+            curr_h, curr_w = image.shape[1:] #list(image.shape[2:])
             # h_ratio, w_ratio = float(curr_h) / float(orig_h), float(curr_w) / float(orig_w)
 
             output = self.model.to(self.device)(image[None].to(self.device))
+            #error here
             mask = output["pred_logits"].sigmoid().max(-1)[0] > 0.3
             polygons = output["pred_boxes"][mask].cpu().detach()
             # polygons = self.scale(output["pred_boxes"][mask].cpu().detach(), curr_w, curr_h)
             scores = output["pred_logits"][mask].sigmoid().max(-1)[0].cpu()
 
-            preds = self.cleanup_detections(polygons, scores, (curr_w, curr_h))
+            bboxes = self.scale_and_bbox(polygons, curr_w, curr_h)
+            preds = self.cleanup_detections(bboxes, scores, labels=None)
 
             if self.process_detections(
                 detections=preds,
@@ -354,6 +414,170 @@ class LineExtractor(BaseExtractor):
                 save_img=save_img,
                 source=source,
                 writer=writer,
+            ):
+                break
+        return writer.annotations
+
+
+class DtlrExtractor(OcrExtractor):
+    """
+    ------------------------------------------------------------------------
+    General Detection-based Text Line Recognition (DTLR)
+    Copyright (c) 2024 Raphaël Baena (Imagine team - LIGM)
+    Licensed under the Apache License, Version 2.0 [see LICENSE for details]
+    Copied from DTLR (https://github.com/raphael-baena/DTLR)
+
+    @article{baena2024DTLR,
+        title={General Detection-based Text Line Recognition},
+        author={Raphael Baena and Syrine Kalleli and Mathieu Aubry},
+        booktitle={NeurIPS},
+        year={2024}},
+        url={https://arxiv.org/abs/2409.17095},
+    }
+    ------------------------------------------------------------------------
+    """
+    from .dtlr.datasets import transforms
+
+    config = LIB_ROOT / "dtlr" / "config" / "HWDB_full.py"
+    labels = MODEL_PATH / "labels_icdar.pkl"
+    T = transforms
+    postprocessors = None  # defined in get_model
+    charset = None         # defined in get_model
+    iou_threshold = 0.2
+
+    def get_model(self):
+        import pickle
+        from torch import nn
+        from .dtlr import build_model_main
+        from .dtlr.util.slconfig import SLConfig
+
+        # 1 - define config
+        self.device = select_device(self.device)
+        args = SLConfig.fromfile(self.config)
+        args.device = self.device
+        args.CTC_training = False
+        args.CTC_loss_coef = 0.25
+        args.fix_size = False
+
+        # 2 - load model, checpoint and charset
+        model, _, postprocessors = build_model_main(args)
+        checkpoint = torch.load(self.weights, map_location="cpu")
+
+        with open(self.labels, mode="rb") as fh:
+            labels_content = pickle.load(fh)
+        charset = labels_content["charset"]["all_multi"]
+        args.charset = charset
+        charset_size = len(args.charset)
+
+        # 3 - define class embeddigs
+        #NOTE `new_class_embed` is defined twice: 1st as a single linear layer
+        # (`nn.Linear`), then as an nn.ModuleList (6 stacked linear layers)
+        features_dim = model.class_embed[0].weight.data.shape[1]
+        new_class_embed = nn.Linear(features_dim, charset_size, )
+        new_decoder_class_embed = nn.Linear(features_dim, charset_size, )
+        new_enc_out_class_embed = nn.Linear(features_dim, charset_size, )
+
+        # always true in our case => redefines `new_class_embed`
+        if model.dec_pred_class_embed_share:
+            class_embed_layerlist = [
+                new_class_embed
+                for i in range(model.transformer.num_decoder_layers)
+            ]
+        new_class_embed = nn.ModuleList(class_embed_layerlist)
+
+        model.class_embed = new_class_embed.to(self.device)
+        model.transformer.decoder.class_embed = new_decoder_class_embed.to(self.device)
+        model.transformer.enc_out_class_embed = new_enc_out_class_embed.to(self.device)
+        model.label_enc = nn.Embedding(charset_size + 1, features_dim).to(self.device)
+
+        # 4 - load state dict and fix mismatches. see: https://stackoverflow.com/a/76154523
+        model_state_dict = model.state_dict()
+        checkpoint_state_dict = checkpoint["model"]
+        fixed_state_dict={
+            k:v
+            if v.size()==model_state_dict[k].size()
+            else model_state_dict[k]
+            for k,v in zip(model_state_dict.keys(), checkpoint_state_dict.values())
+        }
+
+        model.load_state_dict(fixed_state_dict, strict=False)  # `strict=False` => skip layers with key mismatches in the checkpoint. see: https://stackoverflow.com/a/76154523
+        model.to(self.device)
+
+        self.postprocessors = postprocessors
+        self.charset = charset
+        return model.eval()
+
+
+    #NOTE each image is a single line region extracted using `LineExtractor`
+    @smart_inference_mode()
+    def extract_one(self, img: DImage = None, save_img: bool = False):
+        from .dtlr.util import box_ops
+
+        #TODO move to `OcrMixin` ? (until `tensor_img = self.prepare_image(self.resize(orig_img, size))` included)
+        source = setup_source(img.path)
+        orig_img = Image.open(source).convert("RGB")
+        orig_w, orig_h = orig_img.size
+        writer = ImageAnnotator(img, img_w=orig_w, img_h=orig_h)
+
+        for size in self.input_sizes:
+
+            # 1 - resize image, convert resized image to tensor
+            img_resize = self.resize(orig_img, size)
+            resize_w, resize_h = img_resize.size
+            tensor_img = self.prepare_image(img_resize)
+            tensor_w, tensor_h = tensor_img.shape[2], tensor_img.shape[1]
+
+            # 2 - inference
+            #NOTE the model outputs bounding boxes in `xyxy` format, in a 0..1 range (0 = horizontal or vertical start of line)
+            output = self.model.cuda()(tensor_img[None].cuda())
+
+            # perform NMS
+            self.postprocessors['bbox'].nms_iou_threshold = self.iou_threshold
+            output = self.postprocessors['bbox'](output, torch.Tensor([[1.0, 1.0]]).cuda())[0]
+
+            # 3 - extract relevant boxes
+            # boxes = all character bounding boxes in `bbox`
+            boxes = output['boxes']
+            scores = output['scores']
+            labels = output['labels']
+
+            select_mask = scores > 0.1
+            boxes = boxes[select_mask]
+            scores = scores[select_mask]
+
+            # 4 - extract labels
+            # create a list of labels for characters in `bbox` and convert to utf-8
+            to_utf8 = np.vectorize(lambda x: bytes(x, "utf-8").decode("unicode_escape"))
+            labels = labels[select_mask]
+            full_charset = to_utf8(np.array(self.charset))  # the entire character set in utf8
+            labels_chars = full_charset[labels.cpu()]       # the characters in each bounding box, ordered
+
+            # remove bounding boxes whose label is `" "` (aka, don't detect spaces) (and also remove their scores and labels)
+            # there are errors in assigned labels (`o` detected as `e`...), but spaces are detected correctly (with some rare errors)
+            idx_no_spaces = np.where(labels_chars!=" ")[0]
+            boxes = boxes[idx_no_spaces]
+            scores = scores[idx_no_spaces]
+            labels = labels[idx_no_spaces]
+
+            # 5 - convert bounding boxces from 0..1 space to tensor space. reshaping to pixel space is done in `process_detections`
+            final_bboxes = boxes * torch.tensor([tensor_w, tensor_h, tensor_w, tensor_h]).cuda()
+
+            # concat to fit the data model expected by `process_detections`
+            preds = torch.cat([
+                final_bboxes,
+                scores.unsqueeze(1),
+                labels.unsqueeze(1)
+            ], dim=1)
+
+            if self.process_detections(
+                detections=preds,
+                image_tensor=tensor_img.unsqueeze(0).to(self.device),
+                original_image=np.array(orig_img),
+                save_img=save_img,
+                source=source,
+                writer=writer,
+                class_names=full_charset,
+                save_class=True
             ):
                 break
         return writer.annotations
@@ -399,7 +623,7 @@ class YOLOExtractor(BaseExtractor):
                 save_img=save_img,
                 source=source,
                 writer=writer,
-                class_names_examples=names,
+                class_names=names,
             ):
                 break
 
