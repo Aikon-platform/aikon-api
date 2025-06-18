@@ -5,7 +5,7 @@ Routes:
 
 - POST ``/clustering/start``
     Start a new DTI clustering task.
-    
+
     - Parameters:
         - dataset_url [required]: the URL of the zipped dataset to be used.
         - experiment_id [optional]: a unique identifier for this clustering task.
@@ -16,43 +16,43 @@ Routes:
 
 - POST ``/clustering/<tracking_id>/cancel``
     Cancel a DTI clustering task.
-    
+
     - Parameters:
         - tracking_id: the task ID.
     - Response: JSON object indicating the cancellation status.
 
 - GET ``/clustering/<tracking_id>/status``
     Get the status of a DTI clustering task.
-    
+
     - Parameters:
         - tracking_id: the task ID.
     - Response: JSON object containing the task status.
 
 - GET ``/clustering/<tracking_id>/result``
     Get the result of a DTI clustering task.
-    
+
     - Parameters:
         - tracking_id: the task ID.
     - Response: The result file in ZIP format.
 
 - GET ``/clustering/qsizes``
     Get the sizes of the task queues.
-    
+
     - Response: JSON object containing the sizes of the task queues.
 
 - GET ``/clustering/monitor``
     Monitor the DTI clustering tasks.
-    
+
     - Response: JSON object containing monitoring information.
 
 - POST ``/clustering/monitor/clear``
     Clear the directories related to DTI clustering tasks.
-    
+
     - Response: JSON object indicating the number of cleared runs, datasets, and results.
 
 - POST ``/clustering/monitor/clear/<tracking_id>/``
     Clear the directories related to a specific DTI clustering task.
-    
+
     - Parameters:
         - tracking_id: the task ID.
     - Response: JSON object indicating the number of cleared runs, datasets, and results for the specified task.
@@ -91,26 +91,23 @@ def start_clustering():
     - parameters [optional]: a JSON object containing the parameters to be used
 
     The notify_url will be called with a JSON object containing the following keys:
-    
+
     - tracking_id: the task ID
     - result_url: the URL from which to fetch the results
     """
-
-    # Extract experiment_id, dataset_id, dataset_url from POST parameters
-    dataset_url = request.form["dataset_url"]  # Throw 400 if not exists
-
-    experiment_id = slugify(request.form.get("experiment_id", str(uuid.uuid4())))
-    dataset_id = slugify(request.form.get("dataset_id", str(uuid.uuid4())))
-    notify_url = request.form.get("notify_url", None)
-    parameters = json.loads(request.form.get("parameters", "{}"))
+    (
+        experiment_id,
+        notify_url,
+        dataset,
+        param,
+    ) = shared_routes.receive_task(request)
 
     return shared_routes.start_task(
         train_dti,
         experiment_id,
         {
-            "dataset_id": dataset_id,
-            "dataset_url": dataset_url,
-            "parameters": parameters,
+            "dataset_uid": dataset.uid,
+            "parameters": param,
             "notify_url": notify_url,
         },
     )

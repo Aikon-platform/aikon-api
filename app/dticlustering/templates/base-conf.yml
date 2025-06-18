@@ -1,0 +1,50 @@
+dataset:
+  name: generic
+  tag: generic_config
+  img_size: 128
+
+model:
+  n_backgrounds: 1
+  n_objects: 1
+  inject_noise: 0.
+  encoder_name: resnet20
+  transformation_sequence: identity_affine_morpho_tps
+  transformation_sequence_bkg: identity
+  curriculum_learning: [10, 50, 100]
+  curriculum_learning_bkg: False
+  input_alpha_as_weight: True
+  freq_weight: 0.0
+  bin_weight: 0.0
+  estimate_minimum: True
+  softmax: softmax
+  tau: 1.
+  grid_size: 4
+  kernel_size: 7
+  # prototypes & name defined in the specific configs
+
+training:
+  seed: 3407
+  n_epochs: 200
+  batch_size: 32
+  n_workers: 5
+  optimizer_name: adam
+  optimizer:
+    lr: 1.0e-3
+  transformer_optimizer:
+    weight_decay: 1.0e-6
+  scheduler_name: multi_step
+  scheduler_update_range: epoch
+  scheduler:
+    gamma: 0.1
+    milestones: [175]
+  eval_with_bkg: True
+  eval_semantic: True
+  visualizer_port:
+  pretrained:
+  resume: null
+  save: True
+  cont: False
+
+  train_stat_interval: 1000
+  val_stat_interval: 2000
+  check_cluster_interval: 250
