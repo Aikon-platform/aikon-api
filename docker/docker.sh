@@ -59,7 +59,7 @@ start_container() {
     if image_exists; then
         color_echo blue "\nStarting container $CONTAINER_NAME"
         docker run -d --gpus "$DEVICE_NB" --name "$CONTAINER_NAME" \
-           -v "$DATA_FOLDER":/data/ -v "$CUDA_HOME":/cuda/ -p "$CONTAINER_HOST":"$API_PORT":"$API_PORT" \
+           -v "$DATA_FOLDER":/data/ -v "$CUDA_HOME":/cuda/ -p "$CONTAINER_HOST:$API_PORT:$API_PORT" \
            --restart unless-stopped --ipc=host "$CONTAINER_NAME"
     else
         color_echo red "\nImage $CONTAINER_NAME does not exist. Build failed or not yet built."

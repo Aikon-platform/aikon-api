@@ -321,6 +321,8 @@ class LineExtractor(OcrExtractor):
 
         args = SLConfig.fromfile(self.config)
         args.device = self.device
+
+        # TODO change nb queries
         for key, tensor in checkpoint["model"].items():
             if "tgt_embed.weight" in key:
                 # adjust number of queries depending on the checkpoint
