@@ -42,7 +42,7 @@ class LoggedTask(LoggingTaskMixin):
         self.experiment_id = experiment_id
         # Frontend endpoint to sends results and task events to
         self.notify_url = notify_url
-        # Discover-demo frontend uses /status endpoint to retrieve task message (@dramatiq.store_results=True)
+        # aikon-demo frontend uses /status endpoint to retrieve task message (@dramatiq.store_results=True)
 
         # notify() function to send any event to frontend
         self.notifier = notifier

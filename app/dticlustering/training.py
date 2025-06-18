@@ -400,7 +400,7 @@ def set_transformation_sequence(cfg, tsf_seq, sprites=False):
         # if sprites:
         #     cfg.model.curriculum_learning_bkg = milestones[n_tsf - 1]
 
-        # see if reconstruction decrease
+        # see if reconstruction decreases
     return cfg
 
 

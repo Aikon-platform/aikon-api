@@ -23,7 +23,7 @@ model:
   # prototypes & name defined in the specific configs
 
 training:
-  seed: 32903
+  seed: 3407
   n_epochs: 200
   batch_size: 32
   n_workers: 5
