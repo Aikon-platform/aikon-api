@@ -236,7 +236,7 @@ sudo cp ~/discover.key /etc/spiped/ # Copy key to spiped folder
 Create service config file for spiped on front machine (`sudo vi /etc/systemd/system/spiped-connect.service`)
 - Get `<gpu-ip>` with `hostname -I` on the machine where is deployed the API.
 
-⚠️ Note to match the output IP (`127.0.0.1:<spiped-port>` in this example) to the `API_URL` in [`front/.env`](../front/.env)
+⚠️ Note to match the output IP (`127.0.0.1:<spiped-port>` in this example) to the `PROD_API_URL` in [`front/.env`](../front/.env)
 
 ```bash
 [Unit]

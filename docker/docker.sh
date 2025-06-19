@@ -18,12 +18,27 @@ source "$API_ROOT"/.env.prod
 
 echo $HTTP_PROXY
 
+NETWORK_NAME="aikondemo_demo_network"
+
 container_exists() {
     docker ps -a --format '{{.Names}}' | grep -Eq "$CONTAINER_NAME"
 }
 
 image_exists() {
     docker image inspect "$CONTAINER_NAME" >/dev/null 2>&1
+}
+
+network_exists() {
+    docker network ls --format '{{.Name}}' | grep -Eq "^${NETWORK_NAME}$"
+}
+
+create_network() {
+    if ! network_exists; then
+        color_echo blue "\nCreating Docker network $NETWORK_NAME"
+        docker network create "$NETWORK_NAME" --driver bridge
+    else
+        color_echo green "\nNetwork $NETWORK_NAME already exists"
+    fi
 }
 
 stop_container() {
@@ -58,12 +73,13 @@ pull_code() {
 
 # Function to start the container
 start_container() {
+    create_network
+
     if image_exists; then
         color_echo blue "\nStarting container $CONTAINER_NAME"
         docker run -d --gpus "$DEVICE_NB" --name "$CONTAINER_NAME" \
-           -v "$DATA_FOLDER":/data/ -v "$CUDA_HOME":/cuda/ -p "$CONTAINER_HOST":"$API_PORT":"$API_PORT" \
-           --restart unless-stopped --ipc=host "$CONTAINER_NAME"
-	docker network connect aikondemo_demo_network aikonapi || true
+           -v "$DATA_FOLDER":/data/ -v "$CUDA_HOME":/cuda/ -p "$CONTAINER_HOST:$API_PORT:$API_PORT" \
+           --restart unless-stopped --ipc=host --network "$NETWORK_NAME" "$CONTAINER_NAME"
     else
         color_echo red "\nImage $CONTAINER_NAME does not exist. Build failed or not yet built."
         exit 1

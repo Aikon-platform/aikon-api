@@ -70,10 +70,15 @@ cleanup_pids() {
     done
 
     if [ -n "$services" ]; then
-        local remaining=$(ps aux | grep -E "$services" | grep -v grep | wc -l)
+        sleep 2
+        local remaining=$(ps u | grep -E "$services" | grep -v grep | wc -l)
         if [ "$remaining" -gt 0 ]; then
-            color_echo red "⚠️ $remaining processes might still be running. You may need to manually kill them."
-            ps aux | grep -E "$services" | grep -v grep
+            remaining_pids=$(ps u | grep -E "$services" | grep -v grep | awk '{print $2}' | tr '\n' ' ')
+            color_echo red "⚠️ $remaining process(es) might still be running. You may need to manually kill them."
+            color_echo red "  kill -9 $remaining_pids"
+            echo ""
+            color_echo yellow "ps u | grep -E $services | grep -v grep"
+            ps u | grep -E "$services" | grep -v grep
         elif [ "$pid_still_running" -eq 0 ]; then
             color_echo blue "All processes successfully terminated."
         fi
@@ -103,6 +108,7 @@ FLASK_PID=$!
 PIDS+=($FLASK_PID)
 
 venv/bin/dramatiq app.main -t 1 -p 1 &
+#venv/bin/dramatiq app.main -t 1 -p 1 --watch . &
 DRAMATIQ_PID=$!
 PIDS+=($DRAMATIQ_PID)
 

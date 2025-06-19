@@ -74,6 +74,7 @@ def notifying(func: Optional[Callable[..., Any]] = None) -> Callable[..., Any]:
 
             try:
                 notify("STARTED")
+                # TODO if failed, cancel task
                 result = fct(*args, **kwargs, logger=logger, notifier=notify)
                 # dispatch result to frontend
                 notify("SUCCESS", success=True, output=result)
@@ -96,6 +97,8 @@ def serializer(obj):
         return obj.value
     if isinstance(obj, Path):
         return str(obj)
+    if hasattr(obj, "dtype"):
+        return float(obj)
     raise TypeError(f"Type {type(obj)} is not JSON serializable")
 
 
@@ -115,7 +118,7 @@ def sanitize(v):
         return {str(k): sanitize(val) for k, val in v.items()}
     else:
         # For custom objects, include class name in representation
-        return f"{v.__class__.__name__}({str(v)})"
+        return f"{v.__class__.__name__} ({str(v)})"
 
 
 def pprint(o):

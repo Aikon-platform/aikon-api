@@ -14,16 +14,18 @@ In order to use line predictor for extraction, you first need to compile CUDA op
 
     # set CUDA_HOME
     export CUDA_HOME=<path/to/cuda>
-    # make sure nvcc version matches selected CUDA_HOME
+    ```
+2. Ensure NVCC and CUDA versions match
+    ```bash
     export PATH=$CUDA_HOME/bin:$PATH
     export LD_LIBRARY_PATH=$CUDA_HOME/lib64:$LD_LIBRARY_PATH
     ```
-2. Activate python environment in the `api/` root folder
+3. Activate python environment in the `api/` root folder
     ```bash
     source venv/bin/activate
     cd app/regions/lib/line_predictor
     ```
-3. Inside `line_predictor/` folder, run
+4. Inside `line_predictor/` folder, run
     ```bash
     # Compile CUDA operators
     python ./dino/ops/setup.py build install
@@ -33,7 +35,7 @@ In order to use line predictor for extraction, you first need to compile CUDA op
 
 ### Troubleshooting
 
-Versions setup know to work:
+Versions setup known to work:
 ```bash
 $ nvcc --version
 nvcc: NVIDIA (R) Cuda compiler driver
