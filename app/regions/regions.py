@@ -14,7 +14,7 @@ from .lib.extract import (
 )
 from ..shared.tasks import LoggedTask
 from ..shared.dataset import Document, Dataset, Image as DImage
-from ..shared.utils.fileutils import get_model
+from ..shared.utils.fileutils import get_model, list_known_models
 
 EXTRACTOR_POSTPROCESS_KWARGS = {
     "watermarks": {
@@ -23,7 +23,7 @@ EXTRACTOR_POSTPROCESS_KWARGS = {
     },
     "character_line_extraction": {
         "squarify": False,
-        "margin": [0.1, 0.3],  # [<hztl margins>, <vertical margins>]
+        "margin": [0.1, 0.3],  # [<horizontal margins>, <vertical margins>]
     },
 }
 
@@ -44,7 +44,8 @@ def extend_with_model_class(model_key: str, model_infos: Dict) -> Dict:
 
 
 MODEL_MAPPER = {
-    k: extend_with_model_class(k, v) for k, v in DEFAULT_MODEL_INFOS.copy().items()
+    k: extend_with_model_class(k, v)
+    for k, v in list_known_models(MODEL_PATH, DEFAULT_MODEL_INFOS).items()
 }
 
 
@@ -207,12 +208,14 @@ class ExtractRegions(LoggedTask):
 
         try:
             self.initialize()
+
             for doc in self.jlogger.iterate(
                 self.dataset.documents, "Processing documents"
             ):
+                self.log(f"Processing document {doc.uid}...")
                 self.process_doc(doc)
 
-            self.log(f"Task completed with status: SUCCESS")
+            self.log(f"Task completed with status: SUCCESS!")
             return True
         except Exception as e:
             self.task_update(
