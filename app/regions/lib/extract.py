@@ -172,6 +172,9 @@ class BaseExtractor:
 
     @smart_inference_mode()
     def extract_one(self, img: DImage, save_img: bool = False):
+        # source = setup_source(img.path)
+        # if source is None:
+        #     return {}
         raise NotImplementedError()
 
     @smart_inference_mode()
@@ -430,7 +433,6 @@ class LineExtractor(OcrExtractor):
     @smart_inference_mode()
     def extract_one(self, img: DImage, save_img: bool = False):
         source = setup_source(img.path)
-
         if source is None:
             return {}
 
@@ -565,7 +567,7 @@ class DtlrExtractor(OcrExtractor):
     # NOTE each image is a single line region extracted using `LineExtractor`
     @smart_inference_mode()
     def extract_one(self, img: DImage = None, save_img: bool = False):
-        from .dtlr.util import box_ops
+        # from .dtlr.util import box_ops
 
         # TODO move to `OcrMixin` ? (until `tensor_img = self.prepare_image(self.resize(orig_img, size))` included)
         source = setup_source(img.path)
@@ -580,7 +582,7 @@ class DtlrExtractor(OcrExtractor):
 
             # 1 - resize image, convert resized image to tensor
             img_resize = self.resize(orig_img, size)
-            resize_w, resize_h = img_resize.size
+            # resize_w, resize_h = img_resize.size
             tensor_img = self.prepare_image(img_resize)
             tensor_w, tensor_h = tensor_img.shape[2], tensor_img.shape[1]
 
@@ -658,13 +660,12 @@ class YOLOExtractor(BaseExtractor):
 
     @smart_inference_mode()
     def extract_one(self, img: DImage, save_img: bool = False):
-        img_path = img.path
-        source = setup_source(img_path)
+        source = setup_source(img.path)
         if source is None:
             return {}
 
         stride, names, pt = self.model.stride, self.model.names, self.model.pt
-        im0 = cv2.imread(img_path)
+        im0 = cv2.imread(img.path)
         writer = ImageAnnotator(img, img_w=im0.shape[1], img_h=im0.shape[0])
 
         for s in self.input_sizes:
@@ -743,8 +744,9 @@ class FasterRCNNExtractor(BaseExtractor):
 
     @smart_inference_mode()
     def extract_one(self, img: DImage, save_img: bool = False):
-        img_path = img.path
-        source = setup_source(img_path)
+        source = setup_source(img.path)
+        if source is None:
+            return {}
 
         original_image = Image.open(source).convert("RGB")
         writer = ImageAnnotator(
