@@ -109,14 +109,14 @@ def train_dti(
         # (dti_dataset_path / "ready.meta").touch()
 
     # Start training for dataset_name = generic
-    if parameters.get("background_option", "0_dti") == "0_dti":
-        # Use DTI clustering
-        output_path = run_kmeans_training(
+    if parameters.get("background_option", {}).get("use_sprites", False):
+        # Use DTI sprites (1_learn_bg / 2_const_bg / 3_learn_fg)
+        output_path = run_sprites_training(
             experiment_id, dataset_uid, parameters, logger
         )
     else:
-        # Use DTI sprites (1_learn_bg / 2_const_bg / 3_learn_fg)
-        output_path = run_sprites_training(
+        # Use DTI clustering
+        output_path = run_kmeans_training(
             experiment_id, dataset_uid, parameters, logger
         )
 

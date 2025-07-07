@@ -2,6 +2,10 @@
 Training tools to adapt DTI research lib to the API
 """
 import json
+import sys
+import traceback
+
+from hydra.core.hydra_config import HydraConfig
 
 from yaml import load, Loader, dump, Dumper
 from pathlib import Path
@@ -13,7 +17,7 @@ from jinja2 import Environment, FileSystemLoader
 from sklearn.metrics.cluster import normalized_mutual_info_score
 from omegaconf import OmegaConf
 
-from .lib.src.abstract_trainer import run_trainer
+from .lib.src.dataset import get_dataset
 from .lib.src.Akmeans_trainer import Trainer as KMeansTrainer
 from .lib.src.kmeans_trainer import Trainer as _KMeansTrainer
 from .lib.src.Asprites_trainer import Trainer as SpritesTrainer
@@ -340,14 +344,48 @@ class LoggedSpritesTrainer(LoggingTrainerMixin, _SpritesTrainer):
         return dist_min_by_sample, argmin_idx
 
 
+def default_milestones(transforms, epochs):
+    n_tsf = len(transforms.split("_"))
+    epochs = epochs
+
+    # Set the number of epochs for each transformation
+    m1, m2, m3, m4, m5, m6 = (
+        int(epochs * 0.1),
+        int(epochs * 0.2),
+        int(epochs * 0.3),
+        int(epochs * 0.4),
+        int(epochs * 0.5),
+        int(epochs * 0.6),
+    )
+    milestones = {
+        1: [m1],
+        2: [m1, m3],
+        3: [m1, m3, m5],
+        4: [m1, m2, m3, m5],
+        5: [m1, m2, m3, m4, m5],
+        6: [m1, m2, m3, m4, m5, m6],
+    }
+    # len(curriculum_learning) == self.n_tsf - 1
+    # if sprites:
+    #     cfg.model.curriculum_learning_bkg = milestones[n_tsf - 1]
+    return milestones[n_tsf - 1]
+
+
 def set_transformation_sequence(cfg, tsf_seq, sprites=False):
     """
     Set the transformation sequence for the model
 
     Args:
         cfg: The configuration object.
-        tsf_seq: The transformation sequence to set. eg: "identity_affine_morpho_tps".
+        tsf_seq: The transformation sequence to set
         sprites: Whether the model is for sprites or not.
+
+    tsf_seq = {
+      "transforms": "identity_linearcolor_affine_morpho_tps",
+      "iterations": 15000, # total number of iterations to train
+      "milestones": [ 3000, 4000, 7000, 11000 ] # those are iterations, not epochs
+      "n_batches": 1000, # total number of batches in the dataset
+    }
 
     Transformations can be:
     # COARSE (should be applied early on during training)
@@ -366,41 +404,28 @@ def set_transformation_sequence(cfg, tsf_seq, sprites=False):
 
     # MORPHOLOGICAL
     "morpho"|"morphological": MorphologicalModule,
-
-    TODO reorder transforms?
     """
-    cfg.model.transformation_sequence = tsf_seq
+
+    iter_nb = tsf_seq.get("iterations", 15000)
+    batch_nb = tsf_seq.get("n_batches", 1000)
+    epoch_nb = max(iter_nb // tsf_seq.get("n_batches", 500), 1)
+    cfg.training.n_iterations = iter_nb
+    cfg.training.n_epochs = epoch_nb
+
+    transforms = tsf_seq.get("transforms", "identity_affine_morpho")
+
+    cfg.model.transformation_sequence = transforms
     if sprites:
-        cfg.model.transformation_sequence_bkg = tsf_seq
+        # TODO allow to define custom background transformations
+        cfg.model.transformation_sequence_bkg = transforms
 
-    if cfg.model.curriculum_learning:
-        n_tsf = len(tsf_seq.split("_"))
-        epochs = cfg.training.n_epochs
+    if milestones := tsf_seq.get("milestones", False):
+        # convert iter in epochs
+        cfg.model.curriculum_learning = [it // batch_nb + 1 for it in milestones]
+    else:
+        cfg.model.curriculum_learning = default_milestones(transforms, epoch_nb)
 
-        # Set the number of epochs for each transformation
-        m1, m2, m3, m4, m5, m6 = (
-            int(epochs * 0.1),
-            int(epochs * 0.2),
-            int(epochs * 0.3),
-            int(epochs * 0.4),
-            int(epochs * 0.5),
-            int(epochs * 0.6),
-        )
-        milestones = {
-            1: [m1],
-            2: [m1, m3],
-            3: [m1, m3, m5],
-            4: [m1, m2, m3, m5],
-            5: [m1, m2, m3, m4, m5],
-            6: [m1, m2, m3, m4, m5, m6],
-        }
-        # len(curriculum_learning) == self.n_tsf - 1
-        cfg.model.curriculum_learning = milestones[n_tsf - 1]
-
-        # if sprites:
-        #     cfg.model.curriculum_learning_bkg = milestones[n_tsf - 1]
-
-        # see if reconstruction decreases
+    # see if reconstruction decreases
     return cfg
 
 
@@ -412,6 +437,19 @@ def set_scheduler_milestones(cfg):
         int(cfg.training.n_epochs * 0.85),
     ]
     return cfg
+
+
+def get_n_batches(cfg):
+    dataset = get_dataset(cfg.dataset.name)("train", **cfg.dataset)
+    dataset_size = len(dataset)
+
+    batch_size = (
+        cfg.training.batch_size
+        if cfg.training.batch_size < dataset_size
+        else dataset_size
+    )
+
+    return (dataset_size + batch_size - 1) // batch_size
 
 
 def run_training(
@@ -429,17 +467,13 @@ def run_training(
 
     cfg.dataset.tag = dataset_uid
 
-    bkg_opt = parameters.get("background_option", "1_learn_bg")
-    # bkg_opt = "0_dti" ==> DTI kmeans
-    if bkg_opt == "2_const_bg":
-        # Data parameters are respectively [foreground, background, masks]
-        cfg.model.prototype.data.freeze = [False, True, False]
-        cfg.model.prototype.data.init = ["constant", "constant", "gaussian"]
-        cfg.model.prototype.data.value = [0.1, 0.1, 0.0]
-    elif bkg_opt == "3_learn_fg":
-        cfg.model.prototype.data.freeze = [True, True, False]
-        cfg.model.prototype.data.init = ["constant", "constant", "gaussian"]
-        cfg.model.prototype.data.value = [0.1, 0.9, 0.0]
+    bkg_opt = parameters.get("background_option", {})
+    if sprites:
+        # constant background = [False, True, False] + ["constant", "constant", "gaussian"] + [0.1, 0.1, 0.0]
+        # learned foreground  = [True, True, False]  + ["constant", "constant", "gaussian"] + [0.1, 0.9, 0.0]
+        cfg.model.prototype.data.freeze = bkg_opt.get("freeze", [False, False, False])
+        cfg.model.prototype.data.init = bkg_opt.get("init", ["mean", "mean", "mean"])
+        cfg.model.prototype.data.value = bkg_opt.get("value", [0.1, 0.5, 0.0])
 
     # Set training parameters from parameters
     if n_proto := parameters.get("n_prototypes"):
@@ -448,17 +482,30 @@ def run_training(
         else:
             cfg.model.n_prototypes = n_proto
 
-    if tsf_seq := parameters.get("transformation_sequence"):
-        cfg = set_transformation_sequence(cfg, tsf_seq, sprites=sprites)
-
-    cfg = set_scheduler_milestones(cfg)
-
     CONFIGS_PATH.mkdir(parents=True, exist_ok=True)
     OmegaConf.save(cfg, CONFIGS_PATH / f"{clustering_id}.yml")
 
     run_dir = RUNS_PATH / clustering_id
     trainer_class = LoggedSpritesTrainer if sprites else LoggedKMeansTrainer
-    run_trainer(logger=logger, cfg=cfg, trainer_class=trainer_class, run_dir=run_dir)
+
+    torch.backends.cudnn.enabled = False
+
+    if tsf_seq := parameters.get("transformation_sequence"):
+        tsf_seq["n_batches"] = get_n_batches(cfg)
+        cfg = set_transformation_sequence(cfg, tsf_seq, sprites=sprites)
+
+    cfg = set_scheduler_milestones(cfg)
+
+    try:
+        print(OmegaConf.to_yaml(cfg))
+        seed = cfg.get("training", {}).get("seed", 3407)
+        trainer = trainer_class(
+            cfg=cfg, run_dir=str(run_dir), seed=seed, save=True, logger=logger
+        )
+        trainer.run(seed=seed)
+    except Exception:
+        traceback.print_exc(file=sys.stderr)
+        raise
 
     return run_dir
 

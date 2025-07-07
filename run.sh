@@ -94,7 +94,7 @@ cleanup_pids() {
 # Cleanup function if running standalone
 if [ "$START_MODE" != "CHILD" ]; then
     cleanup() {
-        cleanup_pids "${PIDS[*]}" "flask|dramatiq"
+        cleanup_pids "${PIDS[*]}" "flask|dramatiq|multiprocessing"
         exit 0
     }
 
