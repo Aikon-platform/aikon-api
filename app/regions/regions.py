@@ -14,18 +14,18 @@ from .lib.extract import (
 )
 from ..shared.tasks import LoggedTask
 from ..shared.dataset import Document, Dataset, Image as DImage
-from ..shared.utils.fileutils import get_model
+from ..shared.utils.fileutils import get_model, list_known_models
 
-EXTRACTOR_POSTPROCESS_KWARGS = {
-    "watermarks": {
-        "squarify": True,
-        "margin": 0.05,  # same margin for all sides
-    },
-    "character_line_extraction": {
-        "squarify": False,
-        "margin": [0.1, 0.3],  # [<hztl margins>, <vertical margins>]
-    },
-}
+# EXTRACTOR_POSTPROCESS_KWARGS = {
+#     "watermarks": {
+#         "squarify": True,
+#         "margin": 0.05,  # same margin for all sides
+#     },
+#     "character_line_extraction": {
+#         "squarify": False,
+#         "margin": [0.1, 0.3],  # [<horizontal margins>, <vertical margins>]
+#     },
+# }
 
 # add the extractor model class to DEFAULT_MODEL_INFOS.
 def extend_with_model_class(model_key: str, model_infos: Dict) -> Dict:
@@ -44,7 +44,8 @@ def extend_with_model_class(model_key: str, model_infos: Dict) -> Dict:
 
 
 MODEL_MAPPER = {
-    k: extend_with_model_class(k, v) for k, v in DEFAULT_MODEL_INFOS.copy().items()
+    k: extend_with_model_class(k, v)
+    for k, v in list_known_models(MODEL_PATH, DEFAULT_MODEL_INFOS).items()
 }
 
 
@@ -61,7 +62,7 @@ class ExtractRegions(LoggedTask):
         self,
         dataset: Dataset,
         model: Optional[str] = None,
-        postprocess: Optional[str] = None,
+        postprocess: Optional[dict] = {},
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -73,18 +74,26 @@ class ExtractRegions(LoggedTask):
         self.results_url = []
         self.annotations = {}
         self.extractor = None
-        self.extractor_kwargs = EXTRACTOR_POSTPROCESS_KWARGS.get(postprocess, {})
+        self.extractor_kwargs = {
+            "squarify": postprocess.get("squarify", False),
+            "margin": [postprocess.get("h_margin", 0), postprocess.get("v_margin", 0)],
+        }
 
     def initialize(self):
         """
         Initialize the extractor, based on the model's name
         """
-        # if "rcnn" in self.model:
-        #     self.extractor = FasterRCNNExtractor(self.weights, **self.extractor_kwargs)
-        # elif "line" in self.model:
-        #     self.extractor = LineExtractor(self.weights, **self.extractor_kwargs)
-        # else:
-        #     self.extractor = YOLOExtractor(self.weights, **self.extractor_kwargs)
+        if self.model not in MODEL_MAPPER:
+            # if "character" in self.model:
+            #     self.extractor = DtlrExtractor(self.weights, **self.extractor_kwargs)
+            # elif "line" in self.model:
+            #     self.extractor = LineExtractor(self.weights, **self.extractor_kwargs)
+            # elif "rcnn" in self.model:
+            #     self.extractor = FasterRCNNExtractor(self.weights, **self.extractor_kwargs)
+            # else: # last use case: `illustration_extraction`
+            #     self.extractor = YOLOExtractor(self.weights, **self.extractor_kwargs)
+            raise ValueError(f"Model {self.model} is not supported for extraction.")
+
         self.extractor = MODEL_MAPPER[self.model]["model_class"](
             self.weights, **self.extractor_kwargs
         )
@@ -202,12 +211,14 @@ class ExtractRegions(LoggedTask):
 
         try:
             self.initialize()
+
             for doc in self.jlogger.iterate(
                 self.dataset.documents, "Processing documents"
             ):
+                self.log(f"Processing document {doc.uid}...")
                 self.process_doc(doc)
 
-            self.log(f"Task completed with status: SUCCESS")
+            self.log(f"Task completed with status: SUCCESS!")
             return True
         except Exception as e:
             self.task_update(

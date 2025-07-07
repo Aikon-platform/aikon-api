@@ -51,7 +51,7 @@ def get_img_dim(source: TPath) -> Tuple[int, int]:
         return img.size[0], img.size[1]  # width, height
 
 
-def setup_source(source: TPath) -> str:
+def setup_source(source: TPath) -> str | None:
     """
     Check if the source is a URL or a file
 
@@ -62,6 +62,11 @@ def setup_source(source: TPath) -> str:
     is_file = Path(source).suffix[1:] in IMG_FORMATS
     if is_url and is_file:
         source = check_file(source)  # download
+
+    if not Path(source).exists():
+        console(f"Image {source} does not exists. Skipping extraction.", color="red")
+        return None
+
     return source
 
 
@@ -79,7 +84,15 @@ class ImageAnnotator:
             "crops": [],
         }
 
-    def add_region(self, x: int, y: int, w: int, h: int, conf: float, class_info: Tuple[Any, Any] | None = None):
+    def add_region(
+        self,
+        x: int,
+        y: int,
+        w: int,
+        h: int,
+        conf: float,
+        class_info: Tuple[Any, Any] | None = None,
+    ):
         """
         add a region to the Annotator. if the extraction algorithm also provides classification/labelling, the class and class name of the bounding box can be passed using the `class_info` tuple. in that case, an extra "class" field will be added
 
@@ -123,7 +136,10 @@ class ImageAnnotator:
             }
         )
         if class_info is not None and len(class_info):
-            self.annotations["crops"][-1]["class"] = { "id": class_info[0], "label": class_info[1] }
+            self.annotations["crops"][-1]["class"] = {
+                "id": class_info[0],
+                "label": class_info[1],
+            }
 
 
 class BaseExtractor:
@@ -156,6 +172,9 @@ class BaseExtractor:
 
     @smart_inference_mode()
     def extract_one(self, img: DImage, save_img: bool = False):
+        # source = setup_source(img.path)
+        # if source is None:
+        #     return {}
         raise NotImplementedError()
 
     @smart_inference_mode()
@@ -178,7 +197,7 @@ class BaseExtractor:
         source: TPath,
         writer: ImageAnnotator,
         class_names: str | List = "abc",
-        save_class: bool = False
+        save_class: bool = False,
     ) -> bool:
         """
         extract detections and write them
@@ -211,25 +230,35 @@ class BaseExtractor:
 
         # NOTE the original, non-numpy version of those conversions can be found here: https://github.com/Aikon-platform/aikon-api/blob/80b7b6cc71c425778c693ccf0d0d66a8f188532e/app/regions/lib/extract.py
 
-        detections = detections.cpu().numpy()  # move to cpu is necessary to perform numpy operations
+        detections = (
+            detections.cpu().numpy()
+        )  # move to cpu is necessary to perform numpy operations
 
         # convert xyxy to xywh
-        xywh = np.column_stack([
-            detections[:, 0],  # x
-            detections[:, 1],  # y
-            detections[:, 2] - detections[:, 0],  # w
-            detections[:, 3] - detections[:, 1]  # h
-        ])
+        xywh = np.column_stack(
+            [
+                detections[:, 0],  # x
+                detections[:, 1],  # y
+                detections[:, 2] - detections[:, 0],  # w
+                detections[:, 3] - detections[:, 1],  # h
+            ]
+        )
 
         # squarify and add margins if necessary
         if self.squarify:
-            square_dim = np.minimum(np.maximum(xywh[:, 2], xywh[:, 3]), min(img_w, img_h)) # min(max(w, h), min(img_w, img_h))
-            xywh[:, 0] -= (square_dim - xywh[:, 2]) // 2 # x -= (square_dim - w) / 2
-            xywh[:, 1] -= (square_dim - xywh[:, 3]) // 2 # y -= (square_dim - h) / 2
-            xywh[:, 2:4] = square_dim[:, None] # w = h = square_dim
+            square_dim = np.minimum(
+                np.maximum(xywh[:, 2], xywh[:, 3]), min(img_w, img_h)
+            )  # min(max(w, h), min(img_w, img_h))
+            xywh[:, 0] -= (square_dim - xywh[:, 2]) // 2  # x -= (square_dim - w) / 2
+            xywh[:, 1] -= (square_dim - xywh[:, 3]) // 2  # y -= (square_dim - h) / 2
+            xywh[:, 2:4] = square_dim[:, None]  # w = h = square_dim
 
         has_margin = isinstance(self.margin, (int, float)) and self.margin > 0
-        has_margins = isinstance(self.margin, list) and len(self.margin) == 2 and all(isinstance(_, (int, float)) for _ in self.margin)
+        has_margins = (
+            isinstance(self.margin, list)
+            and len(self.margin) == 2
+            and all(isinstance(_, (int, float)) for _ in self.margin)
+        )
 
         if has_margin or has_margins:
             # NOTE if squarify and self.margin = 0 it doesnt matter, so squarify should not be needed right?
@@ -238,34 +267,42 @@ class BaseExtractor:
             else:
                 mx, my = self.margin, self.margin
 
-            xywh[:, 0] -= xywh[:, 2] * mx      # left
-            xywh[:, 1] -= xywh[:, 3] * my      # top
+            xywh[:, 0] -= xywh[:, 2] * mx  # left
+            xywh[:, 1] -= xywh[:, 3] * my  # top
             xywh[:, 2] += xywh[:, 2] * mx * 2  # right
             xywh[:, 3] += xywh[:, 3] * my * 2  # bottom
 
-
         xywh[:, 2] = np.minimum(xywh[:, 2], img_w)  # w cannot be > img_w
         xywh[:, 3] = np.minimum(xywh[:, 3], img_h)  # h cannot be > img_h
-        xywh[:, 0] = np.clip(xywh[:, 0], 0, img_w - xywh[:, 2])  # x must be >= 0 + box can't exceed right limit
-        xywh[:, 1] = np.clip(xywh[:, 1], 0, img_h - xywh[:, 3])  # y must be >= 0 + box can't exceed bottom limit
+        xywh[:, 0] = np.clip(
+            xywh[:, 0], 0, img_w - xywh[:, 2]
+        )  # x must be >= 0 + box can't exceed right limit
+        xywh[:, 1] = np.clip(
+            xywh[:, 1], 0, img_h - xywh[:, 3]
+        )  # y must be >= 0 + box can't exceed bottom limit
 
         detections = np.column_stack([xywh.astype(int), detections[:, -2:]])
 
         for x, y, w, h, conf, cls in reversed(detections):
             cls = int(cls)
             writer.add_region(
-                x, y, w, h,
+                x,
+                y,
+                w,
+                h,
                 float(conf),
-                ( cls, class_names[cls] ) if save_class else None
+                (cls, class_names[cls]) if save_class else None
                 # if `save_class`, pass the class ID and class name to `add_region`
             )
 
             if save_img:
                 xyxy = [x, y, x + w, y + h]
                 label = (
-                    None if HIDE_LABEL else
-                    class_names[cls] if HIDE_CONF else
-                    f"{class_names[cls]} {conf:.2f}"
+                    None
+                    if HIDE_LABEL
+                    else class_names[cls]
+                    if HIDE_CONF
+                    else f"{class_names[cls]} {conf:.2f}"
                 )
                 annotator.box_label(xyxy, label, color=colors(cls, True))
 
@@ -306,6 +343,7 @@ class LineExtractor(OcrExtractor):
     Copied from LinePredictor (https://github.com/raphael-baena/LinePredictor)
     ------------------------------------------------------------------------
     """
+
     from .line_predictor.datasets import transforms
 
     T = transforms
@@ -352,7 +390,7 @@ class LineExtractor(OcrExtractor):
         img_renorm = img_res.permute(*permutation)
         return img_renorm.permute(1, 2, 0)
 
-    #TODO fix bbox extraction on finetuned model
+    # TODO fix bbox extraction on finetuned model
     @staticmethod
     def poly_to_bbox(poly):
         x0, y0, x1, y1 = poly[:, 0], poly[:, 1], poly[:, -4], poly[:, -1]
@@ -370,7 +408,12 @@ class LineExtractor(OcrExtractor):
         return bboxes
 
     # bboxes: tensor of shape [x, 4]
-    def cleanup_detections(self, bboxes: torch.Tensor, scores: torch.Tensor, labels: torch.Tensor|None=None) -> torch.Tensor:
+    def cleanup_detections(
+        self,
+        bboxes: torch.Tensor,
+        scores: torch.Tensor,
+        labels: torch.Tensor | None = None,
+    ) -> torch.Tensor:
         scores = scores.to(self.device)
 
         # Perform Non-Maximum Suppression (NMS)
@@ -390,17 +433,20 @@ class LineExtractor(OcrExtractor):
     @smart_inference_mode()
     def extract_one(self, img: DImage, save_img: bool = False):
         source = setup_source(img.path)
+        if source is None:
+            return {}
+
         orig_img = Image.open(source).convert("RGB")
         orig_w, orig_h = orig_img.size
         writer = ImageAnnotator(img, img_w=orig_w, img_h=orig_h)
 
         for size in self.input_sizes:
             image = self.prepare_image(self.resize(orig_img, size))
-            curr_h, curr_w = image.shape[1:] #list(image.shape[2:])
+            curr_h, curr_w = image.shape[1:]  # list(image.shape[2:])
             # h_ratio, w_ratio = float(curr_h) / float(orig_h), float(curr_w) / float(orig_w)
 
             output = self.model.to(self.device)(image[None].to(self.device))
-            #error here
+            # error here
             mask = output["pred_logits"].sigmoid().max(-1)[0] > 0.3
             polygons = output["pred_boxes"][mask].cpu().detach()
             # polygons = self.scale(output["pred_boxes"][mask].cpu().detach(), curr_w, curr_h)
@@ -438,13 +484,14 @@ class DtlrExtractor(OcrExtractor):
     }
     ------------------------------------------------------------------------
     """
+
     from .dtlr.datasets import transforms
 
     config = LIB_ROOT / "dtlr" / "config" / "HWDB_full.py"
     labels = MODEL_PATH / "labels_icdar.pkl"
     T = transforms
     postprocessors = None  # defined in get_model
-    charset = None         # defined in get_model
+    charset = None  # defined in get_model
     iou_threshold = 0.2
 
     def get_model(self):
@@ -472,18 +519,26 @@ class DtlrExtractor(OcrExtractor):
         charset_size = len(args.charset)
 
         # 3 - define class embeddigs
-        #NOTE `new_class_embed` is defined twice: 1st as a single linear layer
+        # NOTE `new_class_embed` is defined twice: 1st as a single linear layer
         # (`nn.Linear`), then as an nn.ModuleList (6 stacked linear layers)
         features_dim = model.class_embed[0].weight.data.shape[1]
-        new_class_embed = nn.Linear(features_dim, charset_size, )
-        new_decoder_class_embed = nn.Linear(features_dim, charset_size, )
-        new_enc_out_class_embed = nn.Linear(features_dim, charset_size, )
+        new_class_embed = nn.Linear(
+            features_dim,
+            charset_size,
+        )
+        new_decoder_class_embed = nn.Linear(
+            features_dim,
+            charset_size,
+        )
+        new_enc_out_class_embed = nn.Linear(
+            features_dim,
+            charset_size,
+        )
 
         # always true in our case => redefines `new_class_embed`
         if model.dec_pred_class_embed_share:
             class_embed_layerlist = [
-                new_class_embed
-                for i in range(model.transformer.num_decoder_layers)
+                new_class_embed for i in range(model.transformer.num_decoder_layers)
             ]
         new_class_embed = nn.ModuleList(class_embed_layerlist)
 
@@ -495,28 +550,30 @@ class DtlrExtractor(OcrExtractor):
         # 4 - load state dict and fix mismatches. see: https://stackoverflow.com/a/76154523
         model_state_dict = model.state_dict()
         checkpoint_state_dict = checkpoint["model"]
-        fixed_state_dict={
-            k:v
-            if v.size()==model_state_dict[k].size()
-            else model_state_dict[k]
-            for k,v in zip(model_state_dict.keys(), checkpoint_state_dict.values())
+        fixed_state_dict = {
+            k: v if v.size() == model_state_dict[k].size() else model_state_dict[k]
+            for k, v in zip(model_state_dict.keys(), checkpoint_state_dict.values())
         }
 
-        model.load_state_dict(fixed_state_dict, strict=False)  # `strict=False` => skip layers with key mismatches in the checkpoint. see: https://stackoverflow.com/a/76154523
+        model.load_state_dict(
+            fixed_state_dict, strict=False
+        )  # `strict=False` => skip layers with key mismatches in the checkpoint. see: https://stackoverflow.com/a/76154523
         model.to(self.device)
 
         self.postprocessors = postprocessors
         self.charset = charset
         return model.eval()
 
-
-    #NOTE each image is a single line region extracted using `LineExtractor`
+    # NOTE each image is a single line region extracted using `LineExtractor`
     @smart_inference_mode()
     def extract_one(self, img: DImage = None, save_img: bool = False):
-        from .dtlr.util import box_ops
+        # from .dtlr.util import box_ops
 
-        #TODO move to `OcrMixin` ? (until `tensor_img = self.prepare_image(self.resize(orig_img, size))` included)
+        # TODO move to `OcrMixin` ? (until `tensor_img = self.prepare_image(self.resize(orig_img, size))` included)
         source = setup_source(img.path)
+        if source is None:
+            return {}
+
         orig_img = Image.open(source).convert("RGB")
         orig_w, orig_h = orig_img.size
         writer = ImageAnnotator(img, img_w=orig_w, img_h=orig_h)
@@ -525,23 +582,25 @@ class DtlrExtractor(OcrExtractor):
 
             # 1 - resize image, convert resized image to tensor
             img_resize = self.resize(orig_img, size)
-            resize_w, resize_h = img_resize.size
+            # resize_w, resize_h = img_resize.size
             tensor_img = self.prepare_image(img_resize)
             tensor_w, tensor_h = tensor_img.shape[2], tensor_img.shape[1]
 
             # 2 - inference
-            #NOTE the model outputs bounding boxes in `xyxy` format, in a 0..1 range (0 = horizontal or vertical start of line)
+            # NOTE the model outputs bounding boxes in `xyxy` format, in a 0..1 range (0 = horizontal or vertical start of line)
             output = self.model.cuda()(tensor_img[None].cuda())
 
             # perform NMS
-            self.postprocessors['bbox'].nms_iou_threshold = self.iou_threshold
-            output = self.postprocessors['bbox'](output, torch.Tensor([[1.0, 1.0]]).cuda())[0]
+            self.postprocessors["bbox"].nms_iou_threshold = self.iou_threshold
+            output = self.postprocessors["bbox"](
+                output, torch.Tensor([[1.0, 1.0]]).cuda()
+            )[0]
 
             # 3 - extract relevant boxes
             # boxes = all character bounding boxes in `bbox`
-            boxes = output['boxes']
-            scores = output['scores']
-            labels = output['labels']
+            boxes = output["boxes"]
+            scores = output["scores"]
+            labels = output["labels"]
 
             select_mask = scores > 0.1
             boxes = boxes[select_mask]
@@ -551,25 +610,29 @@ class DtlrExtractor(OcrExtractor):
             # create a list of labels for characters in `bbox` and convert to utf-8
             to_utf8 = np.vectorize(lambda x: bytes(x, "utf-8").decode("unicode_escape"))
             labels = labels[select_mask]
-            full_charset = to_utf8(np.array(self.charset))  # the entire character set in utf8
-            labels_chars = full_charset[labels.cpu()]       # the characters in each bounding box, ordered
+            full_charset = to_utf8(
+                np.array(self.charset)
+            )  # the entire character set in utf8
+            labels_chars = full_charset[
+                labels.cpu()
+            ]  # the characters in each bounding box, ordered
 
             # remove bounding boxes whose label is `" "` (aka, don't detect spaces) (and also remove their scores and labels)
             # there are errors in assigned labels (`o` detected as `e`...), but spaces are detected correctly (with some rare errors)
-            idx_no_spaces = np.where(labels_chars!=" ")[0]
+            idx_no_spaces = np.where(labels_chars != " ")[0]
             boxes = boxes[idx_no_spaces]
             scores = scores[idx_no_spaces]
             labels = labels[idx_no_spaces]
 
             # 5 - convert bounding boxces from 0..1 space to tensor space. reshaping to pixel space is done in `process_detections`
-            final_bboxes = boxes * torch.tensor([tensor_w, tensor_h, tensor_w, tensor_h]).cuda()
+            final_bboxes = (
+                boxes * torch.tensor([tensor_w, tensor_h, tensor_w, tensor_h]).cuda()
+            )
 
             # concat to fit the data model expected by `process_detections`
-            preds = torch.cat([
-                final_bboxes,
-                scores.unsqueeze(1),
-                labels.unsqueeze(1)
-            ], dim=1)
+            preds = torch.cat(
+                [final_bboxes, scores.unsqueeze(1), labels.unsqueeze(1)], dim=1
+            )
 
             if self.process_detections(
                 detections=preds,
@@ -579,7 +642,7 @@ class DtlrExtractor(OcrExtractor):
                 source=source,
                 writer=writer,
                 class_names=full_charset,
-                save_class=True
+                save_class=True,
             ):
                 break
         return writer.annotations
@@ -597,11 +660,12 @@ class YOLOExtractor(BaseExtractor):
 
     @smart_inference_mode()
     def extract_one(self, img: DImage, save_img: bool = False):
-        img_path = img.path
-        source = setup_source(img_path)
+        source = setup_source(img.path)
+        if source is None:
+            return {}
 
         stride, names, pt = self.model.stride, self.model.names, self.model.pt
-        im0 = cv2.imread(img_path)
+        im0 = cv2.imread(img.path)
         writer = ImageAnnotator(img, img_w=im0.shape[1], img_h=im0.shape[0])
 
         for s in self.input_sizes:
@@ -680,8 +744,9 @@ class FasterRCNNExtractor(BaseExtractor):
 
     @smart_inference_mode()
     def extract_one(self, img: DImage, save_img: bool = False):
-        img_path = img.path
-        source = setup_source(img_path)
+        source = setup_source(img.path)
+        if source is None:
+            return {}
 
         original_image = Image.open(source).convert("RGB")
         writer = ImageAnnotator(
