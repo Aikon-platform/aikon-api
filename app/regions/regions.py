@@ -16,16 +16,16 @@ from ..shared.tasks import LoggedTask
 from ..shared.dataset import Document, Dataset, Image as DImage
 from ..shared.utils.fileutils import get_model, list_known_models
 
-EXTRACTOR_POSTPROCESS_KWARGS = {
-    "watermarks": {
-        "squarify": True,
-        "margin": 0.05,  # same margin for all sides
-    },
-    "character_line_extraction": {
-        "squarify": False,
-        "margin": [0.1, 0.3],  # [<horizontal margins>, <vertical margins>]
-    },
-}
+# EXTRACTOR_POSTPROCESS_KWARGS = {
+#     "watermarks": {
+#         "squarify": True,
+#         "margin": 0.05,  # same margin for all sides
+#     },
+#     "character_line_extraction": {
+#         "squarify": False,
+#         "margin": [0.1, 0.3],  # [<horizontal margins>, <vertical margins>]
+#     },
+# }
 
 # add the extractor model class to DEFAULT_MODEL_INFOS.
 def extend_with_model_class(model_key: str, model_infos: Dict) -> Dict:
@@ -62,7 +62,7 @@ class ExtractRegions(LoggedTask):
         self,
         dataset: Dataset,
         model: Optional[str] = None,
-        postprocess: Optional[str] = None,
+        postprocess: Optional[dict] = {},
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -74,7 +74,10 @@ class ExtractRegions(LoggedTask):
         self.results_url = []
         self.annotations = {}
         self.extractor = None
-        self.extractor_kwargs = EXTRACTOR_POSTPROCESS_KWARGS.get(postprocess, {})
+        self.extractor_kwargs = {
+            "squarify": postprocess.get("squarify", False),
+            "margin": [postprocess.get("h_margin", 0), postprocess.get("v_margin", 0)],
+        }
 
     def initialize(self):
         """

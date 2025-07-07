@@ -409,7 +409,7 @@ def set_transformation_sequence(cfg, tsf_seq, sprites=False):
     iter_nb = tsf_seq.get("iterations", 15000)
     batch_nb = tsf_seq.get("n_batches", 1000)
     epoch_nb = max(iter_nb // tsf_seq.get("n_batches", 500), 1)
-    cfg.training.n_iterations = iter_nb
+    # cfg.training.n_iterations = iter_nb
     cfg.training.n_epochs = epoch_nb
 
     transforms = tsf_seq.get("transforms", "identity_affine_morpho")
