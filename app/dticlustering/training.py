@@ -415,15 +415,18 @@ def set_transformation_sequence(cfg, tsf_seq, sprites=False):
     transforms = tsf_seq.get("transforms", "identity_affine_morpho")
 
     cfg.model.transformation_sequence = transforms
-    if sprites:
-        # TODO allow to define custom background transformations
-        cfg.model.transformation_sequence_bkg = transforms
-
-    if milestones := tsf_seq.get("milestones", False):
+    if len(transforms.split("_")) == 1:
+        cfg.model.curriculum_learning = False
+    elif milestones := tsf_seq.get("milestones", False):
         # convert iter in epochs
         cfg.model.curriculum_learning = [it // batch_nb + 1 for it in milestones]
     else:
         cfg.model.curriculum_learning = default_milestones(transforms, epoch_nb)
+
+    if sprites:
+        # TODO allow to define custom background transformations
+        cfg.model.transformation_sequence_bkg = transforms
+        cfg.model.curriculum_learning_bkg = cfg.model.curriculum_learning
 
     # see if reconstruction decreases
     return cfg
