@@ -407,8 +407,8 @@ def set_transformation_sequence(cfg, tsf_seq, sprites=False):
     """
 
     iter_nb = tsf_seq.get("iterations", 15000)
-    batch_nb = tsf_seq.get("n_batches", 1000)
-    epoch_nb = max(iter_nb // tsf_seq.get("n_batches", 500), 1)
+    batch_nb = tsf_seq.get("n_batches", 500)
+    epoch_nb = max(iter_nb // batch_nb, 1)
     # cfg.training.n_iterations = iter_nb
     cfg.training.n_epochs = epoch_nb
 
@@ -445,6 +445,9 @@ def set_scheduler_milestones(cfg):
 def get_n_batches(cfg):
     dataset = get_dataset(cfg.dataset.name)("train", **cfg.dataset)
     dataset_size = len(dataset)
+
+    if dataset_size == 0:
+        raise ValueError(f"Dataset '{cfg.dataset.name}' is empty")
 
     batch_size = (
         cfg.training.batch_size
