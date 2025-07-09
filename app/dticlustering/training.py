@@ -477,6 +477,8 @@ def run_training(
         cfg.model.prototype.data.freeze = bkg_opt.get("freeze", [False, False, False])
         cfg.model.prototype.data.init = bkg_opt.get("init", ["mean", "mean", "mean"])
         cfg.model.prototype.data.value = bkg_opt.get("value", [0.1, 0.5, 0.0])
+    else:
+        cfg.model.prototype.data.init = bkg_opt.get("init", ["gaussian"])[0]
 
     # Set training parameters from parameters
     if n_proto := parameters.get("n_prototypes"):
