@@ -405,23 +405,25 @@ def set_transformation_sequence(cfg, tsf_seq, sprites=False):
     # MORPHOLOGICAL
     "morpho"|"morphological": MorphologicalModule,
     """
+    transforms = tsf_seq.get("transforms", "identity_affine_morpho")
+    tsf_nb = len(transforms.split("_"))
 
-    iter_nb = tsf_seq.get("iterations", 15000)
+    iter_nb = tsf_seq.get("iterations", tsf_nb * 1000)
     batch_nb = tsf_seq.get("n_batches", 500)
     epoch_nb = max(iter_nb // batch_nb, 1)
     # cfg.training.n_iterations = iter_nb
     cfg.training.n_epochs = epoch_nb
 
-    transforms = tsf_seq.get("transforms", "identity_affine_morpho")
-
     cfg.model.transformation_sequence = transforms
-    if len(transforms.split("_")) == 1:
+    if tsf_nb == 1:
         cfg.model.curriculum_learning = False
     elif milestones := tsf_seq.get("milestones", False):
         # convert iter in epochs
         cfg.model.curriculum_learning = [it // batch_nb + 1 for it in milestones]
     else:
         cfg.model.curriculum_learning = default_milestones(transforms, epoch_nb)
+
+    cfg.model.grid_size = tsf_seq.get("grid_size", 4)
 
     if sprites:
         # TODO allow to define custom background transformations
