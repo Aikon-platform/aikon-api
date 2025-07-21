@@ -89,7 +89,9 @@ def train_dti(
     - dataset_uid: the ID of the dataset
     - dataset_url: the URL of the zipped dataset to be downloaded
     - parameters: a JSON object containing the training parameters
+    - notify_url: an optional URL to notify when the task is complete
     - logger: a logger object
+    - notifier: an optional notifier object
     """
 
     # current_task = CurrentMessage.get_current_message()

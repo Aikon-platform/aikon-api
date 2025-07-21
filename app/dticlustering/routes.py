@@ -156,3 +156,9 @@ def clear_run(tracking_id: str):
         if delete_path(DTI_RESULTS_PATH / f"{tracking_id}.zip")
         else 0,
     }
+
+
+@blueprint.route("tasks/clear", methods=["POST", "DELETE"])
+def clear_tasks():
+    queue_name = request.form.get("queue") or request.args.get("queue")
+    return shared_routes.clear_queues(train_dti.broker, queue_name)

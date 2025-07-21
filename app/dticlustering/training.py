@@ -2,6 +2,7 @@
 Training tools to adapt DTI research lib to the API
 """
 import json
+import shutil
 import sys
 import traceback
 
@@ -18,10 +19,10 @@ from sklearn.metrics.cluster import normalized_mutual_info_score
 from omegaconf import OmegaConf
 
 from .lib.src.dataset import get_dataset
-from .lib.src.Akmeans_trainer import Trainer as KMeansTrainer
-from .lib.src.kmeans_trainer import Trainer as _KMeansTrainer
-from .lib.src.Asprites_trainer import Trainer as SpritesTrainer
-from .lib.src.sprites_trainer import Trainer as _SpritesTrainer
+from .lib.src.kmeans_trainer import Trainer as KMeansTrainer
+from .lib.src._kmeans_trainer import Trainer as _KMeansTrainer
+from .lib.src.sprites_trainer import Trainer as SpritesTrainer
+from .lib.src._sprites_trainer import Trainer as _SpritesTrainer
 from .const import RUNS_PATH, CONFIGS_PATH
 from .lib.src.utils.image import convert_to_img
 
@@ -35,7 +36,7 @@ BASE_CONFIG_FILE = TEMPLATES_DIR / "base-conf.yml"
 
 class LoggingTrainerMixin:
     """
-    A mixin with hooks to track training progress inside dti Trainers
+    A mixin with hooks to track training progress inside DTI Trainers
     """
 
     output_proto_dir: str = "prototypes"
@@ -67,15 +68,6 @@ class LoggingTrainerMixin:
         self.jlogger.progress(epoch - 1, self.n_epochs, title="Training epoch")
 
         return super().update_scheduler(epoch, batch)
-
-    def save_training_metrics(self):
-        # Log epoch progress end
-        self.jlogger.progress(
-            self.n_epochs, self.n_epochs, title="Training epoch", end=True
-        )
-        self.jlogger.info("Training over, running evaluation")
-
-        return super().save_training_metrics()
 
     def evaluate_folder_to_cluster_mapping(self, cluster_by_path_df):
         """
@@ -289,25 +281,17 @@ class LoggingTrainerMixin:
         return [np.array([]) for k in range(self.n_prototypes)]
 
     @torch.no_grad()
-    def save_metric_plots(self):
-        """
-        Overwrite original save_metric_plots method for lightweight plots saving
-        # TODO fill this function even for kmeans clustering
-        """
-        # self.model.eval()
-        # # Prototypes & transformation predictions
-        # self.save_prototypes()
-        # if self.learn_masks:
-        #     self.save_masked_prototypes()
-        #     self.save_masks()
-        # if self.learn_backgrounds:
-        #     self.save_backgrounds()
-        # self.save_transformed_images()
-        pass
-
-    @torch.no_grad()
     def _get_cluster_argmin_idx(self, images):
         raise NotImplementedError()
+
+    def save_metrics(self):
+        # Log epoch progress end
+        self.jlogger.progress(
+            self.n_epochs, self.n_epochs, title="Training epoch", end=True
+        )
+        self.jlogger.info("Training over, running evaluation")
+
+        return super().save_metrics()
 
 
 class LoggedKMeansTrainer(LoggingTrainerMixin, _KMeansTrainer):
@@ -324,6 +308,42 @@ class LoggedKMeansTrainer(LoggingTrainerMixin, _KMeansTrainer):
             lambda t: t.cpu().numpy(), distances.min(1)
         )
         return dist_min_by_sample, argmin_idx
+
+    # @torch.no_grad()
+    # def save_metrics(self):
+    #     """
+    #     Lightweight version of save_metrics: only saves prototype and transformation visuals.
+    #     """
+    #     if not self.save_img:
+    #         return
+    #
+    #     self.save_prototypes()
+    #
+    #     if self.is_gmm:
+    #         self.save_variances()
+    #
+    #     size = MAX_GIF_SIZE if MAX_GIF_SIZE < max(self.img_size) else self.img_size
+    #
+    #     for k in range(self.n_prototypes):
+    #         save_gif(self.prototypes_path / f"proto{k}", f"prototype{k}.gif", size=size)
+    #         shutil.rmtree(str(self.prototypes_path / f"proto{k}"))
+    #         if self.is_gmm:
+    #             save_gif(self.variances_path / f"var{k}", f"variance{k}.gif", size=size)
+    #             shutil.rmtree(str(self.variances_path / f"var{k}"))
+    #
+    #     if self.model.transformer.is_identity:
+    #         shutil.rmtree(str(self.transformation_path))
+    #         coerce_to_path_and_create_dir(self.transformation_path)
+    #     else:
+    #         self.save_transformed_images()
+    #         for i in range(self.images_to_tsf.size(0)):
+    #             for k in range(self.n_prototypes):
+    #                 save_gif(
+    #                     self.transformation_path / f"img{i}" / f"tsf{k}",
+    #                     f"tsf{k}.gif",
+    #                     size=size,
+    #                 )
+    #                 shutil.rmtree(str(self.transformation_path / f"img{i}" / f"tsf{k}"))
 
 
 class LoggedSpritesTrainer(LoggingTrainerMixin, _SpritesTrainer):
@@ -342,6 +362,21 @@ class LoggedSpritesTrainer(LoggingTrainerMixin, _SpritesTrainer):
             )[0]
         dist_min_by_sample, argmin_idx = map(lambda t: t.cpu().numpy(), dist.min(1))
         return dist_min_by_sample, argmin_idx
+
+    @torch.no_grad()
+    def save_metrics(self):
+        """
+        Overwrite original save_metrics method for lightweight plots saving
+        """
+        self.model.eval()
+        # Prototypes & transformation predictions
+        self.save_prototypes()
+        if self.learn_masks:
+            self.save_masked_prototypes()
+            self.save_masks()
+        if self.learn_backgrounds:
+            self.save_backgrounds()
+        self.save_transformed_images()
 
 
 def default_milestones(transforms, epochs):
@@ -472,7 +507,6 @@ def run_training(
         SPRITES_CONFIG_FILE if sprites else KMEANS_CONFIG_FILE
     )
     cfg = OmegaConf.merge(base_cfg, specific_cfg)
-
     cfg.dataset.tag = dataset_uid
 
     bkg_opt = parameters.get("background_option", {})
