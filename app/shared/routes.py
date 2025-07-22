@@ -11,6 +11,10 @@ from flask import request, send_from_directory, jsonify, Request
 from dramatiq import Actor, Broker
 from dramatiq_abort import abort
 from dramatiq.results import ResultMissing, ResultFailure
+from dramatiq.brokers.redis import RedisBroker
+from dramatiq.message import Message
+
+import redis
 import traceback
 from typing import Tuple, Optional
 
@@ -211,25 +215,6 @@ def result(filename: str, results_dir: str, xaccel_prefix: str, extension: str =
     )
 
 
-def qsizes(broker: Broker) -> dict:
-    """
-    List the queues of the broker and the number of tasks in each queue
-
-    :param broker: The broker to get the queues from
-
-    :return: A dictionary containing the queues and their sizes, or an error message
-    """
-    try:
-        return {
-            "queues": {
-                q: {"name": q, "size": broker.do_qsize(q)}
-                for q in broker.get_declared_queues()
-            }
-        }
-    except AttributeError:
-        return {"error": "Cannot get queue sizes from broker"}
-
-
 def monitor(results_dir: str, broker: Broker) -> dict:
     """
     Monitor the app service
@@ -244,6 +229,85 @@ def monitor(results_dir: str, broker: Broker) -> dict:
         total_size += path.stat().st_size
 
     return {"total_size": total_size, **qsizes(broker)}
+
+
+def qsizes(broker: Broker, queue_name: str = None) -> dict:
+    """
+    List all tasks in queues with their details
+
+    :param broker: The broker to get the tasks from
+    :param queue_name: Optional specific queue name to list tasks from
+    :return: Dictionary containing tasks per queue or error message
+    """
+    try:
+        queues_info = {}
+        queues = broker.get_declared_queues() if not queue_name else [queue_name]
+
+        for queue in queues:
+            queue_info = {
+                "name": queue,
+                "size": broker.do_qsize(queue),
+                "processing": 0,
+                # "tasks": [],
+                # "count": 0
+            }
+
+            # for msg_id in broker.client.lrange(f"{broker.namespace}:{queue_name}", 0, -1):
+            #     msg_data = broker.client.hget(f"{broker.namespace}:{queue_name}.msgs", msg_id)
+            #     if msg_data:
+            #         try:
+            #             # Decode message
+            #             message = Message.decode(msg_data)
+            #             queue_info["tasks"].append({
+            #                 'message_id': message.message_id,
+            #                 'actor_name': message.actor_name,
+            #                 'args': message.args,
+            #                 'kwargs': message.kwargs,
+            #                 'timestamp': message.message_timestamp,
+            #                 'redis_message_id': message.options.get('redis_message_id'),
+            #             })
+            #         except Exception as e:
+            #             print(f"Error decoding message {msg_id}: {e}")
+            #
+            # queue_info["count"] = len(queue_info["tasks"])
+
+            if isinstance(broker, RedisBroker):
+                try:
+                    redis_client = broker.client
+                    namespace = broker.namespace
+                    msgs_key = f"{namespace}:{queue}.msgs"
+                    queue_info["processing"] = redis_client.hlen(msgs_key)
+
+                except Exception:
+                    pass
+
+            queues_info[queue] = queue_info
+
+        return {"queues": queues_info}
+    except Exception as e:
+        return {"error": f"Cannot list queue tasks: {e}"}
+
+
+def clear_queues(broker: Broker, queue_name: str = None) -> dict:
+    """
+    Clear all tasks from queues
+
+    :param broker: The broker to clear queues from
+    :param queue_name: Optional specific queue name to clear
+    :return: Dictionary with clearing results
+    """
+    try:
+        queues = [queue_name] if queue_name else broker.get_declared_queues()
+        cleared = {}
+
+        for queue in queues:
+            count_before = broker.do_qsize(queue)
+            broker.redis.delete(f"dramatiq:default.{queue}")
+            cleared[queue] = {"tasks_cleared": count_before, "status": "cleared"}
+
+        return {"cleared_queues": cleared}
+    except Exception as e:
+        return {"error": f"Cannot clear queues: {e}"}
 
 
 def models(model_path, default_model_info=None):
