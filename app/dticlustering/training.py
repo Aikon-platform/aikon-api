@@ -18,10 +18,10 @@ from sklearn.metrics.cluster import normalized_mutual_info_score
 from omegaconf import OmegaConf
 
 from .lib.src.dataset import get_dataset
-from .lib.src.Akmeans_trainer import Trainer as KMeansTrainer
-from .lib.src.kmeans_trainer import Trainer as _KMeansTrainer
-from .lib.src.Asprites_trainer import Trainer as SpritesTrainer
-from .lib.src.sprites_trainer import Trainer as _SpritesTrainer
+from .lib.src.kmeans_trainer import Trainer as KMeansTrainer
+from .lib.src._kmeans_trainer import Trainer as _KMeansTrainer
+from .lib.src.sprites_trainer import Trainer as SpritesTrainer
+from .lib.src._sprites_trainer import Trainer as _SpritesTrainer
 from .const import RUNS_PATH, CONFIGS_PATH
 from .lib.src.utils.image import convert_to_img
 
@@ -68,14 +68,11 @@ class LoggingTrainerMixin:
 
         return super().update_scheduler(epoch, batch)
 
-    def save_training_metrics(self):
-        # Log epoch progress end
+    def log_end(self):
         self.jlogger.progress(
             self.n_epochs, self.n_epochs, title="Training epoch", end=True
         )
         self.jlogger.info("Training over, running evaluation")
-
-        return super().save_training_metrics()
 
     def evaluate_folder_to_cluster_mapping(self, cluster_by_path_df):
         """
@@ -289,23 +286,6 @@ class LoggingTrainerMixin:
         return [np.array([]) for k in range(self.n_prototypes)]
 
     @torch.no_grad()
-    def save_metric_plots(self):
-        """
-        Overwrite original save_metric_plots method for lightweight plots saving
-        # TODO fill this function even for kmeans clustering
-        """
-        # self.model.eval()
-        # # Prototypes & transformation predictions
-        # self.save_prototypes()
-        # if self.learn_masks:
-        #     self.save_masked_prototypes()
-        #     self.save_masks()
-        # if self.learn_backgrounds:
-        #     self.save_backgrounds()
-        # self.save_transformed_images()
-        pass
-
-    @torch.no_grad()
     def _get_cluster_argmin_idx(self, images):
         raise NotImplementedError()
 
@@ -325,6 +305,18 @@ class LoggedKMeansTrainer(LoggingTrainerMixin, _KMeansTrainer):
         )
         return dist_min_by_sample, argmin_idx
 
+    @torch.no_grad()
+    def save_training_metrics(self):
+        """
+        Overwrite original save_training_metrics method for lightweight plots saving
+        """
+        self.model.eval()
+        # Prototypes & transformation predictions
+        self.save_prototypes()
+        self.save_transformed_images()
+
+        self.log_end()
+
 
 class LoggedSpritesTrainer(LoggingTrainerMixin, _SpritesTrainer):
     """
@@ -342,6 +334,23 @@ class LoggedSpritesTrainer(LoggingTrainerMixin, _SpritesTrainer):
             )[0]
         dist_min_by_sample, argmin_idx = map(lambda t: t.cpu().numpy(), dist.min(1))
         return dist_min_by_sample, argmin_idx
+
+    @torch.no_grad()
+    def save_training_metrics(self):
+        """
+        Overwrite original save_training_metrics method for lightweight plots saving
+        """
+        self.model.eval()
+        # Prototypes & transformation predictions
+        self.save_prototypes()
+        if self.learn_masks:
+            self.save_masked_prototypes()
+            self.save_masks()
+        if self.learn_backgrounds:
+            self.save_backgrounds()
+        self.save_transformed_images()
+
+        self.log_end()
 
 
 def default_milestones(transforms, epochs):
