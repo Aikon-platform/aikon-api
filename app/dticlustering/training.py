@@ -19,9 +19,10 @@ from omegaconf import OmegaConf
 
 from .lib.src.dataset import get_dataset
 from .lib.src.kmeans_trainer import Trainer as KMeansTrainer
-from .lib.src._kmeans_trainer import Trainer as _KMeansTrainer
 from .lib.src.sprites_trainer import Trainer as SpritesTrainer
-from .lib.src._sprites_trainer import Trainer as _SpritesTrainer
+
+# from .lib.src._kmeans_trainer import Trainer as KMeansTrainer
+# from .lib.src._sprites_trainer import Trainer as SpritesTrainer
 from .const import RUNS_PATH, CONFIGS_PATH
 from .lib.src.utils.image import convert_to_img
 
@@ -166,6 +167,10 @@ class LoggingTrainerMixin:
                 "images_in_folder": folder_counts[folder],
                 "images_in_best_cluster": true_positives,
             }
+            self.print_and_log_info(
+                f"Folder {folder} ({folder_counts[folder]} imgs) best match cluster {best_cluster} ({true_positives} true positive): "
+                f"Precision: {precision:.2f}, Recall: {recall:.2f}"
+            )
 
         avg_precision, avg_recall = 0, 0
         if nb_metrics := len(metrics_by_folder):
@@ -175,6 +180,10 @@ class LoggingTrainerMixin:
             avg_recall = (
                 sum(m["recall"] for m in metrics_by_folder.values()) / nb_metrics
             )
+        self.print_and_log_info(
+            f"Average Precision: {avg_precision:.2f}, Average Recall: {avg_recall:.2f}"
+        )
+        self.print_and_log_info(f"Purity: {purity:.2f}, NMI: {nmi:.2f}")
 
         # Purity: percentage of images correctly assigned to their best matching cluster
         # NMI: measure of mutual dependence between folder and cluster assignments
@@ -290,7 +299,7 @@ class LoggingTrainerMixin:
         raise NotImplementedError()
 
 
-class LoggedKMeansTrainer(LoggingTrainerMixin, _KMeansTrainer):
+class LoggedKMeansTrainer(LoggingTrainerMixin, KMeansTrainer):
     """
     A KMeansTrainer with hooks to track training progress
     """
@@ -318,7 +327,7 @@ class LoggedKMeansTrainer(LoggingTrainerMixin, _KMeansTrainer):
         self.log_end()
 
 
-class LoggedSpritesTrainer(LoggingTrainerMixin, _SpritesTrainer):
+class LoggedSpritesTrainer(LoggingTrainerMixin, SpritesTrainer):
     """
     A SpritesTrainer with hooks to track training progress
     """
@@ -483,6 +492,9 @@ def run_training(
     cfg = OmegaConf.merge(base_cfg, specific_cfg)
 
     cfg.dataset.tag = dataset_uid
+
+    cfg.training.optimizer.lr = parameters.get("lr", 1e-4)
+    cfg.model.empty_cluster_threshold = parameters.get("empty_cluster_threshold", 0.025)
 
     bkg_opt = parameters.get("background_option", {})
     if sprites:
