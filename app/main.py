@@ -25,22 +25,15 @@ app.config.from_object(config.FLASK_CONFIG)
 
 class CustomEncoder(JSONEncoder):
     def encode(self, data: MessageData) -> bytes:
-        return json.dumps(data, default=serializer, separators=(",", ":")).encode("utf-8")
+        return json.dumps(data, default=serializer, separators=(",", ":")).encode(
+            "utf-8"
+        )
 
 
 set_encoder(CustomEncoder())
 
 # Dramatiq setup
 broker = RedisBroker(url=config.BROKER_URL)
-
-# Remove the Prometheus middleware if it's added by default
-# broker.middleware = [m for m in broker.middleware if not isinstance(m, Prometheus)]
-
-# if os.getenv("TESTS") == "true":
-#     import os
-#     from dramatiq.brokers.stub import StubBroker
-#     broker = StubBroker()
-#     broker.emit_after("process_boot")
 
 event_backend = backends.RedisBackend(client=broker.client)
 abortable = Abortable(backend=event_backend)
@@ -55,5 +48,5 @@ broker.add_middleware(results)
 dramatiq.set_broker(broker)
 
 # Import routes and tasks
-auto_import_apps(app, ["shared.dataset"], __package__) # import shared dataset routes
+auto_import_apps(app, ["shared.dataset"], __package__)  # import shared dataset routes
 auto_import_apps(app, config.INSTALLED_APPS, __package__)

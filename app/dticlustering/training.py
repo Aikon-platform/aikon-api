@@ -18,10 +18,11 @@ from sklearn.metrics.cluster import normalized_mutual_info_score
 from omegaconf import OmegaConf
 
 from .lib.src.dataset import get_dataset
-from .lib.src.Akmeans_trainer import Trainer as KMeansTrainer
-from .lib.src.kmeans_trainer import Trainer as _KMeansTrainer
-from .lib.src.Asprites_trainer import Trainer as SpritesTrainer
-from .lib.src.sprites_trainer import Trainer as _SpritesTrainer
+from .lib.src.kmeans_trainer import Trainer as KMeansTrainer
+from .lib.src.sprites_trainer import Trainer as SpritesTrainer
+
+# from .lib.src._kmeans_trainer import Trainer as KMeansTrainer
+# from .lib.src._sprites_trainer import Trainer as SpritesTrainer
 from .const import RUNS_PATH, CONFIGS_PATH
 from .lib.src.utils.image import convert_to_img
 
@@ -68,14 +69,11 @@ class LoggingTrainerMixin:
 
         return super().update_scheduler(epoch, batch)
 
-    def save_training_metrics(self):
-        # Log epoch progress end
+    def log_end(self):
         self.jlogger.progress(
             self.n_epochs, self.n_epochs, title="Training epoch", end=True
         )
         self.jlogger.info("Training over, running evaluation")
-
-        return super().save_training_metrics()
 
     def evaluate_folder_to_cluster_mapping(self, cluster_by_path_df):
         """
@@ -169,6 +167,10 @@ class LoggingTrainerMixin:
                 "images_in_folder": folder_counts[folder],
                 "images_in_best_cluster": true_positives,
             }
+            self.print_and_log_info(
+                f"Folder {folder} ({folder_counts[folder]} imgs) best match cluster {best_cluster} ({true_positives} true positive): "
+                f"Precision: {precision:.2f}, Recall: {recall:.2f}"
+            )
 
         avg_precision, avg_recall = 0, 0
         if nb_metrics := len(metrics_by_folder):
@@ -178,6 +180,10 @@ class LoggingTrainerMixin:
             avg_recall = (
                 sum(m["recall"] for m in metrics_by_folder.values()) / nb_metrics
             )
+        self.print_and_log_info(
+            f"Average Precision: {avg_precision:.2f}, Average Recall: {avg_recall:.2f}"
+        )
+        self.print_and_log_info(f"Purity: {purity:.2f}, NMI: {nmi:.2f}")
 
         # Purity: percentage of images correctly assigned to their best matching cluster
         # NMI: measure of mutual dependence between folder and cluster assignments
@@ -289,28 +295,11 @@ class LoggingTrainerMixin:
         return [np.array([]) for k in range(self.n_prototypes)]
 
     @torch.no_grad()
-    def save_metric_plots(self):
-        """
-        Overwrite original save_metric_plots method for lightweight plots saving
-        # TODO fill this function even for kmeans clustering
-        """
-        # self.model.eval()
-        # # Prototypes & transformation predictions
-        # self.save_prototypes()
-        # if self.learn_masks:
-        #     self.save_masked_prototypes()
-        #     self.save_masks()
-        # if self.learn_backgrounds:
-        #     self.save_backgrounds()
-        # self.save_transformed_images()
-        pass
-
-    @torch.no_grad()
     def _get_cluster_argmin_idx(self, images):
         raise NotImplementedError()
 
 
-class LoggedKMeansTrainer(LoggingTrainerMixin, _KMeansTrainer):
+class LoggedKMeansTrainer(LoggingTrainerMixin, KMeansTrainer):
     """
     A KMeansTrainer with hooks to track training progress
     """
@@ -325,8 +314,20 @@ class LoggedKMeansTrainer(LoggingTrainerMixin, _KMeansTrainer):
         )
         return dist_min_by_sample, argmin_idx
 
+    @torch.no_grad()
+    def save_training_metrics(self):
+        """
+        Overwrite original save_training_metrics method for lightweight plots saving
+        """
+        self.model.eval()
+        # Prototypes & transformation predictions
+        self.save_prototypes()
+        self.save_transformed_images()
 
-class LoggedSpritesTrainer(LoggingTrainerMixin, _SpritesTrainer):
+        self.log_end()
+
+
+class LoggedSpritesTrainer(LoggingTrainerMixin, SpritesTrainer):
     """
     A SpritesTrainer with hooks to track training progress
     """
@@ -342,6 +343,23 @@ class LoggedSpritesTrainer(LoggingTrainerMixin, _SpritesTrainer):
             )[0]
         dist_min_by_sample, argmin_idx = map(lambda t: t.cpu().numpy(), dist.min(1))
         return dist_min_by_sample, argmin_idx
+
+    @torch.no_grad()
+    def save_training_metrics(self):
+        """
+        Overwrite original save_training_metrics method for lightweight plots saving
+        """
+        self.model.eval()
+        # Prototypes & transformation predictions
+        self.save_prototypes()
+        if self.learn_masks:
+            self.save_masked_prototypes()
+            self.save_masks()
+        if self.learn_backgrounds:
+            self.save_backgrounds()
+        self.save_transformed_images()
+
+        self.log_end()
 
 
 def default_milestones(transforms, epochs):
@@ -405,23 +423,25 @@ def set_transformation_sequence(cfg, tsf_seq, sprites=False):
     # MORPHOLOGICAL
     "morpho"|"morphological": MorphologicalModule,
     """
+    transforms = tsf_seq.get("transforms", "identity_affine_morpho")
+    tsf_nb = len(transforms.split("_"))
 
-    iter_nb = tsf_seq.get("iterations", 15000)
-    batch_nb = tsf_seq.get("n_batches", 1000)
-    epoch_nb = max(iter_nb // tsf_seq.get("n_batches", 500), 1)
+    iter_nb = tsf_seq.get("iterations", tsf_nb * 1000)
+    batch_nb = tsf_seq.get("n_batches", 500)
+    epoch_nb = max(iter_nb // batch_nb, 1)
     # cfg.training.n_iterations = iter_nb
     cfg.training.n_epochs = epoch_nb
 
-    transforms = tsf_seq.get("transforms", "identity_affine_morpho")
-
     cfg.model.transformation_sequence = transforms
-    if len(transforms.split("_")) == 1:
+    if tsf_nb == 1:
         cfg.model.curriculum_learning = False
     elif milestones := tsf_seq.get("milestones", False):
         # convert iter in epochs
         cfg.model.curriculum_learning = [it // batch_nb + 1 for it in milestones]
     else:
         cfg.model.curriculum_learning = default_milestones(transforms, epoch_nb)
+
+    cfg.model.grid_size = tsf_seq.get("grid_size", 4)
 
     if sprites:
         # TODO allow to define custom background transformations
@@ -445,6 +465,9 @@ def set_scheduler_milestones(cfg):
 def get_n_batches(cfg):
     dataset = get_dataset(cfg.dataset.name)("train", **cfg.dataset)
     dataset_size = len(dataset)
+
+    if dataset_size == 0:
+        raise ValueError(f"Dataset '{cfg.dataset.name}' is empty")
 
     batch_size = (
         cfg.training.batch_size
@@ -470,6 +493,9 @@ def run_training(
 
     cfg.dataset.tag = dataset_uid
 
+    cfg.training.optimizer.lr = parameters.get("lr", 1e-4)
+    cfg.model.empty_cluster_threshold = parameters.get("empty_cluster_threshold", 0.025)
+
     bkg_opt = parameters.get("background_option", {})
     if sprites:
         # constant background = [False, True, False] + ["constant", "constant", "gaussian"] + [0.1, 0.1, 0.0]
@@ -477,6 +503,8 @@ def run_training(
         cfg.model.prototype.data.freeze = bkg_opt.get("freeze", [False, False, False])
         cfg.model.prototype.data.init = bkg_opt.get("init", ["mean", "mean", "mean"])
         cfg.model.prototype.data.value = bkg_opt.get("value", [0.1, 0.5, 0.0])
+    else:
+        cfg.model.prototype.data.init = bkg_opt.get("init", ["gaussian"])[0]
 
     # Set training parameters from parameters
     if n_proto := parameters.get("n_prototypes"):
