@@ -1,7 +1,7 @@
 dataset:
   name: generic
   tag: generic_config
-  img_size: 128
+  img_size: [128, 128]
 
 model:
   n_backgrounds: 1
@@ -26,7 +26,7 @@ training:
   seed: 3407
   n_epochs: 200
   batch_size: 32
-  n_workers: 5
+  n_workers: 8
   optimizer_name: adam
   optimizer:
     lr: 1.0e-3
