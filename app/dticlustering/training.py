@@ -458,6 +458,7 @@ def set_scheduler_milestones(cfg):
     """
     cfg.training.scheduler.milestones = [
         int(cfg.training.n_epochs * 0.85),
+        # cfg.training.n_epochs
     ]
     return cfg
 
