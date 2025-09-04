@@ -101,6 +101,10 @@ class ExtractRegions(LoggedTask):
             #     self.extractor = YOLOExtractor(self.weights, **self.extractor_kwargs)
             raise ValueError(f"Model {self.model} is not supported for extraction.")
 
+        self.print_and_log(f">>>>>> EXTRACTREGIONS.initialize.MODEL_PATH {MODEL_PATH}")
+        self.print_and_log(f">>>>>> EXTRACTREGIONS.initialize.model {self.model}")
+        self.print_and_log(f">>>>>> EXTRACTREGIONS.initialize.weights {self.weights}")
+
         self.extractor = MODEL_MAPPER[self.model]["model_class"](
             self.weights, **self.extractor_kwargs
         )
