@@ -321,7 +321,7 @@ class LoggedKMeansTrainer(LoggingTrainerMixin, KMeansTrainer):
         """
         self.model.eval()
         # Prototypes & transformation predictions
-        self.save_prototypes()
+        self.save_prototypes(normalize_contrast=True)
         self.save_transformed_images()
 
         self.log_end()
@@ -351,7 +351,7 @@ class LoggedSpritesTrainer(LoggingTrainerMixin, SpritesTrainer):
         """
         self.model.eval()
         # Prototypes & transformation predictions
-        self.save_prototypes()
+        self.save_prototypes(normalize_contrast=True)
         if self.learn_masks:
             self.save_masked_prototypes()
             self.save_masks()
