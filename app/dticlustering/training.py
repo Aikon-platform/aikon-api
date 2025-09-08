@@ -498,7 +498,7 @@ def run_training(
     proto_source = parameters.get("source", "data")
     if proto_source != "data":
         cfg.model.prototype.source = "generator"
-        cfg.model.prototype.generator = proto_source
+        cfg.model.prototype.data.generator = proto_source
 
     cfg.model.empty_cluster_threshold = parameters.get("empty_cluster_threshold", 0.025)
 

@@ -3,10 +3,10 @@ model:
   n_sprites: 10
   prototype:
     source: data # generator
-    generator: mlp # mlp / unet
     data:
       # [foreground, background, masks]
       freeze: [False, False, False]
       value: [0.1, 0.5, 0.]
       init: ["constant", "mean", "gaussian"]
       gaussian_weights_std: 25
+      generator: mlp # mlp / unet
