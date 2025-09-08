@@ -2,7 +2,8 @@ model:
   name: dti_sprites
   n_sprites: 10
   prototype:
-    source: data
+    source: data # generator
+    generator: mlp # mlp / unet
     data:
       # [foreground, background, masks]
       freeze: [False, False, False]
