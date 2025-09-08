@@ -321,7 +321,7 @@ class LoggedKMeansTrainer(LoggingTrainerMixin, KMeansTrainer):
         """
         self.model.eval()
         # Prototypes & transformation predictions
-        self.save_prototypes(normalize_contrast=True)
+        self.save_prototypes()
         self.save_transformed_images()
 
         self.log_end()
@@ -351,7 +351,7 @@ class LoggedSpritesTrainer(LoggingTrainerMixin, SpritesTrainer):
         """
         self.model.eval()
         # Prototypes & transformation predictions
-        self.save_prototypes(normalize_contrast=True)
+        self.save_prototypes()
         if self.learn_masks:
             self.save_masked_prototypes()
             self.save_masks()
@@ -495,6 +495,11 @@ def run_training(
     cfg.dataset.tag = dataset_uid
 
     cfg.training.optimizer.lr = parameters.get("lr", 1e-4)
+    proto_source = parameters.get("source", "data")
+    if proto_source != "data":
+        cfg.model.prototype.source = "generator"
+        cfg.model.prototype.generator = proto_source
+
     cfg.model.empty_cluster_threshold = parameters.get("empty_cluster_threshold", 0.025)
 
     bkg_opt = parameters.get("background_option", {})
