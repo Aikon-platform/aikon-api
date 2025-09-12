@@ -84,6 +84,7 @@ def has_content(path, file_nb=None):
 
 
 def create_dir(path: Path):
+    path = Path(path)
     path.mkdir(parents=True, exist_ok=True)
     return path
 
