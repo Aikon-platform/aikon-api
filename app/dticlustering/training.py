@@ -72,6 +72,8 @@ class LoggingTrainerMixin:
         if self.learn_backgrounds:
             self.backgrounds_path = create_dir(self.run_dir / "backgrounds")
 
+        self.transformation_path = create_dir(self.run_dir / "transforms")
+
         self.setup_images_to_tsf()
 
     def print_and_log_info(self, string: str) -> None:
