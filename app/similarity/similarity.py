@@ -654,16 +654,21 @@ class ComputeSimilarity(LoggedTask):
             return
 
         self.task_update("STARTED")
-        self.log(
-            f"Similarity task triggered for {self.dataset.uid} with {self.feat_net}!"
-        )
 
         scores, experiment_id = self.check_already_computed()
         if scores:
-            return {
+            response = {
                 "dataset_url": self.dataset.get_absolute_url(),
                 "results_url": self.get_results_url(experiment_id),
             }
+            self.log(
+                f"Similarity scores already computed for {self.dataset.uid} with {self.feat_net}: {response}"
+            )
+            return response
+
+        self.log(
+            f"Similarity task triggered for {self.dataset.uid} with {self.feat_net}!"
+        )
 
         try:
             self.results = self.compute_similarity()

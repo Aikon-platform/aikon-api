@@ -55,7 +55,7 @@ class ExtractRegions(LoggedTask):
 
     Args:
         dataset (Dataset): The dataset to process
-        model (str, optional): The model file name stem to use for extraction (default: DEFAULT_MODEL)
+        model (str, optional): The model filename stem to use for extraction (default: DEFAULT_MODEL)
         postprocess: Optional arguments for the postprocessor
     """
 
@@ -75,16 +75,14 @@ class ExtractRegions(LoggedTask):
         self.results_url = []
         self.annotations = {}
         self.extractor = None
-        if isinstance(postprocess, dict):
-            self.extractor_kwargs = {
-                "squarify": postprocess.get("squarify", False),
-                "margin": [postprocess.get("h_margin", 0), postprocess.get("v_margin", 0)],
-            }
-        else:
-            self.extractor_kwargs = {
-                "squarify": False,
-                "margin": [0,0]
-            }
+
+        if type(postprocess) is not dict:
+            postprocess = {}
+
+        self.extractor_kwargs = {
+            "squarify": postprocess.get("squarify", False),
+            "margin": [postprocess.get("h_margin", 0), postprocess.get("v_margin", 0)],
+        }
 
     def initialize(self):
         """
