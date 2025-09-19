@@ -56,7 +56,7 @@ class FeatureExtractor:
                     # for feat in feats:
                     #     yield feat.to(self.device, non_blocking=True)
                     return feats
-                console("No cache: recomputing features...")
+                console(f"No cache: recomputing features inside {feat_path}...")
 
         console("Extracting features...")
 
