@@ -305,11 +305,15 @@ class Document:
         """
         if self.images_path.exists() and self.has_images():
             console(
-                f"Document {self.uid} already exists, skipping download.", color="blue"
+                f"Document {self.uid} already exists in {self.images_path}, skipping download.",
+                color="blue",
             )
             return
 
-        console(f"Downloading [{self.dtype}] {self.uid}...", color="blue")
+        console(
+            f"Downloading [{self.dtype}] document {self.uid} in {self.images_path}...",
+            color="blue",
+        )
 
         self.images_path.mkdir(parents=True, exist_ok=True)
         self.save_metadata({"src": self.src})
