@@ -76,7 +76,7 @@ class LoggingTrainerMixin:
 
         self.setup_images_to_tsf()
 
-    def print_and_log_info(self, string: str) -> None:
+    def print_and_log_info(self, string) -> None:
         self.jlogger.info(string)
         # self.logger.info(string)
 
@@ -249,6 +249,8 @@ class LoggingTrainerMixin:
             shuffle=False,
         )
 
+        self.save_aligned_images(loader=train_loader)
+
         # Prepare data collection
         cluster_by_path = []
         k_image = 0
@@ -258,7 +260,7 @@ class LoggingTrainerMixin:
         for images, _, _, paths in train_loader:
             images = images.to(self.device)
 
-            batch_distances, batch_argmin_idx = self._get_cluster_argmin_idx(images)
+            batch_distances, batch_argmin_idx = self.get_cluster_assignments(images)
             # distances_all = np.hstack([distances_all, batch_distances])
             # cluster_idx_all = np.hstack([cluster_idx_all, batch_argmin_idx])
 
@@ -271,10 +273,9 @@ class LoggingTrainerMixin:
                     self.cluster_path / f"cluster{idx}" / "raw" / f"{k_image}_raw.png"
                 )
 
-                # trick for non-RGB images
-                tsf_idx = min(idx, tsf_imgs.shape[1] - 1)
                 try:
-                    tsf_img = tsf_imgs[b, tsf_idx]
+                    # trick for non-RGB images
+                    tsf_img = tsf_imgs[b, min(idx, tsf_imgs.shape[1] - 1)]
                 except IndexError:
                     tsf_img = tsf_imgs[b]
 
@@ -287,15 +288,37 @@ class LoggingTrainerMixin:
                     if hasattr(dataset, "data_path")
                     else str(p)
                 )
-                cluster_by_path.append((k_image, rel_path, idx, float(d)))
+                raw_p = f"cluster{idx}/raw/{k_image}_raw.png"
+                cluster_by_path.append(
+                    (
+                        k_image,
+                        rel_path,
+                        # dataset.name,
+                        # str(dataset.input_files[k_image]),
+                        raw_p,
+                        idx,
+                        float(d),
+                    )
+                )
                 k_image += 1
 
         dataset.output_paths = False
 
         if cluster_by_path:
+            self.print_and_log_info(cluster_by_path)
             cluster_df = pd.DataFrame(
-                cluster_by_path, columns=["image_id", "path", "cluster_id", "distance"]
+                cluster_by_path,
+                columns=[
+                    "image_id",
+                    "path",
+                    # "dataset_name",
+                    # "original_name",
+                    "cluster_name",
+                    "cluster_id",
+                    "distance",
+                ],
             ).set_index("image_id")
+
             cluster_df.to_csv(self.run_dir / "cluster_by_path.csv")
             cluster_df.to_json(self.run_dir / "cluster_by_path.json", orient="index")
             self.evaluate_folder_to_cluster_mapping(cluster_df.reset_index())
@@ -312,10 +335,6 @@ class LoggingTrainerMixin:
 
         return [np.array([]) for k in range(self.n_prototypes)]
 
-    @torch.no_grad()
-    def _get_cluster_argmin_idx(self, images):
-        raise NotImplementedError()
-
 
 class LoggedKMeansTrainer(LoggingTrainerMixin, KMeansTrainer):
     """
@@ -326,14 +345,6 @@ class LoggedKMeansTrainer(LoggingTrainerMixin, KMeansTrainer):
 
     def setup_directories(self):
         super().setup_directories()
-
-    @torch.no_grad()
-    def _get_cluster_argmin_idx(self, images):
-        distances = self.model(images)[1]
-        dist_min_by_sample, argmin_idx = map(
-            lambda t: t.cpu().numpy(), distances.min(1)
-        )
-        return dist_min_by_sample, argmin_idx
 
     @torch.no_grad()
     def save_training_metrics(self):
@@ -356,16 +367,6 @@ class LoggedSpritesTrainer(LoggingTrainerMixin, SpritesTrainer):
         super().setup_directories()
 
     @torch.no_grad()
-    def _get_cluster_argmin_idx(self, images):
-        dist = self.model(images)[1]
-        if self.n_backgrounds > 1:
-            dist = dist.view(images.size(0), self.n_prototypes, self.n_backgrounds).min(
-                2
-            )[0]
-        dist_min_by_sample, argmin_idx = map(lambda t: t.cpu().numpy(), dist.min(1))
-        return dist_min_by_sample, argmin_idx
-
-    @torch.no_grad()
     def save_training_metrics(self):
         """
         Overwrite original save_training_metrics method for lightweight plots saving
@@ -373,7 +374,10 @@ class LoggedSpritesTrainer(LoggingTrainerMixin, SpritesTrainer):
         self.model.eval()
         if self.learn_masks:
             # masked prototypes inside prototypes/ (save_prototypes only saves frg)
-            self.save_masked_prototypes()
+            self.save_masked_prototypes()  # foreground / background
+            self.save_masked_prototypes(
+                checkerboard=True, prefix="frg_proto"
+            )  # checkerboard bkg
             self.save_masks()
         else:
             self.save_prototypes()
