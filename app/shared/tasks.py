@@ -15,6 +15,7 @@ from ..shared.utils.logging import (
     TLogger,
     LoggerHelper,
     LoggingTaskMixin,
+    pprint,
 )
 
 
@@ -80,7 +81,9 @@ class LoggedTask(LoggingTaskMixin):
         self.notifier(event, message=message, **kwargs)
 
     def log(self, message: str, color=None) -> None:
-        self.print_and_log(f"[task.{self.__class__.__name__}] {message}", color=color)
+        self.print_and_log(
+            f"[task.{self.__class__.__name__}] {pprint(message)}", color=color
+        )
 
     def log_error(self, message: str, exception: Optional[Exception] = None) -> None:
         exc = exception or Exception(message)

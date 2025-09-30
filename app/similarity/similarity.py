@@ -193,12 +193,23 @@ class BlockSimMatrix:
     def __len__(self) -> int:
         return sum(len(matrix) for matrix in self.data.values())
 
+    def __str__(self):
+        pairs = self.doc_pairs
+        return ", ".join([f"{p[0]}-{p[1]}" for p in pairs])
+
     def absolute_pairs(self) -> Iterable[PairTuple]:
         for matrix in self.data.values():
             yield from matrix.absolute_pairs()
 
     def blocks(self) -> Iterable[SparseDocSimMatrix]:
         return self.data.values()
+
+    @property
+    def doc_pairs(self) -> Iterable[Tuple[Document, Document]]:
+        pairs = []
+        for matrix in self.data.values():
+            pairs.append((matrix.doc1.document.uid, matrix.doc2.document.uid))
+        return pairs
 
 
 class DocIndex(TypedDict):
@@ -449,8 +460,12 @@ class ComputeSimilarity(LoggedTask):
         Compute the similarity between images in the dataset and returns the results
         """
         source_paths = [str(i.path) for i in self.images]
+        doc_ids = self.dataset.doc_uid
 
-        self.log(f"Prepared {len(self.images)} images to be processed")
+        self.log(
+            f"Prepared {len(self.images)} images to be processed from {len(doc_ids)} documents ({', '.join(doc_ids)})"
+        )
+
         topk = self.segswap_n if self.algorithm == "segswap" else self.topk
         features = self.get_features(source_paths)
 
@@ -466,7 +481,7 @@ class ComputeSimilarity(LoggedTask):
                 source_paths, pairs, cos_topk=topk, device=self.device
             )
 
-        self.log(f"Computed similarity scores for {len(pairs)} pairs")
+        self.log(f"Computed similarity scores for {len(pairs)} pairs of images")
 
         return self.format_results(pairs)
 
@@ -491,6 +506,7 @@ class ComputeSimilarity(LoggedTask):
         res = self.format_results(matrix)
         with open(score_file, "wb") as f:
             f.write(orjson.dumps(res, default=serializer))
+            self.log(f"Stored similarity scores inside {score_file}")
 
         if self.algorithm == algorithm:
             file_path = f"{self.experiment_id}/{result_name}"
@@ -527,7 +543,7 @@ class ComputeSimilarity(LoggedTask):
         """
         doc_images = self.doc_images
 
-        self.log(f"Computing cosine similarity for {len(doc_images)} pairs")
+        self.log(f"Computing cosine similarity for {len(doc_images)} documents")
 
         all_scores = BlockSimMatrix()
         for doc1 in doc_images:
@@ -576,7 +592,7 @@ class ComputeSimilarity(LoggedTask):
             A list of pairs (k_i, k_j, sim, tr_i, tr_j)
         """
         self.log(
-            f"Computing SegSwap similarity for {len(input_pairs.data)} pairs of documents"
+            f"Computing SegSwap similarity for {len(input_pairs.data)} pairs of documents ({input_pairs})"
         )
 
         param = torch.load(get_model_path("hard_mining_neg5"), map_location=device)
@@ -654,16 +670,22 @@ class ComputeSimilarity(LoggedTask):
             return
 
         self.task_update("STARTED")
-        self.log(
-            f"Similarity task triggered for {self.dataset.uid} with {self.feat_net}!"
-        )
 
         scores, experiment_id = self.check_already_computed()
         if scores:
-            return {
+            response = {
                 "dataset_url": self.dataset.get_absolute_url(),
                 "results_url": self.get_results_url(experiment_id),
             }
+            self.log(
+                f"Similarity scores already computed for {self.dataset.uid} with {self.feat_net}"
+            )
+            self.log(response)
+            return response
+
+        self.log(
+            f"Similarity task triggered for {self.dataset.uid} with {self.feat_net}!"
+        )
 
         try:
             self.results = self.compute_similarity()

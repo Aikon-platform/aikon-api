@@ -95,6 +95,12 @@ class Dataset:
             return f"{self.base_uid}@{self.crops_uid}"
         return self.base_uid
 
+    @property
+    def doc_uid(self) -> list:
+        if not self.documents:
+            return []
+        return [d.uid for d in self.documents]
+
     def to_dict(self, with_url: bool = False) -> DatasetDict:
         """
         Convert the dataset to a dictionary
