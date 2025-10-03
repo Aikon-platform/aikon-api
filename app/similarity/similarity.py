@@ -31,45 +31,19 @@ from .lib.dataset import FileListDataset
 from .lib.features import FeatureExtractor
 from .lib import segswap
 from .lib.models import get_model_path
-from .lib.utils import AllTranspose
+from .lib.utils import AllTranspose, DocInFeatures, group_by_documents, handle_transpositions
 
-from ..shared.dataset import Dataset, Document
+from ..shared.dataset import Dataset
 from ..shared.dataset.document import DocDict, get_file_url
-from ..shared.dataset.utils import ImageDict, Image
+from ..shared.dataset.utils import ImageDict
 from ..shared.utils import get_device
 from ..shared.tasks import LoggedTask
-from ..shared.utils.logging import serializer, console
+from ..shared.utils.logging import serializer
 
 SimScore: TypeAlias = Tuple[float, int, int]
 PairTuple: TypeAlias = Tuple[int, int, float, int, int]
 PairList: TypeAlias = Set[PairTuple] | List[PairTuple]
 DocRef: TypeAlias = Tuple[str, str]
-
-
-@dataclass
-class DocInFeatures:
-    document: Document
-    range: range
-    images: List[Image]
-
-    def __eq__(self, value: "DocInFeatures") -> bool:
-        return self.document.uid == value.document.uid
-
-    def __hash__(self):
-        return hash(self.document.uid)
-
-    def slice(self, scale_by: int) -> slice:
-        return slice(self.range.start * scale_by, self.range.stop * scale_by)
-
-    def __str__(self):
-        return (
-            f"DocInFeatures({self.document.uid}, {self.range.start}-{self.range.stop})"
-        )
-
-    def __repr__(self):
-        return str(self)
-
-
 Pair: TypeAlias = Tuple[Tuple[DocInFeatures, int], Tuple[DocInFeatures, int], SimScore]
 
 
@@ -232,49 +206,6 @@ class SimilarityResults(TypedDict):
     parameters: SimParameters
     index: DocIndex
     pairs: List[PairTuple]
-
-
-def group_by_documents(images: List[Image]) -> List[DocInFeatures]:
-    """
-    Identify groups of consecutive images from the same document
-    """
-    ranges = []
-    p = 0
-    for k, i in enumerate(images + [None]):
-        if i is None or i.document != images[p].document:
-            ranges.append(DocInFeatures(images[p].document, range(p, k), images[p:k]))
-            p = k
-    return ranges
-
-
-def handle_transpositions(
-    sim_matrix: np.ndarray, n_trans_rows: int, n_trans_cols: int = None
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """
-    Handle multiple transpositions per image.
-    """
-    if n_trans_cols is None:
-        n_trans_cols = n_trans_rows
-
-    n_rows, n_cols = sim_matrix.shape
-    n_im_rows = n_rows // n_trans_rows
-    n_im_cols = n_cols // n_trans_cols
-    assert n_rows % n_trans_rows == 0, "Features must be divisible by transpositions"
-    assert n_cols % n_trans_cols == 0, "Features must be divisible by transpositions"
-
-    # Reshape to get all transposition combinations
-    sim_trans = (
-        sim_matrix.reshape(n_im_rows, n_trans_rows, n_im_cols, n_trans_cols)
-        .transpose(0, 2, 1, 3)
-        .reshape(n_im_rows, n_im_cols, n_trans_rows * n_trans_cols)
-    )
-
-    # Find best transposition pairs
-    best_trans = sim_trans.argmax(axis=2, keepdims=True)
-    sim_matrix = np.take_along_axis(sim_trans, best_trans, axis=2).squeeze(axis=2)
-    tr_i, tr_j = np.divmod(best_trans.squeeze(axis=2), n_trans_cols)
-
-    return sim_matrix, tr_i, tr_j
 
 
 class ComputeSimilarity(LoggedTask):
