@@ -219,7 +219,8 @@ def status_task(tracking_id: str):
     return shared_routes.status(tracking_id, index_dataset)
 
 
-@blueprint.route("qsizes", methods=["GET"])
+@blueprint.route("indexing/qsizes", methods=["GET"])
+@blueprint.route("query/qsizes", methods=["GET"])
 def qsizes_search():
     """
     List the queues of the broker and the number of tasks in each queue
@@ -228,12 +229,14 @@ def qsizes_search():
     return shared_routes.qsizes(index_dataset.broker)
 
 
-@blueprint.route("monitor", methods=["GET"])
+@blueprint.route("indexing/monitor", methods=["GET"])
+@blueprint.route("query/monitor", methods=["GET"])
 def monitor_search():
     return shared_routes.monitor(SEARCH_RESULTS_PATH, index_dataset.broker)
 
 
-@blueprint.route("monitor/clear/", methods=["POST"])
+@blueprint.route("indexing/monitor/clear/", methods=["POST"])
+@blueprint.route("query/monitor/clear/", methods=["POST"])
 def clear_old_search():
     # TODO clear features associated with an old index or query
     return {
@@ -275,6 +278,6 @@ def clear_index(tracking_id: str):
         "cleared_experiment": 1,
     }
 
-@blueprint.route("models", methods=["GET"])
+@blueprint.route("indexing/models", methods=["GET"])
 def get_models():
     return shared_routes.models(MODEL_PATH, DEFAULT_MODEL_INFOS)

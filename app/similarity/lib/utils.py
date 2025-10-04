@@ -77,38 +77,3 @@ def handle_transpositions(
 
     return sim_matrix, tr_i, tr_j
 
-
-@dataclass
-class DocInFeatures:
-    document: Document
-    range: range
-    images: list[Image]
-
-    def __eq__(self, value: "DocInFeatures") -> bool:
-        return self.document.uid == value.document.uid
-
-    def __hash__(self):
-        return hash(self.document.uid)
-
-    def slice(self, scale_by: int) -> slice:
-        return slice(self.range.start * scale_by, self.range.stop * scale_by)
-
-    def __str__(self):
-        return (
-            f"DocInFeatures({self.document.uid}, {self.range.start}-{self.range.stop})"
-        )
-
-    def __repr__(self):
-        return str(self)
-
-def group_by_documents(images: list[Image]) -> list[DocInFeatures]:
-    """
-    Identify groups of consecutive images from the same document
-    """
-    ranges = []
-    p = 0
-    for k, i in enumerate(images + [None]):
-        if i is None or i.document != images[p].document:
-            ranges.append(DocInFeatures(images[p].document, range(p, k), images[p:k]))
-            p = k
-    return ranges

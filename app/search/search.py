@@ -112,24 +112,18 @@ class DatasetIndex:
             return obj
 
     def describe_images(self, images: List[Image], transpositions: List[str]) -> dict:
-        docs = group_by_documents(images)
-        return {
-            "sources": {
-                doc.document.uid: doc.document.to_dict(with_metadata=True)
-                for doc in docs
-            },
-            "images": [
-                cast(ImageDict, {**im.to_dict(), "doc_uid": im.document.uid})
-                for document in docs
-                for im in document.images
-            ],
-            "transpositions": transpositions,
-        }
+        return Dataset.serialize(
+            images=images, 
+            transpositions=transpositions
+        )
 
     def describe_self(self) -> dict:
         return {
             "metadata": self.extra_metadata,
-            "index": self.describe_images(self.images, self.transpositions)
+            "index": Dataset.serialize(
+                images=self.images, 
+                transpositions=self.raw_transpositions
+            )
         }
 
     def build(self):
@@ -205,13 +199,11 @@ class DatasetIndex:
 
         return {
             "query": self.describe_images(query_images, query_transpositions),
-            "result": {
-                "pairs": [
-                    (int(i), int(j), float(score), int(tr_i), int(tr_j))
-                    for i, (js, scores, tr_is, tr_js) in enumerate(zip(*pairs))
-                    for (j, score, tr_i, tr_j) in zip(js, scores, tr_is, tr_js)
-                ],
-            }
+            "pairs": [
+                (int(i), int(j), float(score), int(tr_i), int(tr_j))
+                for i, (js, scores, tr_is, tr_js) in enumerate(zip(*pairs))
+                for (j, score, tr_i, tr_j) in zip(js, scores, tr_is, tr_js)
+            ],
         }
 
     def compute_cosine_similarity(

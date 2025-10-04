@@ -31,11 +31,11 @@ from .lib.dataset import FileListDataset
 from .lib.features import FeatureExtractor
 from .lib import segswap
 from .lib.models import get_model_path
-from .lib.utils import AllTranspose, DocInFeatures, group_by_documents, handle_transpositions
+from .lib.utils import AllTranspose, handle_transpositions
 
 from ..shared.dataset import Dataset
 from ..shared.dataset.document import DocDict, get_file_url
-from ..shared.dataset.utils import ImageDict
+from ..shared.dataset.utils import ImageDict, DocInRange, group_by_documents
 from ..shared.utils import get_device
 from ..shared.tasks import LoggedTask
 from ..shared.utils.logging import serializer
@@ -44,7 +44,7 @@ SimScore: TypeAlias = Tuple[float, int, int]
 PairTuple: TypeAlias = Tuple[int, int, float, int, int]
 PairList: TypeAlias = Set[PairTuple] | List[PairTuple]
 DocRef: TypeAlias = Tuple[str, str]
-Pair: TypeAlias = Tuple[Tuple[DocInFeatures, int], Tuple[DocInFeatures, int], SimScore]
+Pair: TypeAlias = Tuple[Tuple[DocInRange, int], Tuple[DocInRange, int], SimScore]
 
 
 def _extend_from_dense_scores(
@@ -72,7 +72,7 @@ def _extend_from_dense_scores(
 
 
 class SparseDocSimMatrix:
-    def __init__(self, doc1: DocInFeatures, doc2: DocInFeatures):
+    def __init__(self, doc1: DocInRange, doc2: DocInRange):
         """
         Data structure to store the similarity matrix between two documents
         """
@@ -148,7 +148,7 @@ class BlockSimMatrix:
         self.data: Dict[Tuple[str, str], SparseDocSimMatrix] = OrderedDict()
 
     def __getitem__(
-        self, docs: Tuple[DocInFeatures, DocInFeatures]
+        self, docs: Tuple[DocInRange, DocInRange]
     ) -> Union[SparseDocSimMatrix, TransposedSimMatrix]:
         doc1, doc2 = docs
         if reverse := (doc1.document.uid > doc2.document.uid):
@@ -367,18 +367,10 @@ class ComputeSimilarity(LoggedTask):
 
         return {
             "parameters": self.format_parameters(),
-            "index": {
-                "sources": {
-                    doc.document.uid: doc.document.to_dict(with_metadata=True)
-                    for doc in docs
-                },
-                "images": [
-                    cast(ImageDict, {**im.to_dict(), "doc_uid": im.document.uid})
-                    for document in docs
-                    for im in document.images
-                ],
-                "transpositions": self.raw_transpositions,
-            },
+            "index": Dataset.serialize(
+                documents=docs, 
+                transpositions=self.raw_transpositions
+            ),
             "pairs": [
                 (offsets[doc1] + i, offsets[doc2] + j, *sim)
                 for (doc1, i), (doc2, j), sim in pairs
