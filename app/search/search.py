@@ -10,13 +10,14 @@ import gzip
 from ..similarity.lib.features import FeatureExtractor
 from ..similarity.lib.dataset import FileListDataset
 from ..similarity.lib.const import FEAT_NET, COS_TOPK
-from ..similarity.lib.utils import AllTranspose, handle_transpositions, group_by_documents
+from ..similarity.lib.utils import AllTranspose, handle_transpositions
 
 from ..shared.tasks import LoggedTask
 from ..shared.dataset import Dataset, Image
 from ..shared.dataset.utils import ImageDict
 from ..shared.utils import get_device
-from .const import SEARCH_INDEX_PATH, SEARCH_RESULTS_PATH
+from ..shared.utils.logging import serializer
+from .const import SEARCH_INDEX_PATH, SEARCH_QUERY_PATH
 
 class DatasetIndex:
     """
@@ -95,7 +96,7 @@ class DatasetIndex:
         Prepare the index for a given index ID
         """
         with sft_safe_open(index_path, "torch") as f:
-            metadata = f.metadata()
+            metadata = orjson.loads(f.metadata()["metadata"].encode("utf-8"))
             if dataset is None:
                 dataset = Dataset(uid=metadata["dataset_uid"], load=True)
             else:
@@ -105,10 +106,11 @@ class DatasetIndex:
             obj = cls(
                 dataset=dataset,
                 feat_net=metadata["feat_net"],
-                transpositions=metadata["raw_transpositions"],
+                transpositions=metadata["transpositions"],
                 extra_metadata=metadata,
             )
-            obj.index_features = f["features"]
+
+            obj.index_features = f.get_tensor("features")
             return obj
 
     def describe_images(self, images: List[Image], transpositions: List[str]) -> dict:
@@ -119,7 +121,7 @@ class DatasetIndex:
 
     def describe_self(self) -> dict:
         return {
-            "metadata": self.extra_metadata,
+            "metadata": self.metadata,
             "index": Dataset.serialize(
                 images=self.images, 
                 transpositions=self.raw_transpositions
@@ -160,10 +162,10 @@ class DatasetIndex:
         sft_save_file(
             {"features": self.index_features}, 
             self.index_path, 
-            metadata=self.metadata
+            metadata={"metadata": orjson.dumps(self.metadata).decode("utf-8")}
         )
         with gzip.open(self.index_path.with_suffix(".json.gz"), "wt") as f:
-            orjson.dump(self.metadata, f)
+            f.write(orjson.dumps(self.metadata).decode("utf-8"))
     
     def query(self, target_dataset: Dataset, raw_transpositions: List[str], topk: int = COS_TOPK):
         """
@@ -192,15 +194,15 @@ class DatasetIndex:
 
         pairs = self.compute_cosine_similarity(
             query_features.cpu().numpy(),
-            self.index_features.cpu().numpy(),
-            topk=self.topk,
+            topk=topk,
             n_query_transpositions=len(query_transpositions),
         )
 
         return {
             "query": self.describe_images(query_images, query_transpositions),
             "pairs": [
-                (int(i), int(j), float(score), int(tr_i), int(tr_j))
+                (int(j), int(i), round(float(score), 2), int(tr_j), int(tr_i))
+                # source_i, query_i, score, source_transposition, query_transposition
                 for i, (js, scores, tr_is, tr_js) in enumerate(zip(*pairs))
                 for (j, score, tr_i, tr_j) in zip(js, scores, tr_is, tr_js)
             ],
@@ -226,7 +228,7 @@ class DatasetIndex:
                 tr_i: A vector of shape (n_query_samples, topk) containing the best transpositions for the query features
                 tr_j: A vector of shape (n_index_samples, topk) containing the best transpositions for the index features
         """
-        self.log(f"Computing cosine similarity")
+        # self.log(f"Computing cosine similarity")
 
         n_index_transpositions = len(self.transpositions)
 
@@ -244,6 +246,8 @@ class DatasetIndex:
             tr_i = tr_j = np.zeros_like(sim_matrix)
 
         # get topk
+        if topk > sim_matrix.shape[1]:
+            topk = sim_matrix.shape[1]
         raw_top_indices = np.argpartition(sim_matrix, -topk, axis=1)[:, -topk:]
         sorted_top_indices = np.argsort(np.take_along_axis(sim_matrix, raw_top_indices, axis=1), axis=1)
 
@@ -273,6 +277,8 @@ class IndexDataset(LoggedTask):
         self.raw_transpositions: List[str] = parameters.get("transpositions", ["none"])
 
         self.device = get_device()
+
+        self.results_url = None
 
     @staticmethod
     def path_for_task(experiment_id: str) -> Path:
@@ -312,7 +318,7 @@ class IndexDataset(LoggedTask):
             return False
         
     def check_dataset(self) -> bool:
-        return len(self.images) > 0
+        return len(self.dataset.documents) > 0
 
     def index_dataset(self):
         """
@@ -362,8 +368,9 @@ class QueryIndex(LoggedTask):
 
         self.device = get_device()
 
+    @staticmethod
     def path_for_task(experiment_id: str) -> Path:
-        return SEARCH_RESULTS_PATH / f"{experiment_id}.json"
+        return SEARCH_QUERY_PATH / f"{experiment_id}.json"
 
     def run_task(self) -> bool:
         try:
@@ -374,7 +381,10 @@ class QueryIndex(LoggedTask):
 
             self.log(f"Loaded index {self.index_id}; Querying index with {len(self.query_images)} images")
 
-            results = self.index.query(self.query_dataset)
+            results = self.index.query(
+                self.query_dataset,
+                self.raw_transpositions,
+            )
 
             self.log(f"Query completed, saving results")
 

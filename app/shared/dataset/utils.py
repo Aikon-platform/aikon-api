@@ -76,7 +76,7 @@ class DocInRange:
     A range of images from the same document, used to group images by document
     Mostly used in similarity to reference feature indices
     """
-    document: Document
+    document: "Document"
     range: range
     images: list[Image]
 

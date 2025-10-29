@@ -34,7 +34,7 @@ from .lib.models import get_model_path
 from .lib.utils import AllTranspose, handle_transpositions
 
 from ..shared.dataset import Dataset
-from ..shared.dataset.document import DocDict, get_file_url
+from ..shared.dataset.document import DocDict, get_file_url, Document
 from ..shared.dataset.utils import ImageDict, DocInRange, group_by_documents
 from ..shared.utils import get_device
 from ..shared.tasks import LoggedTask

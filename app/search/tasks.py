@@ -2,10 +2,11 @@ import dramatiq
 from typing import Optional
 
 from .const import SEARCH_QUEUE
-from ..config import TIME_LIMIT
+from ..config import TIME_LIMIT, BASE_URL
 from ..shared.utils.logging import notifying, TLogger, LoggerHelper, console
 from ..shared.dataset import Dataset
 
+from .search import IndexDataset, QueryIndex
 
 @dramatiq.actor(
     time_limit=TIME_LIMIT, max_retries=0, store_results=True, queue_name=SEARCH_QUEUE
@@ -55,7 +56,10 @@ def index_dataset(
         return {
             "dataset_url": dataset.get_absolute_url(),
             # TODO change to use only results_url (and remove annotations)
-            "results_url": index_task.results_url,
+            "results_url": f"{BASE_URL}/search/indexing/{experiment_id}/result",
+            "metadata": {
+                "index_id": getattr(index_task.index, "index_id", None),
+            },
             "error": index_task.error_list,
         }
 
@@ -111,7 +115,10 @@ def query_index(
         return {
             "dataset_url": dataset.get_absolute_url(),
             # TODO change to use only results_url (and remove annotations)
-            "results_url": query_task.results_url,
+            "results_url": f"{BASE_URL}/search/query/{experiment_id}/result",
+            "metadata": {
+            "index_id": getattr(query_task.index, "index_id", None),
+            },
             "error": query_task.error_list,
         }
 

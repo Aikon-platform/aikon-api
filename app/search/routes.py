@@ -83,7 +83,7 @@ from ..shared import routes as shared_routes
 from ..shared.const import DATASETS_PATH
 from ..shared.utils.fileutils import clear_dir, delete_path, delete_empty_dirs
 from .const import (
-    SEARCH_RESULTS_PATH,
+    SEARCH_QUERY_PATH,
     SEARCH_INDEX_PATH,
     SEARCH_XACCEL_PREFIX,
     MODEL_PATH,
@@ -92,7 +92,7 @@ from .const import (
 from ..similarity.lib.const import FEAT_NET
 from ..similarity.lib.models import DEFAULT_MODEL_INFOS
 
-blueprint = Blueprint("similarity", __name__, url_prefix="/similarity")
+blueprint = Blueprint("search", __name__, url_prefix="/search")
 
 
 @blueprint.route("indexing/start", methods=["POST"])
@@ -196,7 +196,7 @@ def result_index(tracking_id: str):
     """
     Sends the index results file for a given document pair
     """
-    return shared_routes.result(tracking_id, SEARCH_RESULTS_PATH, SEARCH_XACCEL_PREFIX, "json")
+    return shared_routes.result(tracking_id, SEARCH_INDEX_PATH, SEARCH_XACCEL_PREFIX, "json")
 
 
 @blueprint.route("query/<tracking_id>/result", methods=["GET"])
@@ -204,7 +204,7 @@ def result_query(tracking_id: str):
     """
     Sends the query results file for a given document pair
     """
-    return shared_routes.result(tracking_id, SEARCH_RESULTS_PATH, SEARCH_XACCEL_PREFIX, "json")
+    return shared_routes.result(tracking_id, SEARCH_QUERY_PATH, SEARCH_XACCEL_PREFIX, "json")
 
 
 @blueprint.route("indexing/<tracking_id>/cancel", methods=["POST"])
@@ -232,7 +232,7 @@ def qsizes_search():
 @blueprint.route("indexing/monitor", methods=["GET"])
 @blueprint.route("query/monitor", methods=["GET"])
 def monitor_search():
-    return shared_routes.monitor(SEARCH_RESULTS_PATH, index_dataset.broker)
+    return shared_routes.monitor(SEARCH_QUERY_PATH, index_dataset.broker)
 
 
 @blueprint.route("indexing/monitor/clear/", methods=["POST"])
@@ -241,7 +241,7 @@ def clear_old_search():
     # TODO clear features associated with an old index or query
     return {
         "cleared_index": clear_dir(SEARCH_INDEX_PATH, path_to_clear="*.safetensors"),
-        "cleared_results": clear_dir(SEARCH_RESULTS_PATH, path_to_clear="*.safetensors"),
+        "cleared_results": clear_dir(SEARCH_QUERY_PATH, path_to_clear="*.safetensors"),
     }
 
 
@@ -264,7 +264,7 @@ def clear_index(tracking_id: str):
 
     if index_path.exists():
         with sft_safe_open(index_path, "torch") as f:
-            metadata = f.metadata()
+            metadata = orjson.loads(f.metadata()["metadata"].encode("utf-8"))
         
         # we check that the index is associated with the experiment
         if metadata["from_experiment"] != tracking_id:
