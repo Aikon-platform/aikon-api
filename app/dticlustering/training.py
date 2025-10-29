@@ -41,6 +41,7 @@ class LoggingTrainerMixin:
     """
 
     output_proto_dir: str = "prototypes"
+    prototypes_dir: Path = None
     save_iter = False
     learn_masks = False
     learn_backgrounds = False
@@ -59,7 +60,9 @@ class LoggingTrainerMixin:
         if not self.save_img:
             return
 
-        self.prototypes_path = create_dir(self.run_dir / "prototypes")
+        self.prototypes_dir = create_dir(self.run_dir / "prototypes")
+
+        self.prototypes_path = create_dir(self.prototypes_dir / "foregrounds")
         self.cluster_path = create_dir(self.run_dir / "clusters")
         for k in range(self.n_prototypes):
             create_dir(self.cluster_path / f"cluster{k}")
@@ -67,11 +70,12 @@ class LoggingTrainerMixin:
             create_dir(self.cluster_path / f"cluster{k}" / "tsf")
 
         if self.learn_masks:
-            self.masks_path = create_dir(self.run_dir / "masks")
+            self.masks_path = create_dir(self.prototypes_dir / "masks")
 
         if self.learn_backgrounds:
-            self.backgrounds_path = create_dir(self.run_dir / "backgrounds")
+            self.backgrounds_path = create_dir(self.prototypes_dir / "backgrounds")
 
+        # TODO find a way to delete this
         self.transformation_path = create_dir(self.run_dir / "transforms")
 
         self.setup_images_to_tsf()
@@ -237,7 +241,8 @@ class LoggingTrainerMixin:
         """
         Evaluate model qualitatively by visualizing clusters and saving results
         """
-        # Setup dataset with paths
+        self.model.eval()
+
         dataset = self.train_loader.dataset
         if hasattr(dataset, "output_paths"):
             dataset.output_paths = True
@@ -248,27 +253,41 @@ class LoggingTrainerMixin:
             num_workers=self.n_workers,
             shuffle=False,
         )
+        self.save_aligned_images(
+            loader=train_loader, path=f"{self.output_proto_dir}/aligned_translation"
+        )
 
-        self.save_aligned_images(loader=train_loader)
-
-        # Prepare data collection
         cluster_by_path = []
         k_image = 0
-        # distances_all, cluster_idx_all = np.array([]), np.array([], dtype=np.int32)
 
-        # Process dataset
+        tsf_names = [
+            name
+            for name in self.cfg.model.get("transformation_sequence", "").split("_")
+            if name not in ["id", "identity"]
+        ]
+
         for images, _, _, paths in train_loader:
             images = images.to(self.device)
 
-            batch_distances, batch_argmin_idx = self.get_cluster_assignments(images)
-            # distances_all = np.hstack([distances_all, batch_distances])
-            # cluster_idx_all = np.hstack([cluster_idx_all, batch_argmin_idx])
+            dist = self.model(images)[1]
+            batch_distances, batch_argmin_idx = map(
+                lambda t: t.cpu().numpy(), dist.min(1)
+            )
 
             tsf_imgs = self.model.transform(images).cpu()
+            batch_tsf = self.model.get_batch_tsf_matrices(
+                images, batch_argmin_idx, tsf_names
+            )
             # Save individual images
-            for b, (img, idx, d, p) in enumerate(
-                zip(images, batch_argmin_idx, batch_distances, paths)
+            for b, (img, idx, d, p, tsf) in enumerate(
+                # zip(images, batch_argmin_idx, batch_distances, paths, batch_tsf)
+                zip(images, batch_argmin_idx, dist.cpu().numpy(), paths, batch_tsf)
             ):
+                tsf_matrices = [
+                    [round(float(x), 3) for x in matrix.cpu().flatten().numpy()]
+                    for matrix in tsf
+                ]
+
                 convert_to_img(img.cpu()).save(
                     self.cluster_path / f"cluster{idx}" / "raw" / f"{k_image}_raw.png"
                 )
@@ -290,14 +309,10 @@ class LoggingTrainerMixin:
                 )
                 raw_p = f"cluster{idx}/raw/{k_image}_raw.png"
                 cluster_by_path.append(
-                    (
-                        k_image,
-                        rel_path,
-                        # dataset.name,
-                        # str(dataset.input_files[k_image]),
-                        raw_p,
-                        idx,
-                        float(d),
+                    tuple(
+                        [k_image, rel_path, raw_p, idx]
+                        + tsf_matrices
+                        + [round(float(x), 5) for x in d]
                     )
                 )
                 k_image += 1
@@ -305,18 +320,16 @@ class LoggingTrainerMixin:
         dataset.output_paths = False
 
         if cluster_by_path:
-            self.print_and_log_info(cluster_by_path)
+            self.print_and_log_info(cluster_by_path[:1])
+
+            columns = (
+                ["image_id", "path", "cluster_name", "cluster_id"]
+                + [f"matrix_{tsf}" for tsf in tsf_names]
+                + [f"dist_cluster_{i}" for i in range(self.n_prototypes)]
+            )
             cluster_df = pd.DataFrame(
                 cluster_by_path,
-                columns=[
-                    "image_id",
-                    "path",
-                    # "dataset_name",
-                    # "original_name",
-                    "cluster_name",
-                    "cluster_id",
-                    "distance",
-                ],
+                columns=columns,
             ).set_index("image_id")
 
             cluster_df.to_csv(self.run_dir / "cluster_by_path.csv")
