@@ -13,6 +13,7 @@ stream-unzip
 orjson
 httpx
 iiif-download>=0.1.10
+python-dotenv
 
 addict
 cython
