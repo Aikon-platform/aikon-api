@@ -700,7 +700,7 @@ class FasterRCNNExtractor(BaseExtractor):
     DEFAULT_IMG_SIZES = [800, 1400, 2000]  # used for multiscale inference
 
     def get_model(self):
-        model = torch.load(self.weights, map_location=self.device).eval()
+        model = torch.load(self.weights, map_location=self.device, weights_only=False).eval()
         return model
 
     @staticmethod

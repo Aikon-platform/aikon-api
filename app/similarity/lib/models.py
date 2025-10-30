@@ -173,7 +173,7 @@ def load_model(
     if feat_net in DEFAULT_MODEL_LOADERS:
         model = DEFAULT_MODEL_LOADERS[feat_net](model_path, device)
     else:
-        model = torch.load(model_path, map_location=device)
+        model = torch.load(model_path, map_location=device, weights_only=False)
 
     if isinstance(model, dict):
         raise ValueError("Invalid network for feature extraction : no loader known.")
