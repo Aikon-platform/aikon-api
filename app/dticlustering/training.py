@@ -17,15 +17,12 @@ from jinja2 import Environment, FileSystemLoader
 from sklearn.metrics.cluster import normalized_mutual_info_score
 from omegaconf import OmegaConf
 
-from .lib.src.abstract_trainer import AbstractTrainer
 from .lib.src.dataset import get_dataset
 from .lib.src.kmeans_trainer import Trainer as KMeansTrainer
 from .lib.src.sprites_trainer import Trainer as SpritesTrainer
 
-# from .lib.src._kmeans_trainer import Trainer as KMeansTrainer
-# from .lib.src._sprites_trainer import Trainer as SpritesTrainer
 from .const import RUNS_PATH, CONFIGS_PATH
-from .lib.src.utils.image import convert_to_img
+from .lib.src.utils.image import convert_to_img, align_img
 from ..shared.utils.fileutils import create_dir
 from ..shared.utils.logging import TLogger, LoggerHelper, serializer
 
@@ -41,6 +38,7 @@ class LoggingTrainerMixin:
     """
 
     output_proto_dir: str = "prototypes"
+    prototypes_dir: Path = None
     save_iter = False
     learn_masks = False
     learn_backgrounds = False
@@ -59,29 +57,50 @@ class LoggingTrainerMixin:
         if not self.save_img:
             return
 
-        self.prototypes_path = create_dir(self.run_dir / "prototypes")
+        self.prototypes_dir = create_dir(self.run_dir / "prototypes")
+
+        self.prototypes_path = create_dir(self.prototypes_dir / "foregrounds")
         self.cluster_path = create_dir(self.run_dir / "clusters")
         for k in range(self.n_prototypes):
             create_dir(self.cluster_path / f"cluster{k}")
             create_dir(self.cluster_path / f"cluster{k}" / "raw")
             create_dir(self.cluster_path / f"cluster{k}" / "tsf")
+            create_dir(self.cluster_path / f"cluster{k}" / "aligned_translation")
 
         if self.learn_masks:
-            self.masks_path = create_dir(self.run_dir / "masks")
+            self.masks_path = create_dir(self.prototypes_dir / "masks")
 
         if self.learn_backgrounds:
-            self.backgrounds_path = create_dir(self.run_dir / "backgrounds")
+            self.backgrounds_path = create_dir(self.prototypes_dir / "backgrounds")
 
+        # TODO find a way to delete this
         self.transformation_path = create_dir(self.run_dir / "transforms")
 
         self.setup_images_to_tsf()
+
+    # def setup_metrics(self):
+    #     # TODO find a way to delete validation metrics .tsv files
+    #     self.check_cluster_interval = self.cfg["training"]["check_cluster_interval"]
 
     def print_and_log_info(self, string) -> None:
         self.jlogger.info(string)
         # self.logger.info(string)
 
+    def cleanup_empty_outputs(self):
+        empty_files = ["train_metrics.tsv", "val_metrics.tsv", "val_scores.tsv"]
+        for filename in empty_files:
+            filepath = self.run_dir / filename
+            if filepath.exists():
+                with open(filepath, "r") as f:
+                    lines = f.readlines()
+                if len(lines) <= 1:
+                    filepath.unlink()
+
+        transforms_dir = self.run_dir / "transforms"
+        if transforms_dir.exists() and not any(transforms_dir.iterdir()):
+            transforms_dir.rmdir()
+
     def run(self, *args, **kwargs):
-        # Log epoch progress start
         self.jlogger.progress(
             self.start_epoch - 1, self.n_epochs, title="Training epoch"
         )
@@ -160,7 +179,6 @@ class LoggingTrainerMixin:
         )
 
         # confusion_matrix = folder_to_cluster.copy()
-
         # hungarian matching
 
         metrics_by_folder = {}
@@ -237,8 +255,10 @@ class LoggingTrainerMixin:
         """
         Evaluate model qualitatively by visualizing clusters and saving results
         """
-        # Setup dataset with paths
+        self.model.eval()
+
         dataset = self.train_loader.dataset
+        max_dim = dataset.max_dim
         if hasattr(dataset, "output_paths"):
             dataset.output_paths = True
 
@@ -248,76 +268,83 @@ class LoggingTrainerMixin:
             num_workers=self.n_workers,
             shuffle=False,
         )
+        tsf_names = [
+            name
+            for name in self.cfg.model.get("transformation_sequence", "").split("_")
+            if name not in ["id", "identity"]
+        ]
+        affine_idx = next(
+            (i for i, name in enumerate(tsf_names) if name in ["affine", "aff"]), None
+        )
 
-        self.save_aligned_images(loader=train_loader)
-
-        # Prepare data collection
         cluster_by_path = []
-        k_image = 0
-        # distances_all, cluster_idx_all = np.array([]), np.array([], dtype=np.int32)
-
-        # Process dataset
-        for images, _, _, paths in train_loader:
+        for batch_idx, (images, _, _, paths) in enumerate(train_loader, start=0):
             images = images.to(self.device)
-
-            batch_distances, batch_argmin_idx = self.get_cluster_assignments(images)
-            # distances_all = np.hstack([distances_all, batch_distances])
-            # cluster_idx_all = np.hstack([cluster_idx_all, batch_argmin_idx])
+            distances = self.model(images)[1]
+            batch_argmin_idx = distances.argmin(1).cpu().numpy()
 
             tsf_imgs = self.model.transform(images).cpu()
-            # Save individual images
-            for b, (img, idx, d, p) in enumerate(
-                zip(images, batch_argmin_idx, batch_distances, paths)
+            batch_tsf = self.model.get_batch_tsf_matrices(
+                images, batch_argmin_idx, tsf_names
+            )
+
+            for i, (img, idx, d, p, tsf) in enumerate(
+                zip(images, batch_argmin_idx, distances.cpu().numpy(), paths, batch_tsf)
             ):
+                img_id = batch_idx * self.batch_size + i
                 convert_to_img(img.cpu()).save(
-                    self.cluster_path / f"cluster{idx}" / "raw" / f"{k_image}_raw.png"
+                    self.cluster_path / f"cluster{idx}" / "raw" / f"{img_id}_raw.png"
                 )
 
-                try:
-                    # trick for non-RGB images
-                    tsf_img = tsf_imgs[b, min(idx, tsf_imgs.shape[1] - 1)]
-                except IndexError:
-                    tsf_img = tsf_imgs[b]
-
+                tsf_img = (
+                    tsf_imgs[i, min(idx, tsf_imgs.shape[1] - 1)]
+                    if tsf_imgs.ndim > 3
+                    else tsf_imgs[i]
+                )
                 convert_to_img(tsf_img).save(
-                    self.cluster_path / f"cluster{idx}" / "tsf" / f"{k_image}_tsf.png"
+                    self.cluster_path / f"cluster{idx}" / "tsf" / f"{img_id}_tsf.png"
                 )
 
+                if affine_idx:
+                    align_img(
+                        original_img=dataset.get_original(img_id),
+                        affine_tsf=tsf[affine_idx][:2, :].cpu(),
+                        out_size=max_dim,
+                    ).save(
+                        self.cluster_path
+                        / f"cluster{idx}"
+                        / "aligned_translation"
+                        / f"{img_id}_aligned.png"
+                    )
+
+                tsf_matrices = [
+                    [round(float(x), 3) for x in m.cpu().flatten().numpy()] for m in tsf
+                ]
                 rel_path = (
                     os.path.relpath(p, dataset.data_path)
                     if hasattr(dataset, "data_path")
                     else str(p)
                 )
-                raw_p = f"cluster{idx}/raw/{k_image}_raw.png"
+
                 cluster_by_path.append(
-                    (
-                        k_image,
-                        rel_path,
-                        # dataset.name,
-                        # str(dataset.input_files[k_image]),
-                        raw_p,
-                        idx,
-                        float(d),
-                    )
+                    (img_id, rel_path, f"cluster{idx}/raw/{img_id}_raw.png", idx)
+                    + tuple(tsf_matrices)
+                    + tuple(float(x) for x in d)
                 )
-                k_image += 1
 
         dataset.output_paths = False
 
         if cluster_by_path:
-            self.print_and_log_info(cluster_by_path)
-            cluster_df = pd.DataFrame(
-                cluster_by_path,
-                columns=[
-                    "image_id",
-                    "path",
-                    # "dataset_name",
-                    # "original_name",
-                    "cluster_name",
-                    "cluster_id",
-                    "distance",
-                ],
-            ).set_index("image_id")
+            # self.print_and_log_info(cluster_by_path[:1])
+
+            columns = (
+                ["image_id", "path", "cluster_name", "cluster_id"]
+                + [f"matrix_{tsf}" for tsf in tsf_names]
+                + [f"dist_cluster_{i}" for i in range(self.n_prototypes)]
+            )
+            cluster_df = pd.DataFrame(cluster_by_path, columns=columns).set_index(
+                "image_id"
+            )
 
             cluster_df.to_csv(self.run_dir / "cluster_by_path.csv")
             cluster_df.to_json(self.run_dir / "cluster_by_path.json", orient="index")
@@ -328,12 +355,12 @@ class LoggingTrainerMixin:
             output_html = template.render(
                 clusters=range(self.n_prototypes),
                 images=cluster_df.to_dict(orient="index"),
-                proto_dir=self.output_proto_dir,
+                proto_dir="prototypes"
+                # proto_dir=self.output_proto_dir,
             )
-            with open(self.run_dir / "clusters.html", "w") as fh:
-                fh.write(output_html)
+            (self.run_dir / "clusters.html").write_text(output_html)
 
-        return [np.array([]) for k in range(self.n_prototypes)]
+        return [np.array([]) for _ in range(self.n_prototypes)]
 
 
 class LoggedKMeansTrainer(LoggingTrainerMixin, KMeansTrainer):
@@ -352,7 +379,7 @@ class LoggedKMeansTrainer(LoggingTrainerMixin, KMeansTrainer):
         Overwrite original save_training_metrics method for lightweight plots saving
         """
         self.model.eval()
-        self.save_prototypes()
+        self.save_prototypes(path=self.prototypes_dir)
         self.log_end()
 
 
@@ -374,9 +401,9 @@ class LoggedSpritesTrainer(LoggingTrainerMixin, SpritesTrainer):
         self.model.eval()
         if self.learn_masks:
             # masked prototypes inside prototypes/ (save_prototypes only saves frg)
-            self.save_masked_prototypes()  # foreground / background
+            self.save_masked_prototypes(path="prototypes")  # foreground / background
             self.save_masked_prototypes(
-                checkerboard=True, prefix="frg_proto"
+                checkerboard=True, prefix="frg"
             )  # checkerboard bkg
             self.save_masks()
         else:
@@ -566,6 +593,7 @@ def run_training(
             cfg=cfg, run_dir=str(run_dir), seed=seed, save=True, logger=logger
         )
         trainer.run(seed=seed)
+        trainer.cleanup_empty_outputs()
     except Exception:
         traceback.print_exc(file=sys.stderr)
         raise

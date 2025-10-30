@@ -3,7 +3,10 @@ import sys
 from itertools import combinations_with_replacement
 from enum import Enum
 from PIL.Image import Transpose
+import numpy as np
 
+from ...shared.dataset import Document
+from ...shared.dataset.utils import Image
 
 class AllTranspose(Enum):
     NONE = -1
@@ -43,3 +46,34 @@ def best_matches(segswap_pairs, q_img, doc_pair):
 
     # return sorted([(pair[0], f"{sim_hash}/{pair[sim_doc]}") for pair in img_pairs], key=lambda x: x[0], reverse=True)
     return [(float(pair[0]), f"{sim_hash}/{pair[sim_doc]}") for pair in img_pairs]
+
+
+def handle_transpositions(
+    sim_matrix: np.ndarray, n_trans_rows: int, n_trans_cols: int = None
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Handle multiple transpositions per image.
+    """
+    if n_trans_cols is None:
+        n_trans_cols = n_trans_rows
+
+    n_rows, n_cols = sim_matrix.shape
+    n_im_rows = n_rows // n_trans_rows
+    n_im_cols = n_cols // n_trans_cols
+    assert n_rows % n_trans_rows == 0, "Features must be divisible by transpositions"
+    assert n_cols % n_trans_cols == 0, "Features must be divisible by transpositions"
+
+    # Reshape to get all transposition combinations
+    sim_trans = (
+        sim_matrix.reshape(n_im_rows, n_trans_rows, n_im_cols, n_trans_cols)
+        .transpose(0, 2, 1, 3)
+        .reshape(n_im_rows, n_im_cols, n_trans_rows * n_trans_cols)
+    )
+
+    # Find best transposition pairs
+    best_trans = sim_trans.argmax(axis=2, keepdims=True)
+    sim_matrix = np.take_along_axis(sim_trans, best_trans, axis=2).squeeze(axis=2)
+    tr_i, tr_j = np.divmod(best_trans.squeeze(axis=2), n_trans_cols)
+
+    return sim_matrix, tr_i, tr_j
+
