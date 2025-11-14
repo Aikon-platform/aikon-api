@@ -56,6 +56,7 @@ class ExtractRegions(LoggedTask):
     Args:
         dataset (Dataset): The dataset to process
         model (str, optional): The model filename stem to use for extraction (default: DEFAULT_MODEL)
+        postprocess: Optional arguments for the postprocessor
     """
 
     def __init__(
