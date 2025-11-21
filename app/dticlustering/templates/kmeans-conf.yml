@@ -2,9 +2,11 @@ model:
   name: dtikmeans
   n_prototypes: 10
   prototype:
-    source: data
+    source: data # generator
     data:
+      generator: mlp # mlp / unet
       init: gaussian
+      value: 0.5
       gaussian_weights_std: 25
 
 training:

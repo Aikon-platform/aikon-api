@@ -3,7 +3,7 @@ The Dataset class, which represents a dataset of documents
 """
 
 from pathlib import Path
-from typing import List, Union, Optional, Dict, TypedDict, __all__
+from typing import List, Union, Optional, TypedDict, __all__, cast
 from typing_extensions import NotRequired
 
 import orjson
@@ -13,8 +13,7 @@ from ..const import DATASETS_PATH
 from ..utils import hash_str
 
 from .document import Document, DocDict
-from .utils import Image
-
+from .utils import DocInRange, Image, group_by_documents, ImageDict
 
 class DatasetDict(TypedDict):
     uid: str
@@ -94,6 +93,12 @@ class Dataset:
         if self.crops_uid:
             return f"{self.base_uid}@{self.crops_uid}"
         return self.base_uid
+
+    @property
+    def doc_uid(self) -> list:
+        if not self.documents:
+            return []
+        return [d.uid for d in self.documents]
 
     def to_dict(self, with_url: bool = False) -> DatasetDict:
         """
@@ -200,3 +205,24 @@ class Dataset:
         if self.crops:
             return crop_list
         return im_list
+
+    @staticmethod
+    def serialize(*, images: List[Image] = None, documents: List[DocInRange] = None, **metadata):
+        """
+        Serialize a list of images or documents (as DocInRange) to a dictionary, useful for indexing pairs
+        """
+        if documents is None and images is None:
+            raise ValueError("Either documents or images must be provided")
+        documents = documents or group_by_documents(images)
+        return {
+            "sources": {
+                doc.document.uid: doc.document.to_dict(with_metadata=True)
+                for doc in documents
+            },
+            "images": [
+                cast(ImageDict, {**im.to_dict(), "doc_uid": im.document.uid})
+                for document in documents
+                for im in document.images
+            ],
+            **metadata,
+        }

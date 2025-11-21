@@ -12,11 +12,11 @@
             <div class="cluster">
                 <div>
                     <h3>Cluster {{ cluster }}</h3>
-                    <img class="proto" src="{{ proto_dir }}/prototype{{ cluster }}.png" alt="Prototype">
+                    <img class="proto" src="prototypes/proto{{ cluster }}.png" alt="Prototype">
                     <div class="images">
                         {% for image_id, image in images.items() %}
                             {% if image.cluster_id == cluster %}
-                                <img src="clusters/cluster{{ cluster }}/{{ image_id }}_raw.png" alt="{{ image.path }}">
+                                <img src="clusters/cluster{{ cluster }}/raw/{{ image_id }}_raw.png" alt="{{ image.path }}">
                             {% endif %}
                         {% endfor %}
                     </div>

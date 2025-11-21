@@ -74,8 +74,8 @@ cleanup_pids() {
         local remaining=$(ps u | grep -E "$services" | grep -v grep | wc -l)
         if [ "$remaining" -gt 0 ]; then
             remaining_pids=$(ps u | grep -E "$services" | grep -v grep | awk '{print $2}' | tr '\n' ' ')
-            color_echo red "⚠️ $remaining process(es) might still be running. You may need to manually kill them."
-            color_echo red "  kill -9 $remaining_pids"
+            color_echo red "⚠️ $remaining process(es) might still be running. You may need to manually kill them."
+            color_echo red "💀 kill -9 $remaining_pids"
             echo ""
             color_echo yellow "ps u | grep -E $services | grep -v grep"
             ps u | grep -E "$services" | grep -v grep

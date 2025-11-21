@@ -68,3 +68,31 @@ make html
 ## Deployment
 
 See [docker/README.md](docker/README.md) for deployment instructions.
+
+## Citation
+
+If you find this work useful, please consider citing:
+
+```bibtex
+@article{albouy2025aikon,
+    title={{AIKON : A Modular Computer Vision Platform for Historical Corpora}},
+    author={
+        Albouy, Ségolène and
+        Norindr, Somkeo and
+        Kervegan, Paul and
+        Aouinti, Fouad and
+        Delanaux, Rémy and
+        Champenois, Robin and
+        Lazaris, Stavros and
+        Guilbaud, Alexandre and
+        Husson, Matthieu and
+        Aubry, Mathieu
+    },
+    url={https://hal.science/hal-05248250},
+    year={2025},
+    month={Sep},
+    number={hal-05248250},
+    journal={HAL Pre-Print},
+    keyword={Digital Humanities, Computer Vision, Historical Documents, Visual Analysis},
+}
+```

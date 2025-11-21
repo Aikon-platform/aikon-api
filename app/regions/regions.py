@@ -75,16 +75,14 @@ class ExtractRegions(LoggedTask):
         self.results_url = []
         self.annotations = {}
         self.extractor = None
-        if isinstance(postprocess, dict):
-            self.extractor_kwargs = {
-                "squarify": postprocess.get("squarify", False),
-                "margin": [postprocess.get("h_margin", 0), postprocess.get("v_margin", 0)],
-            }
-        else:
-            self.extractor_kwargs = {
-                "squarify": False,
-                "margin": [0,0]
-            }
+
+        if type(postprocess) is not dict:
+            postprocess = {}
+
+        self.extractor_kwargs = {
+            "squarify": postprocess.get("squarify", False),
+            "margin": [postprocess.get("h_margin", 0), postprocess.get("v_margin", 0)],
+        }
 
     def initialize(self):
         """
