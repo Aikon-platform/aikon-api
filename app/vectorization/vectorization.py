@@ -32,7 +32,9 @@ def load_model(model_checkpoint_path=MODEL_CHECKPOINT, model_config_path=MODEL_C
     # TODO allow for multiple models
     config = set_config(model_config_path)
     model, _, postprocessors = build_model_main(config)
-    checkpoint = torch.load(model_checkpoint_path, map_location="cuda")
+    checkpoint = torch.load(
+        model_checkpoint_path, map_location="cuda", weights_only=False
+    )
     model.load_state_dict(checkpoint["model"])
     return model, postprocessors
 
@@ -53,10 +55,7 @@ class ComputeVectorization(LoggedTask):
 
     def store(self, doc):
         self.create_zip(doc.uid)
-        doc_results = {
-            "doc_id": doc.uid,
-            "result_url": doc.get_results_url(DEMO_NAME)
-        }
+        doc_results = {"doc_id": doc.uid, "result_url": doc.get_results_url(DEMO_NAME)}
 
         self.results_url.append(doc_results)
         self.notifier(
@@ -151,7 +150,5 @@ class ComputeVectorization(LoggedTask):
                 raise e
 
         except Exception as e:
-            self.log_error(
-                f"Failed to zip directory {output_dir}", e
-            )
+            self.log_error(f"Failed to zip directory {output_dir}", e)
             raise e

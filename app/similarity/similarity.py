@@ -368,8 +368,7 @@ class ComputeSimilarity(LoggedTask):
         return {
             "parameters": self.format_parameters(),
             "index": Dataset.serialize(
-                documents=docs, 
-                transpositions=self.raw_transpositions
+                documents=docs, transpositions=self.raw_transpositions
             ),
             "pairs": [
                 (offsets[doc1] + i, offsets[doc2] + j, *sim)
@@ -518,7 +517,9 @@ class ComputeSimilarity(LoggedTask):
             f"Computing SegSwap similarity for {len(input_pairs.data)} pairs of documents ({input_pairs})"
         )
 
-        param = torch.load(get_model_path("hard_mining_neg5"), map_location=device)
+        param = torch.load(
+            get_model_path("hard_mining_neg5"), map_location=device, weights_only=False
+        )
         backbone = segswap.load_backbone(param).to(device)
         encoder = segswap.load_encoder(param).to(device)
 

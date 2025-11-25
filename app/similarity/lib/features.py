@@ -48,8 +48,9 @@ class FeatureExtractor:
             feat_path = cache_dir / f"{cache_id}_{self.extractor_label}.pt"
 
             if os.path.exists(feat_path):
-                feats = torch.load(feat_path, map_location=self.device)
-                # feats = torch.load(feat_path, map_location="cpu")
+                feats = torch.load(
+                    feat_path, map_location=self.device, weights_only=False
+                )
 
                 if feats.numel() != 0:
                     console(f"Loaded extracted features from {feat_path}")
