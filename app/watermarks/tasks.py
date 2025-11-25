@@ -39,7 +39,9 @@ def auto_load_models(models: List[str] = None):
     for model in models:
         if model not in MODELS:
             MODELS[model] = torch.load(
-                MODEL_PATHS[model], map_location=torch.device(DEVICE)
+                MODEL_PATHS[model],
+                map_location=torch.device(DEVICE),
+                weights_only=False,
             ).eval()
 
 
