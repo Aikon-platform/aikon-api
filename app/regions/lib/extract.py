@@ -355,7 +355,7 @@ class LineExtractor(OcrExtractor):
         from .line_predictor.config.slconfig import SLConfig
 
         self.device = select_device(self.device)
-        checkpoint = torch.load(self.weights, map_location="cpu")
+        checkpoint = torch.load(self.weights, weights_only=False, map_location="cpu")
 
         args = SLConfig.fromfile(self.config)
         args.device = self.device
@@ -508,9 +508,9 @@ class DtlrExtractor(OcrExtractor):
         args.CTC_loss_coef = 0.25
         args.fix_size = False
 
-        # 2 - load model, checpoint and charset
+        # 2 - load model, checkpoint and charset
         model, _, postprocessors = build_model_main(args)
-        checkpoint = torch.load(self.weights, map_location="cpu")
+        checkpoint = torch.load(self.weights, weights_only=False, map_location="cpu")
 
         with open(self.labels, mode="rb") as fh:
             labels_content = pickle.load(fh)
@@ -700,7 +700,9 @@ class FasterRCNNExtractor(BaseExtractor):
     DEFAULT_IMG_SIZES = [800, 1400, 2000]  # used for multiscale inference
 
     def get_model(self):
-        model = torch.load(self.weights, map_location=self.device).eval()
+        model = torch.load(
+            self.weights, map_location=self.device, weights_only=False
+        ).eval()
         return model
 
     @staticmethod

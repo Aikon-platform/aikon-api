@@ -223,7 +223,7 @@ class LoggerHelper:
         """
         Log an info message
         """
-        base_logger.info("\n".join(str(p) for p in s))
+        base_logger.info("\n".join(pprint(p) for p in s))
 
     @staticmethod
     def warning(*s, exception: bool = False, **kwargs) -> None:
@@ -438,7 +438,7 @@ class JobLogger:
         """
         Log an info message
         """
-        text = "\n".join(str(k) for k in s)
+        text = "\n".join(pprint(k) for k in s)
         self._latest_infos.append(text)
         self._latest_infos = self._latest_infos[-10:]
         self._send_state(with_warnings=False)

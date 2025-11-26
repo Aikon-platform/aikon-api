@@ -69,3 +69,42 @@ def pdf_to_img(pdf_path, img_path, dpi=500, max_size=3000):
 
     except Exception as e:
         console(f"Error converting {pdf_path} to images: {e}", "red")
+
+@dataclass
+class DocInRange:
+    """
+    A range of images from the same document, used to group images by document
+    Mostly used in similarity to reference feature indices
+    """
+    document: "Document"
+    range: range
+    images: list[Image]
+
+    def __eq__(self, value: "DocInRange") -> bool:
+        return self.document.uid == value.document.uid
+
+    def __hash__(self):
+        return hash(self.document.uid)
+
+    def slice(self, scale_by: int) -> slice:
+        return slice(self.range.start * scale_by, self.range.stop * scale_by)
+
+    def __str__(self):
+        return (
+            f"DocInFeatures({self.document.uid}, {self.range.start}-{self.range.stop})"
+        )
+
+    def __repr__(self):
+        return str(self)
+
+def group_by_documents(images: list[Image]) -> list[DocInRange]:
+    """
+    Identify groups of consecutive images from the same document
+    """
+    ranges = []
+    p = 0
+    for k, i in enumerate(images + [None]):
+        if i is None or i.document != images[p].document:
+            ranges.append(DocInRange(images[p].document, range(p, k), images[p:k]))
+            p = k
+    return ranges

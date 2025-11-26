@@ -13,6 +13,8 @@ stream-unzip
 orjson
 httpx
 iiif-download>=0.1.10
+python-dotenv
+packaging
 
 addict
 cython
@@ -40,8 +42,8 @@ kornia==0.7.* # TODO update
 hydra-core
 fvcore
 
-# Match pytorch with your cuda version / container image: https://pytorch.org/get-started/locally/
 torch>=2.2
 torchvision
 torchaudio
---extra-index-url https://download.pytorch.org/whl/cu124
+--extra-index-url https://download.pytorch.org/whl/cu130
+# Match pytorch with your cuda version / container image: https://pytorch.org/get-started/locally/

@@ -26,7 +26,7 @@ if [ "$answer" = "yes" ]; then
     color_echo yellow "\nSystem packages..."
     if [ "$OS" = "Linux" ]; then
         sudo apt-get install redis-server python3.10 python3.10-venv python3.10-dev curl
-        sudo systemctl restart redis-server
+        sudo systemctl start redis-server
     elif [ "$OS" = "Mac" ]; then
         brew install redis python@3.10 curl
         brew services start redis

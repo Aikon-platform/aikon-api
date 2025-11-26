@@ -6,6 +6,7 @@ model:
     data:
       generator: mlp # mlp / unet
       init: gaussian
+      value: 0.5
       gaussian_weights_std: 25
 
 training:
