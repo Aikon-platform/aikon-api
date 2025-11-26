@@ -168,6 +168,14 @@ class Document:
         with open(self.metadata_path, "r") as f:
             return json.load(f)
 
+    @staticmethod
+    def create_path(path):
+        path = Path(path).resolve()
+        if path.parent.exists() and path.parent.is_file():
+            console(f"Removing file folder creation: {path.parent}")
+            path.parent.unlink()
+        path.parent.mkdir(parents=True, exist_ok=True)
+
     @property
     def images(self):
         """
@@ -251,11 +259,8 @@ class Document:
                 skip()
                 continue
 
-            if path.parent.exists() and path.parent.is_file():
-                path.parent.unlink()
-            path.parent.mkdir(parents=True, exist_ok=True)
-            if path.exists():
-                path.unlink()
+            self.create_path(path)
+
             with open(path, "wb") as f:
                 for chunk in unzipped_chunks:
                     f.write(chunk)
@@ -399,7 +404,7 @@ class Document:
                 if crop_path.exists():
                     continue
 
-                crop_path.parent.mkdir(parents=True, exist_ok=True)
+                self.create_path(crop_path)
 
                 if source != img["source"]:
                     source = img["source"]
