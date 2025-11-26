@@ -1,5 +1,4 @@
-from collections import defaultdict, OrderedDict
-from dataclasses import dataclass
+from collections import OrderedDict
 from typing import (
     Optional,
     TypedDict,
@@ -7,9 +6,7 @@ from typing import (
     List,
     TypeAlias,
     Tuple,
-    cast,
     Set,
-    TypeVar,
     Union,
 )
 import numpy as np
@@ -39,6 +36,8 @@ from ..shared.dataset.utils import ImageDict, DocInRange, group_by_documents
 from ..shared.utils import get_device
 from ..shared.tasks import LoggedTask
 from ..shared.utils.logging import serializer
+
+from ..config.base import IS_CUDA
 
 SimScore: TypeAlias = Tuple[float, int, int]
 PairTuple: TypeAlias = Tuple[int, int, float, int, int]
@@ -398,7 +397,7 @@ class ComputeSimilarity(LoggedTask):
             n_transpositions=len(self.transpositions),
         )
 
-        if self.algorithm == "segswap":
+        if self.algorithm == "segswap" and IS_CUDA:
             pairs = self.compute_segswap_similarity(
                 source_paths, pairs, cos_topk=topk, device=self.device
             )
