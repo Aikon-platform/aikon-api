@@ -229,10 +229,6 @@ class Document:
         )
 
     def _download_from_zip(self, zip_url: str):
-        """
-        Download a zip file from a URL, extract its contents, and save images.
-        """
-
         def zipped_chunks():
             with httpx.stream("GET", zip_url) as r:
                 yield from r.iter_bytes(chunk_size=8192)
@@ -255,7 +251,11 @@ class Document:
                 skip()
                 continue
 
+            if path.parent.exists() and path.parent.is_file():
+                path.parent.unlink()
             path.parent.mkdir(parents=True, exist_ok=True)
+            if path.exists():
+                path.unlink()
             with open(path, "wb") as f:
                 for chunk in unzipped_chunks:
                     f.write(chunk)
