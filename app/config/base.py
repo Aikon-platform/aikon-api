@@ -1,6 +1,5 @@
 from pathlib import Path
 from environ import Env
-import torch
 
 # Path to api/ folder
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -8,17 +7,20 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 ENV = Env()
 Env.read_env(env_file=f"{BASE_DIR}/.env")
 
-IS_CUDA = torch.cuda.is_available()
+try:
+    import torch
 
-INSTALLED_APPS = ENV("INSTALLED_APPS").split(",")
+    IS_CUDA = torch.cuda.is_available()
+except (ImportError, RuntimeError):
+    IS_CUDA = False
+
+INSTALLED_APPS = ENV.list("INSTALLED_APPS", default=[])
 if not IS_CUDA:
     cuda_apps = {"vectorization", "dticlustering"}
     removed = cuda_apps & set(INSTALLED_APPS)
     INSTALLED_APPS = [app for app in INSTALLED_APPS if app not in cuda_apps]
-    for app in removed:
-        print(
-            f"Warning: {app} removed from INSTALLED_APPS because CUDA is not available."
-        )
+    if removed:
+        print(f"Warning: {', '.join(removed)} removed (CUDA unavailable)")
 
 data_path = Path(ENV("API_DATA_FOLDER", default=f"{BASE_DIR}/data"))
 API_DATA_FOLDER = (
