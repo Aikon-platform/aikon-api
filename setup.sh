@@ -4,7 +4,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 INSTALL_MODE=${INSTALL_MODE:-"full_install"}
 source "$SCRIPT_DIR"/docker/utils.sh
-source "../front"
+source "../front/app/config/.env"
 
 color_echo cyan "Running a $INSTALL_MODE for the API! 🚀"
 
