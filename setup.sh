@@ -48,7 +48,7 @@ answer=$(printf "%s\n" "${options[@]}" | fzy)
 if [ "$answer" = "yes" ]; then
     color_echo yellow "\nSetting up .env files"
 
-    default_param=("API_PORT" "PROD_URL" "API_DATA_FOLDER" "TARGET" "DOCKER" "YOLO_CONFIG_DIR")
+    default_param=("API_PORT" "PROD_API_URL" "API_DATA_FOLDER" "TARGET" "DOCKER" "YOLO_CONFIG_DIR")
     setup_env "$SCRIPT_DIR"/.env "${default_params[@]}"
     setup_env "$SCRIPT_DIR"/.env.dev "${default_params[@]}"
 fi

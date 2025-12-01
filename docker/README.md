@@ -99,7 +99,7 @@ sed -i -e 's/^TARGET=.*/TARGET="prod"/' .env.prod
 sed -i -e 's/^API_DATA_FOLDER=.*/API_DATA_FOLDER="/data/"/' .env.prod
 sed -i -e 's/^YOLO_CONFIG_DIR=.*/YOLO_CONFIG_DIR="/data/yolotmp/"/' .env.prod
 
-# OPTIONAL: modify other variables, notably PROD_URL, API_PORT and HUGGING_FACE_HUB_TOKEN
+# OPTIONAL: modify other variables, notably PROD_API_URL and API_PORT
 nano .env.prod
 ```
 

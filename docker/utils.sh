@@ -169,7 +169,7 @@ get_env_desc() {
 
 get_default_val() {
     local param=$1
-    if [[ "$param" = "PROD_URL" ]]; then
+    if [[ "$param" = "PROD_API_URL" ]]; then
         default_val=${PROD_API_URL:-""}
     elif [ -n "${!param}" ]; then
         # if the value is already exported in the current shell, use it as default
