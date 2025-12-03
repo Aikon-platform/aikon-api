@@ -1,5 +1,6 @@
 from typing import Optional, List, Dict, Tuple
 from torch.utils.data import DataLoader
+from torchvision import transforms
 from safetensors.torch import save_file as sft_save_file, safe_open as sft_safe_open
 import numpy as np
 from scipy.spatial.distance import cdist
@@ -18,6 +19,8 @@ from ..shared.dataset.utils import ImageDict
 from ..shared.utils import get_device
 from ..shared.utils.logging import serializer
 from .const import SEARCH_INDEX_PATH, SEARCH_QUERY_PATH
+
+from .utils import BriquetSynthetizeSketch
 
 class DatasetIndex:
     """
@@ -128,18 +131,32 @@ class DatasetIndex:
             )
         }
 
-    def build(self):
+    def build(self, are_sketches: bool = False):
         """
         Build the index
+
+        :param are_sketches: whether the images are sketches (e.g. Briquet)
         """
         if self.extractor is None:
             self.init_extractor()
 
         img_paths = [str(i.path) for i in self.images]
 
+        transform = self.extractor.transforms
+        print("ARE SKETCHES", are_sketches)
+        if are_sketches:
+            assert isinstance(transform.transforms[0], transforms.Resize)
+            transform = transforms.Compose(
+                [
+                    transform.transforms[0],
+                    BriquetSynthetizeSketch(size=transform.transforms[0].size),
+                    *transform.transforms[1:],
+                ]
+            )
+
         img_dataset = FileListDataset(
             data_paths=img_paths,
-            transform=self.extractor.transforms,
+            transform=transform,
             device=self.device,
             transpositions=self.transpositions,
         )
@@ -275,6 +292,8 @@ class IndexDataset(LoggedTask):
         self.algorithm = "cosine"
 
         self.raw_transpositions: List[str] = parameters.get("transpositions", ["none"])
+        self.are_sketches = parameters.get("are_sketches", False)
+        self.log(f"Indexing with parameters: {parameters}")
 
         self.device = get_device()
 
@@ -336,7 +355,7 @@ class IndexDataset(LoggedTask):
 
         self.log(f"Indexing {len(self.index.images)} images")
 
-        self.index.build()
+        self.index.build(are_sketches=self.are_sketches)
 
         self.log("Indexing completed, saving index")
         
