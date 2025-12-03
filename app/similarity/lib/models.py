@@ -117,8 +117,6 @@ def _instantiate_dino_deitsmall16_pretrain(weights_path, device) -> torch.nn.Mod
 
 def _instantiate_resnet18_watermarks(weights_path, device, conv4: bool=False) -> torch.nn.Module:
     path_str = str(weights_path)
-    if conv4:
-        path_str = path_str.replace("_conv4", "")
     model = torch.load(path_str, map_location=device, weights_only=False)
     if conv4:
         model.layer4 = torch.nn.Identity()
@@ -160,6 +158,9 @@ def download_model(model_name):
 
 
 def get_model_path(model_name):
+    # TODO Hook to handle cropped models by removing "_conv4" suffix
+    model_name = model_name.replace("_conv4", "")
+
     if not os.path.exists(MODEL_PATH / f"{model_name}.pth"):
         download_model(model_name)
 
