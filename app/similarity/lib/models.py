@@ -3,6 +3,7 @@ from typing import Tuple, Callable, Any
 from torchvision.models.feature_extraction import create_feature_extractor
 from torchvision import models, transforms
 from collections import OrderedDict
+from functools import partial
 
 from .vit import VisionTransformer
 from ..const import MODEL_PATH
@@ -15,10 +16,10 @@ DEFAULT_MODEL_URLS = {
     "dino_vitbase8_pretrain": "https://dl.fbaipublicfiles.com/dino/dino_vitbase8_pretrain/dino_vitbase8_pretrain.pth",
     "hard_mining_neg5": "https://github.com/XiSHEN0220/SegSwap/raw/main/model/hard_mining_neg5.pth",
     "resnet18": "https://download.pytorch.org/models/resnet18-5c106cde.pth",
-    "resnet18_watermarks": {
+    **{k: {
         "repo_id": "seglinglin/Historical-Document-Backbone",
         "filename": "resnet18_watermarks.pth",
-    },
+    } for k in ["resnet18_watermarks", "resnet18_watermarks_conv4"]},
     "resnet34": "https://download.pytorch.org/models/resnet34-333f7ec4.pth",
     "resnet50": "https://download.pytorch.org/models/resnet50-19c8e357.pth",
     "resnet101": "https://download.pytorch.org/models/resnet101-5d3b4d8f.pth",
@@ -54,6 +55,11 @@ DEFAULT_MODEL_INFOS = {
         "name": "ResNet 18 for watermarks",
         "model": "resnet18_watermarks",
         "desc": "Deep residual network trained for watermarks comparison.",
+    },
+    "resnet18_watermarks_conv4": {
+        "name": "ResNet 18 for watermarks, cropped to conv4",
+        "model": "resnet18_watermarks_conv4",
+        "desc": "Deep residual network trained for watermarks comparison, more efficient for cross-domain.",
     },
     "dino_deitsmall16_pretrain": {
         "name": "DINO DeiT-Small 16",
@@ -109,22 +115,31 @@ def _instantiate_dino_deitsmall16_pretrain(weights_path, device) -> torch.nn.Mod
     return model
 
 
+def _instantiate_resnet18_watermarks(weights_path, device, conv4: bool=False) -> torch.nn.Module:
+    path_str = str(weights_path)
+    model = torch.load(path_str, map_location=device, weights_only=False)
+    if conv4:
+        model.layer4 = torch.nn.Identity()
+    return model
+
+
 DEFAULT_MODEL_LOADERS = {
     "moco_v2_800ep_pretrain": _instantiate_moco_v2_800ep_pretrain,
     "dino_vitbase8_pretrain": _instantiate_dino_vitbase8_pretrain,
     "dino_deitsmall16_pretrain": _instantiate_dino_deitsmall16_pretrain,
     "resnet34": _instantiate_resnet34,
+    "resnet18_watermarks": partial(_instantiate_resnet18_watermarks, conv4=False),
+    "resnet18_watermarks_conv4": partial(_instantiate_resnet18_watermarks, conv4=True)
 }
 
 DEFAULT_MODEL_TRANSFORMS = {
-    "resnet18_watermarks": transforms.Compose(
+    **{k: transforms.Compose(
         [
             transforms.Resize((320, 320)),
             transforms.Normalize(mean=[0.75, 0.70, 0.65], std=[0.14, 0.15, 0.16]),
         ]
-    )
+    ) for k in ["resnet18_watermarks", "resnet18_watermarks_conv4"]}
 }
-
 
 def download_model(model_name):
     os.makedirs(MODEL_PATH, exist_ok=True)
@@ -143,6 +158,9 @@ def download_model(model_name):
 
 
 def get_model_path(model_name):
+    # TODO Hook to handle cropped models by removing "_conv4" suffix
+    model_name = model_name.replace("_conv4", "")
+
     if not os.path.exists(MODEL_PATH / f"{model_name}.pth"):
         download_model(model_name)
 
