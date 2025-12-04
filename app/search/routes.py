@@ -110,7 +110,8 @@ def start_indexing(client_id):
             ...(tasking.routes.receive_task request)...
             "parameters": {
                 "feat_net": "model.pt",
-                "transpositions": ["none"]
+                "transpositions": ["none"],
+                "are_sketches": false
             }
         }
     """
@@ -128,6 +129,7 @@ def start_indexing(client_id):
     parameters = {
         "feat_net": param.get("feat_net", FEAT_NET),
         "transpositions": param.get("transpositions", ["none"]),
+        "are_sketches": param.get("are_sketches", False),
         "client_id": client_id,
     }
 
