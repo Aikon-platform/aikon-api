@@ -8,7 +8,7 @@ DEMO_NAME = "search"
 DEMO_DIR = BASE_DIR / "app" / DEMO_NAME
 LIB_PATH = DEMO_DIR / "lib"
 
-SEARCH_QUEUE = "queue5"  # see docker-confs/supervisord.conf
+SEARCH_QUEUE = "queue3"  # see docker-confs/supervisord.conf
 
 SEARCH_DATA_FOLDER = API_DATA_FOLDER / DEMO_NAME
 SEARCH_XACCEL_PREFIX = f"{XACCEL_PREFIX}/{DEMO_NAME}"
