@@ -5,11 +5,12 @@ from typing_extensions import NotRequired
 
 import requests
 import json
-import httpx
 from pathlib import Path
-from PIL import Image as PImage
 from stream_unzip import stream_unzip
 from typing import List, Optional, TypedDict, Literal
+
+import httpx
+from PIL import Image as PImage
 from iiif_download import IIIFManifest
 
 from ... import config
@@ -201,11 +202,25 @@ class Document:
         Load the images of the document
         """
         if not self.images_info_path.exists():
-            # TODO save it? or regenerate on each load?
             self._images = self.list_images_from_path()
             return
         with open(self.images_info_path, "r") as f:
             self._images = [Image.from_dict(img, self) for img in json.load(f)]
+
+    def sanity_check(self) -> bool:
+        """
+        check that Document files are downloaded.
+        1. if there is an images.json, ensure that all files are in `images/`
+        2. else, check if there are image files in `images/`
+        NOTE: originally images.json was not created for zips and pdf files, so we can't always rely on it
+        """
+        if self.images_info_path.exists():
+            with open(self.images_info_path, mode="r") as fh:
+                n_expected = len(json.load(fh))
+            n_actual = len(get_img_paths(self.images_path))
+            return n_actual == n_expected
+        else:
+            return self.has_images()
 
     def _download_from_iiif(self, manifest_url: str):
         """
@@ -252,11 +267,13 @@ class Document:
             if "/." in "/" + file_name.replace("\\", "/"):  # hidden file
                 skip()
                 continue
+
             path = self.images_path / file_name
             if path.suffix.lower() not in ALLOWED_EXTENSIONS:
                 skip()
                 continue
             self.create_path(path)
+
             with open(path, "wb") as f:
                 for chunk in unzipped_chunks:
                     f.write(chunk)
@@ -306,7 +323,8 @@ class Document:
         """
         Download a document from its source definition
         """
-        if self.images_path.exists() and self.has_images():
+        # if self.images_path.exists() and self.has_images():
+        if self.sanity_check():
             console(
                 f"Document {self.uid} already exists in {self.images_path}, skipping download.",
                 color="blue",
