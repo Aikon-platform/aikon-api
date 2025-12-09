@@ -243,7 +243,6 @@ class Document:
         def zipped_chunks():
             with httpx.stream("GET", zip_url) as r:
                 yield from r.iter_bytes(chunk_size=8192)
-
         def skip():
             for _ in unzipped_chunks:
                 pass
@@ -257,12 +256,11 @@ class Document:
             if path.suffix.lower() not in ALLOWED_EXTENSIONS:
                 skip()
                 continue
-
             self.create_path(path)
-
             with open(path, "wb") as f:
                 for chunk in unzipped_chunks:
                     f.write(chunk)
+        self.save_images(self.list_images_from_path(), True)
 
     def _download_from_url_list(self, images_list_url: str):
         """
