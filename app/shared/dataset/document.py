@@ -295,6 +295,7 @@ class Document:
                     f.write(chunk)
 
         pdf_to_img(pdf_path, self.images_path)
+        print(json.dumps(self.list_images_from_path(), indent=2))
         pdf_path.unlink()
 
     def _download_from_img(self, img_url: str):
