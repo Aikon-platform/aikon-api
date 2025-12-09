@@ -355,6 +355,9 @@ class Document:
         """
         Iterate over the images in the document
         """
+        # possibly overkill
+        if not self.sanity_check():
+            self.download()
         return self.images
 
     def list_images_from_path(self) -> List[Image]:
