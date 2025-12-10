@@ -21,10 +21,14 @@ class ImageDict(TypedDict):
 @dataclass
 class Image:
     id: str
-    src: str
+    src: str|None
     path: Path
     metadata: dict[str, str] | None = None
     document: "Document" = None
+
+    def remove_src(self):
+        self.src = None
+        return self
 
     def to_dict(self, relpath: Path = None) -> dict:
         if relpath is None:
