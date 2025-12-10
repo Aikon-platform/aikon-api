@@ -45,5 +45,5 @@ fvcore
 torch>=2.2
 torchvision
 torchaudio
---extra-index-url https://download.pytorch.org/whl/cu130
+--extra-index-url https://download.pytorch.org/whl/cu124
 # Match pytorch with your cuda version / container image: https://pytorch.org/get-started/locally/
