@@ -32,7 +32,7 @@ stdout_logfile = /dev/stdout
 stdout_logfile_maxbytes = 0
 
 [program:redis-server]
-command = redis-server --loglevel warning
+command = redis-server --loglevel warning --save "3600 1"
 autostart = true
 autorestart = true
 stderr_logfile = /dev/stderr
