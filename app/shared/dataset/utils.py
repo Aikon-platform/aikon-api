@@ -62,17 +62,19 @@ class Image:
 
 def pdf_to_img(pdf_path, img_path, dpi=500, max_size=3000):
     """
-    Convert the PDF file to JPEG images
+    Convert the PDF file to PNG images
     """
     import subprocess
 
     file_prefix = pdf_path.stem
     try:
-        command = f"pdftoppm -jpeg -r {dpi} -scale-to {max_size} {pdf_path} {img_path}/{file_prefix} -sep _ "
+        # TODO issue, we save everything to png, even RGB images without alpha that could be compressed as jpg
+        command = f"pdftoppm -png -r {dpi} -scale-to {max_size} {pdf_path} {img_path}/{file_prefix} -sep _ "
         subprocess.run(command, shell=True, check=True)
 
     except Exception as e:
         console(f"Error converting {pdf_path} to images: {e}", "red")
+
 
 @dataclass
 class DocInRange:
@@ -80,6 +82,7 @@ class DocInRange:
     A range of images from the same document, used to group images by document
     Mostly used in similarity to reference feature indices
     """
+
     document: "Document"
     range: range
     images: list[Image]
@@ -100,6 +103,7 @@ class DocInRange:
 
     def __repr__(self):
         return str(self)
+
 
 def group_by_documents(images: list[Image]) -> list[DocInRange]:
     """
