@@ -12,7 +12,7 @@ stream-zip
 stream-unzip
 orjson
 httpx
-iiif-download==0.1.13
+iiif-download>=0.1.15
 python-dotenv
 packaging
 

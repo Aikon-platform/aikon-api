@@ -286,12 +286,12 @@ class Document:
         images_dict = get_json(images_list_url)
         images = []
         for img_stem, img_url in images_dict.items():
-            download_image(img_url, self.images_path, img_stem)
+            ext = download_image(img_url, self.images_path, img_stem)
             images.append(
                 Image(
                     id=img_stem,
                     src=img_url,
-                    path=self.images_path / f"{img_stem}.jpg",
+                    path=self.images_path / f"{img_stem}.{ext}",
                     document=self,
                 )
             )
