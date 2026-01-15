@@ -6,7 +6,8 @@ import hashlib
 import torch
 import gc
 import requests
-from typing import Optional
+from typing import Optional, List
+import re
 
 from .logging import console
 
@@ -53,3 +54,13 @@ def get_json(url: str) -> Optional[dict]:
     except requests.exceptions.RequestException:
         console(f"Error getting JSON for {url}")
         return None
+
+
+def natural_sort(s: str) -> List[str | int]:
+    """Natural sort key: 'ref2' < 'ref10'"""
+    return [int(part) if part.isdigit() else part for part in re.split(r"(\d+)", s)]
+
+
+def sort_naturally(l: List[str]) -> List[str]:
+    """Sort a list of strings naturally: 'ref2' < 'ref10'"""
+    return sorted(l, key=natural_sort)
