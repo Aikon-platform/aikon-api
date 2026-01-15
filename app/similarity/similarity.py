@@ -33,7 +33,7 @@ from .lib.utils import AllTranspose, handle_transpositions
 from ..shared.dataset import Dataset
 from ..shared.dataset.document import DocDict, get_file_url, Document
 from ..shared.dataset.utils import ImageDict, DocInRange, group_by_documents
-from ..shared.utils import get_device
+from ..shared.utils import get_device, sort_naturally
 from ..shared.tasks import LoggedTask
 from ..shared.utils.logging import serializer
 
@@ -238,6 +238,7 @@ class ComputeSimilarity(LoggedTask):
         self.transpositions = [
             getattr(AllTranspose, t.upper()) for t in self.raw_transpositions
         ]
+        self.skip_pairs: set[str] = set(parameters.get("skip_pairs", []))
 
         self.device = get_device()
 
@@ -279,6 +280,11 @@ class ComputeSimilarity(LoggedTask):
 
     def add_results_url(self, value):
         self._results_url.append(value)
+
+    def skip(self, uid1: str, uid2: str) -> bool:
+        """Check if this pair should be skipped (already computed)"""
+        pair_id = "-".join(sort_naturally([uid1, uid2]))
+        return pair_id in self.skip_pairs
 
     @torch.no_grad()
     def get_features(self, img_paths: List[str]):
@@ -469,6 +475,12 @@ class ComputeSimilarity(LoggedTask):
         all_scores = BlockSimMatrix()
         for doc1 in doc_images:
             for doc2 in doc_images:
+                if self.skip(doc1.document.uid, doc2.document.uid):
+                    self.log(
+                        f"Skipping already computed pair: {doc1.document.uid} - {doc2.document.uid}"
+                    )
+                    continue
+
                 sim_matrix = 1.0 - cdist(
                     features[doc1.slice(scale_by=n_transpositions)],
                     features[doc2.slice(scale_by=n_transpositions)],
@@ -543,6 +555,12 @@ class ComputeSimilarity(LoggedTask):
         for block in input_pairs.blocks():
             doc1 = block.doc1
             doc2 = block.doc2
+            if self.skip(doc1.document.uid, doc2.document.uid):
+                self.log(
+                    f"Skipping already computed pair: {doc1.document.uid} - {doc2.document.uid}"
+                )
+                continue
+
             doc_scores = segswap_scores[doc1, doc2]
 
             pairs = list(block)
