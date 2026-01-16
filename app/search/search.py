@@ -15,12 +15,12 @@ from ..similarity.lib.utils import AllTranspose, handle_transpositions
 
 from ..shared.tasks import LoggedTask
 from ..shared.dataset import Dataset, Image
-from ..shared.dataset.utils import ImageDict
 from ..shared.utils import get_device
 from ..shared.utils.logging import serializer
 from .const import SEARCH_INDEX_PATH, SEARCH_QUERY_PATH
 
 from .utils import BriquetSynthetizeSketch
+
 
 class DatasetIndex:
     """
@@ -29,10 +29,10 @@ class DatasetIndex:
     Building:
     - Initialize the class from a dataset
     - Call .build() to build the index
-    - Call .save() to save the index into two files: 
+    - Call .save() to save the index into two files:
         - index_id.safetensors contains feature vectors
         - index_id.json.gz contains metadata and list of images
-    
+
     Querying:
     - Call .load() to load the index from the index_id.safetensors file
     - Call .query() to query the index with a dataset. Returns a dictionary with the description of the query dataset, and the associated results (as a list of pairs of image indices and scores). The index indices refer to the index_id.json.gz file.
@@ -40,7 +40,14 @@ class DatasetIndex:
     Utils:
     - .describe_self() returns a dictionary with the description of the index (metadata and list of images)
     """
-    def __init__(self, dataset: Dataset, feat_net: str, transpositions: List[str], extra_metadata: Optional[Dict] = None):
+
+    def __init__(
+        self,
+        dataset: Dataset,
+        feat_net: str,
+        transpositions: List[str],
+        extra_metadata: Optional[Dict] = None,
+    ):
         self.dataset = dataset
         self.images = self.dataset.prepare()
 
@@ -51,9 +58,11 @@ class DatasetIndex:
             getattr(AllTranspose, t.upper()) for t in self.raw_transpositions
         ]
 
-        self.index_id = self.id_for_dataset(self.dataset, self.feat_net, self.transpositions)
+        self.index_id = self.id_for_dataset(
+            self.dataset, self.feat_net, self.transpositions
+        )
         self.index_path = self.path_for_id(self.index_id)
-        
+
         self.extractor = None
         self.device = get_device()
 
@@ -83,7 +92,9 @@ class DatasetIndex:
         """
         Generate an ID for a dataset index, for a given (dataset, feature net, transpositions) tuple
         """
-        return f"{dataset.uid}+{feat_net}+{''.join(str(t.value) for t in transpositions)}"
+        return (
+            f"{dataset.uid}+{feat_net}+{''.join(str(t.value) for t in transpositions)}"
+        )
 
     @staticmethod
     def path_for_id(index_id: str) -> Path:
@@ -105,7 +116,7 @@ class DatasetIndex:
             else:
                 if dataset.uid != metadata["dataset_uid"]:
                     raise Exception("Dataset does not match the index")
-            
+
             obj = cls(
                 dataset=dataset,
                 feat_net=metadata["feat_net"],
@@ -117,18 +128,14 @@ class DatasetIndex:
             return obj
 
     def describe_images(self, images: List[Image], transpositions: List[str]) -> dict:
-        return Dataset.serialize(
-            images=images, 
-            transpositions=transpositions
-        )
+        return Dataset.serialize(images=images, transpositions=transpositions)
 
     def describe_self(self) -> dict:
         return {
             "metadata": self.metadata,
             "index": Dataset.serialize(
-                images=self.images, 
-                transpositions=self.raw_transpositions
-            )
+                images=self.images, transpositions=self.raw_transpositions
+            ),
         }
 
     def build(self, are_sketches: bool = False):
@@ -177,14 +184,19 @@ class DatasetIndex:
         Save the index to disk
         """
         sft_save_file(
-            {"features": self.index_features}, 
-            self.index_path, 
-            metadata={"metadata": orjson.dumps(self.metadata).decode("utf-8")}
+            {"features": self.index_features},
+            self.index_path,
+            metadata={"metadata": orjson.dumps(self.metadata).decode("utf-8")},
         )
         with gzip.open(self.index_path.with_suffix(".json.gz"), "wt") as f:
             f.write(orjson.dumps(self.metadata).decode("utf-8"))
-    
-    def query(self, target_dataset: Dataset, raw_transpositions: List[str], topk: int = COS_TOPK):
+
+    def query(
+        self,
+        target_dataset: Dataset,
+        raw_transpositions: List[str],
+        topk: int = COS_TOPK,
+    ):
         """
         Query the index with a list of image URLs
         """
@@ -205,9 +217,7 @@ class DatasetIndex:
 
         data_loader = DataLoader(img_dataset, batch_size=16, shuffle=False)
 
-        query_features = self.extractor.extract_features(
-            data_loader # no cache
-        )
+        query_features = self.extractor.extract_features(data_loader)  # no cache
 
         pairs = self.compute_cosine_similarity(
             query_features.cpu().numpy(),
@@ -266,7 +276,9 @@ class DatasetIndex:
         if topk > sim_matrix.shape[1]:
             topk = sim_matrix.shape[1]
         raw_top_indices = np.argpartition(sim_matrix, -topk, axis=1)[:, -topk:]
-        sorted_top_indices = np.argsort(np.take_along_axis(sim_matrix, raw_top_indices, axis=1), axis=1)
+        sorted_top_indices = np.argsort(
+            np.take_along_axis(sim_matrix, raw_top_indices, axis=1), axis=1
+        )
 
         top_indices = np.take_along_axis(raw_top_indices, sorted_top_indices, axis=1)
         top_values = np.take_along_axis(sim_matrix, top_indices, axis=1)
@@ -335,7 +347,7 @@ class IndexDataset(LoggedTask):
                 exception=e,
             )
             return False
-        
+
     def check_dataset(self) -> bool:
         return len(self.dataset.documents) > 0
 
@@ -345,12 +357,10 @@ class IndexDataset(LoggedTask):
         """
 
         self.index = DatasetIndex(
-            self.dataset, 
-            self.feat_net, 
-            self.raw_transpositions, 
-            {
-                "from_experiment": self.experiment_id
-            }
+            self.dataset,
+            self.feat_net,
+            self.raw_transpositions,
+            {"from_experiment": self.experiment_id},
         )
 
         self.log(f"Indexing {len(self.index.images)} images")
@@ -358,12 +368,13 @@ class IndexDataset(LoggedTask):
         self.index.build(are_sketches=self.are_sketches)
 
         self.log("Indexing completed, saving index")
-        
+
         self.index.save()
 
         self.log("Index saved")
 
         return self.index.describe_self()
+
 
 class QueryIndex(LoggedTask):
     """
@@ -398,7 +409,9 @@ class QueryIndex(LoggedTask):
 
             self.index = DatasetIndex.load(self.index_id)
 
-            self.log(f"Loaded index {self.index_id}; Querying index with {len(self.query_images)} images")
+            self.log(
+                f"Loaded index {self.index_id}; Querying index with {len(self.query_images)} images"
+            )
 
             results = self.index.query(
                 self.query_dataset,

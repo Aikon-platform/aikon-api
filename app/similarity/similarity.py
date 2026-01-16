@@ -8,6 +8,7 @@ from typing import (
     Tuple,
     Set,
     Union,
+    TYPE_CHECKING,
 )
 import numpy as np
 import torch
@@ -31,8 +32,9 @@ from .lib.models import get_model_path
 from .lib.utils import AllTranspose, handle_transpositions
 
 from ..shared.dataset import Dataset
+from ..shared.dataset.types import ImageDict, DocInRange
+from ..shared.dataset.utils import group_by_documents
 from ..shared.dataset.document import DocDict, get_file_url, Document
-from ..shared.dataset.utils import ImageDict, DocInRange, group_by_documents
 from ..shared.utils import get_device, sort_naturally
 from ..shared.tasks import LoggedTask
 from ..shared.utils.logging import serializer
