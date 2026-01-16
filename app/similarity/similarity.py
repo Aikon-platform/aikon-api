@@ -230,6 +230,9 @@ class ComputeSimilarity(LoggedTask):
         self.feat_net = parameters.get("feat_net", FEAT_NET) if parameters else FEAT_NET
         self.topk = int(parameters.get("topk", COS_TOPK))
         self.algorithm = parameters.get("algorithm", "cosine")
+        if self.algorithm == "segswap" and not IS_CUDA:
+            self.log("CUDA not available, falling back to cosine similarity")
+            self.algorithm = "cosine"
 
         # Whether to perform pre-filter using cosine similarity to keep only best matches before running segswap
         self.segswap_prefilter = parameters.get("segswap_prefilter", True)
@@ -284,7 +287,7 @@ class ComputeSimilarity(LoggedTask):
         self._results_url.append(value)
 
     def skip(self, uid1: str, uid2: str) -> bool:
-        """Check if this pair should be skipped (already computed)"""
+        """Check if this pair should be skipped (explicitly listed by the front)"""
         pair_id = "-".join(sort_naturally([uid1, uid2]))
         return pair_id in self.skip_pairs
 
@@ -445,6 +448,11 @@ class ComputeSimilarity(LoggedTask):
             }
 
             self.add_results_url(result_url)
+
+            if self.skip(matrix.doc1.document.uid, matrix.doc2.document.uid):
+                # do not notify skipped pairs
+                return
+
             self.notifier(
                 "PROGRESS",
                 output={
