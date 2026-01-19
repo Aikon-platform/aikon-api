@@ -288,7 +288,10 @@ class ComputeSimilarity(LoggedTask):
     def skip(self, uid1: str, uid2: str) -> bool:
         """Check if this pair should be skipped (explicitly listed by the front)"""
         pair_id = "-".join(sort_naturally([uid1, uid2]))
-        return pair_id in self.skip_pairs
+        skipping = pair_id in self.skip_pairs
+        if skipping:
+            self.log(f"Skipping {uid1} / {uid2}")
+        return skipping
 
     @torch.no_grad()
     def get_features(self, img_paths: List[str]):
@@ -452,6 +455,7 @@ class ComputeSimilarity(LoggedTask):
                 # do not notify skipped pairs
                 return
 
+            self.log(f"Sending {doc_ref} results to front")  # marker
             self.notifier(
                 "PROGRESS",
                 output={
@@ -486,7 +490,7 @@ class ComputeSimilarity(LoggedTask):
             for doc2 in doc_images:
                 if self.skip(doc1.document.uid, doc2.document.uid):
                     self.log(
-                        f"Skipping already computed pair: {doc1.document.uid} - {doc2.document.uid}"
+                        f"Skipping cosine computation for: {doc1.document.uid} - {doc2.document.uid}"
                     )
                     continue
 
@@ -566,7 +570,7 @@ class ComputeSimilarity(LoggedTask):
             doc2 = block.doc2
             if self.skip(doc1.document.uid, doc2.document.uid):
                 self.log(
-                    f"Skipping already computed pair: {doc1.document.uid} - {doc2.document.uid}"
+                    f"Skipping segswap computation for: {doc1.document.uid} - {doc2.document.uid}"
                 )
                 continue
 
