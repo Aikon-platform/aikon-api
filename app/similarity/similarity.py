@@ -8,7 +8,6 @@ from typing import (
     Tuple,
     Set,
     Union,
-    TYPE_CHECKING,
 )
 import numpy as np
 import torch
@@ -228,7 +227,7 @@ class ComputeSimilarity(LoggedTask):
         self.doc_images = group_by_documents(self.images)
 
         self.feat_net = parameters.get("feat_net", FEAT_NET) if parameters else FEAT_NET
-        self.topk = int(parameters.get("topk", COS_TOPK))
+        self.topk = int(parameters.get("cosine_n_filter", COS_TOPK))
         self.algorithm = parameters.get("algorithm", "cosine")
         if self.algorithm == "segswap" and not IS_CUDA:
             self.log("CUDA not available, falling back to cosine similarity")
