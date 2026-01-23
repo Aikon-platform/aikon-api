@@ -31,8 +31,9 @@ from .lib.models import get_model_path
 from .lib.utils import AllTranspose, handle_transpositions
 
 from ..shared.dataset import Dataset
+from ..shared.dataset.types import ImageDict, DocInRange
+from ..shared.dataset.utils import group_by_documents
 from ..shared.dataset.document import DocDict, get_file_url, Document
-from ..shared.dataset.utils import ImageDict, DocInRange, group_by_documents
 from ..shared.utils import get_device, sort_naturally
 from ..shared.tasks import LoggedTask
 from ..shared.utils.logging import serializer
@@ -226,8 +227,11 @@ class ComputeSimilarity(LoggedTask):
         self.doc_images = group_by_documents(self.images)
 
         self.feat_net = parameters.get("feat_net", FEAT_NET) if parameters else FEAT_NET
-        self.topk = int(parameters.get("topk", COS_TOPK))
+        self.topk = int(parameters.get("cosine_n_filter", COS_TOPK))
         self.algorithm = parameters.get("algorithm", "cosine")
+        if self.algorithm == "segswap" and not IS_CUDA:
+            self.log("CUDA not available, falling back to cosine similarity")
+            self.algorithm = "cosine"
 
         # Whether to perform pre-filter using cosine similarity to keep only best matches before running segswap
         self.segswap_prefilter = parameters.get("segswap_prefilter", True)
@@ -282,9 +286,12 @@ class ComputeSimilarity(LoggedTask):
         self._results_url.append(value)
 
     def skip(self, uid1: str, uid2: str) -> bool:
-        """Check if this pair should be skipped (already computed)"""
+        """Check if this pair should be skipped (explicitly listed by the front)"""
         pair_id = "-".join(sort_naturally([uid1, uid2]))
-        return pair_id in self.skip_pairs
+        skipping = pair_id in self.skip_pairs
+        if skipping:
+            self.log(f"Skipping {uid1} / {uid2}")
+        return skipping
 
     @torch.no_grad()
     def get_features(self, img_paths: List[str]):
@@ -443,6 +450,12 @@ class ComputeSimilarity(LoggedTask):
             }
 
             self.add_results_url(result_url)
+
+            if self.skip(matrix.doc1.document.uid, matrix.doc2.document.uid):
+                # do not notify skipped pairs
+                return
+
+            self.log(f"Sending {doc_ref} results to front")  # marker
             self.notifier(
                 "PROGRESS",
                 output={
@@ -477,7 +490,7 @@ class ComputeSimilarity(LoggedTask):
             for doc2 in doc_images:
                 if self.skip(doc1.document.uid, doc2.document.uid):
                     self.log(
-                        f"Skipping already computed pair: {doc1.document.uid} - {doc2.document.uid}"
+                        f"Skipping cosine computation for: {doc1.document.uid} - {doc2.document.uid}"
                     )
                     continue
 
@@ -557,7 +570,7 @@ class ComputeSimilarity(LoggedTask):
             doc2 = block.doc2
             if self.skip(doc1.document.uid, doc2.document.uid):
                 self.log(
-                    f"Skipping already computed pair: {doc1.document.uid} - {doc2.document.uid}"
+                    f"Skipping segswap computation for: {doc1.document.uid} - {doc2.document.uid}"
                 )
                 continue
 
