@@ -24,6 +24,8 @@ def group_by_documents(images: list[Image]) -> list[DocInRange]:
     """
     Identify groups of consecutive images from the same document
     """
+    if not images:
+        return []
     ranges = []
     p = 0
     for k, i in enumerate(images + [None]):
