@@ -1,10 +1,10 @@
 #!/bin/bash
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+source "$SCRIPT_DIR"/docker/utils.sh
+source "../front/app/config/.env"
 
 INSTALL_MODE=${INSTALL_MODE:-"full_install"}
-source "$SCRIPT_DIR"/docker/utils.sh
-source "../front"
 
 color_echo cyan "Running a $INSTALL_MODE for the API! 🚀"
 
@@ -45,16 +45,18 @@ color_echo blue "\nDo you want to setup environment variable?"
 answer=$(printf "%s\n" "${options[@]}" | fzy)
 if [ "$answer" = "yes" ]; then
     color_echo yellow "\nSetting up .env files"
-
-    default_param=("API_PORT" "PROD_URL" "API_DATA_FOLDER" "TARGET" "DOCKER" "YOLO_CONFIG_DIR")
+    default_params=("API_PORT" "PROD_URL" "API_DATA_FOLDER" "TARGET" "DOCKER" "YOLO_CONFIG_DIR")
     setup_env "$SCRIPT_DIR"/.env "${default_params[@]}"
     setup_env "$SCRIPT_DIR"/.env.dev "${default_params[@]}"
 fi
+echo -e "\n\n\n OK 1 \n\n\n"
 
+source "$SCRIPT_DIR"/.env
+source "$SCRIPT_DIR"/.env.dev
+echo -e "\n\n\n OK 2 \n\n\n"
 if [ "$TARGET" == "dev" ]; then
-    color_echo yellow "\nPre-commit install"
-    venv/bin/pip install pre-commit
-    pre-commit install
+    color_echo yellow "\nPre-commit setup"
+    uv run pre-commit install
 fi
 
 set_redis() {
