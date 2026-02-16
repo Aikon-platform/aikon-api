@@ -104,7 +104,8 @@ def receive_task(
     if not param:
         raise ValueError("No data in request: Task aborted!")
 
-    console(f"Received task: {param}", color="magenta")
+    console(f"Received task!", color="magenta")
+    console(param, color="magenta")
 
     experiment_id = param.get("experiment_id", str(uuid.uuid4()))
     notify_url = param.get("notify_url", None)
@@ -165,6 +166,7 @@ def cancel_task(tracking_id: str) -> dict:
     :return: A dictionary containing the tracking_id
     """
     abort(tracking_id)
+    console(f"Canceled task: {tracking_id}", color="magenta")
 
     return {"tracking_id": tracking_id}
 

@@ -1,5 +1,4 @@
-from collections import defaultdict, OrderedDict
-from dataclasses import dataclass
+from collections import OrderedDict
 from typing import (
     Optional,
     TypedDict,
@@ -7,9 +6,7 @@ from typing import (
     List,
     TypeAlias,
     Tuple,
-    cast,
     Set,
-    TypeVar,
     Union,
 )
 import numpy as np
@@ -34,11 +31,14 @@ from .lib.models import get_model_path
 from .lib.utils import AllTranspose, handle_transpositions
 
 from ..shared.dataset import Dataset
+from ..shared.dataset.types import ImageDict, DocInRange
+from ..shared.dataset.utils import group_by_documents
 from ..shared.dataset.document import DocDict, get_file_url, Document
-from ..shared.dataset.utils import ImageDict, DocInRange, group_by_documents
-from ..shared.utils import get_device
+from ..shared.utils import get_device, sort_naturally
 from ..shared.tasks import LoggedTask
 from ..shared.utils.logging import serializer
+
+from ..config.base import IS_CUDA
 
 SimScore: TypeAlias = Tuple[float, int, int]
 PairTuple: TypeAlias = Tuple[int, int, float, int, int]
@@ -227,8 +227,11 @@ class ComputeSimilarity(LoggedTask):
         self.doc_images = group_by_documents(self.images)
 
         self.feat_net = parameters.get("feat_net", FEAT_NET) if parameters else FEAT_NET
-        self.topk = int(parameters.get("topk", COS_TOPK))
+        self.topk = int(parameters.get("cosine_n_filter", COS_TOPK))
         self.algorithm = parameters.get("algorithm", "cosine")
+        if self.algorithm == "segswap" and not IS_CUDA:
+            self.log("CUDA not available, falling back to cosine similarity")
+            self.algorithm = "cosine"
 
         # Whether to perform pre-filter using cosine similarity to keep only best matches before running segswap
         self.segswap_prefilter = parameters.get("segswap_prefilter", True)
@@ -239,6 +242,7 @@ class ComputeSimilarity(LoggedTask):
         self.transpositions = [
             getattr(AllTranspose, t.upper()) for t in self.raw_transpositions
         ]
+        self.skip_pairs: set[str] = set(parameters.get("skip_pairs", []))
 
         self.device = get_device()
 
@@ -280,6 +284,14 @@ class ComputeSimilarity(LoggedTask):
 
     def add_results_url(self, value):
         self._results_url.append(value)
+
+    def skip(self, uid1: str, uid2: str) -> bool:
+        """Check if this pair should be skipped (explicitly listed by the front)"""
+        pair_id = "-".join(sort_naturally([uid1, uid2]))
+        skipping = pair_id in self.skip_pairs
+        if skipping:
+            self.log(f"Skipping {uid1} / {uid2}")
+        return skipping
 
     @torch.no_grad()
     def get_features(self, img_paths: List[str]):
@@ -368,8 +380,7 @@ class ComputeSimilarity(LoggedTask):
         return {
             "parameters": self.format_parameters(),
             "index": Dataset.serialize(
-                documents=docs, 
-                transpositions=self.raw_transpositions
+                documents=docs, transpositions=self.raw_transpositions
             ),
             "pairs": [
                 (offsets[doc1] + i, offsets[doc2] + j, *sim)
@@ -399,7 +410,7 @@ class ComputeSimilarity(LoggedTask):
             n_transpositions=len(self.transpositions),
         )
 
-        if self.algorithm == "segswap":
+        if self.algorithm == "segswap" and IS_CUDA:
             pairs = self.compute_segswap_similarity(
                 source_paths, pairs, cos_topk=topk, device=self.device
             )
@@ -439,6 +450,12 @@ class ComputeSimilarity(LoggedTask):
             }
 
             self.add_results_url(result_url)
+
+            if self.skip(matrix.doc1.document.uid, matrix.doc2.document.uid):
+                # do not notify skipped pairs
+                return
+
+            self.log(f"Sending {doc_ref} results to front")  # marker
             self.notifier(
                 "PROGRESS",
                 output={
@@ -471,6 +488,12 @@ class ComputeSimilarity(LoggedTask):
         all_scores = BlockSimMatrix()
         for doc1 in doc_images:
             for doc2 in doc_images:
+                if self.skip(doc1.document.uid, doc2.document.uid):
+                    self.log(
+                        f"Skipping cosine computation for: {doc1.document.uid} - {doc2.document.uid}"
+                    )
+                    continue
+
                 sim_matrix = 1.0 - cdist(
                     features[doc1.slice(scale_by=n_transpositions)],
                     features[doc2.slice(scale_by=n_transpositions)],
@@ -518,7 +541,9 @@ class ComputeSimilarity(LoggedTask):
             f"Computing SegSwap similarity for {len(input_pairs.data)} pairs of documents ({input_pairs})"
         )
 
-        param = torch.load(get_model_path("hard_mining_neg5"), map_location=device)
+        param = torch.load(
+            get_model_path("hard_mining_neg5"), map_location=device, weights_only=False
+        )
         backbone = segswap.load_backbone(param).to(device)
         encoder = segswap.load_encoder(param).to(device)
 
@@ -543,6 +568,12 @@ class ComputeSimilarity(LoggedTask):
         for block in input_pairs.blocks():
             doc1 = block.doc1
             doc2 = block.doc2
+            if self.skip(doc1.document.uid, doc2.document.uid):
+                self.log(
+                    f"Skipping segswap computation for: {doc1.document.uid} - {doc2.document.uid}"
+                )
+                continue
+
             doc_scores = segswap_scores[doc1, doc2]
 
             pairs = list(block)

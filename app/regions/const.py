@@ -1,10 +1,8 @@
 """
 Module-specific constants for the regions app
 """
-from pathlib import Path
-
 from ..shared.utils.fileutils import create_dirs_if_not, download_model_if_not
-from ..config.base import ENV, BASE_DIR, API_DATA_FOLDER
+from ..config.base import ENV, BASE_DIR, API_DATA_FOLDER, IS_CUDA
 
 DEMO_NAME = "regions"
 
@@ -40,38 +38,34 @@ download_model_if_not(
 download_model_if_not(
     {
         "repo_id": "seglinglin/Historical-Illustration-Extraction",
-        "filename": "line_extraction.pth",
-    },
-    MODEL_PATH / "line_extraction.pth",
-)
-download_model_if_not(
-    {
-        "repo_id": "seglinglin/Historical-Illustration-Extraction",
-        "filename": "character_line_extraction.pth",
-    },
-    MODEL_PATH / "character_line_extraction.pth",
-)
-download_model_if_not(
-    {
-        "repo_id": "seglinglin/Line-Extraction",
-        "filename": "labels_icdar.pkl",
-    },
-    MODEL_PATH / "labels_icdar.pkl",
-)
-download_model_if_not(
-    {
-        "repo_id": "seglinglin/Historical-Illustration-Extraction",
         "filename": "fasterrcnn_watermark_extraction.pth",
     },
     MODEL_PATH / "fasterrcnn_watermark_extraction.pth",
 )
-# download_model_if_not(
-#     {
-#         "repo_id": "seglinglin/Historical-Illustration-Extraction",
-#         "filename": "character_line_extraction.pth",
-#     },
-#     MODEL_PATH / "character_line_extraction.pth",
-# )
+
+if IS_CUDA:
+    download_model_if_not(
+        {
+            "repo_id": "seglinglin/Historical-Illustration-Extraction",
+            "filename": "line_extraction.pth",
+        },
+        MODEL_PATH / "line_extraction.pth",
+    )
+    download_model_if_not(
+        {
+            "repo_id": "seglinglin/Historical-Illustration-Extraction",
+            "filename": "character_line_extraction.pth",
+        },
+        MODEL_PATH / "character_line_extraction.pth",
+    )
+    download_model_if_not(
+        {
+            "repo_id": "seglinglin/Line-Extraction",
+            "filename": "labels_icdar.pkl",
+        },
+        MODEL_PATH / "labels_icdar.pkl",
+    )
+
 DEFAULT_MODEL = "illustration_extraction.pt"
 
 DEFAULT_MODEL_INFOS = {
@@ -90,14 +84,16 @@ DEFAULT_MODEL_INFOS = {
         "model": "fasterrcnn_watermark_extraction",
         "desc": "Faster-RCNN model trained to detect watermark in historical documents.",
     },
-    "line_extraction": {
+}
+
+if IS_CUDA:
+    DEFAULT_MODEL_INFOS["line_extraction"] = {
         "name": "Line extraction",
         "model": "line_extraction",
         "desc": "DINO-DETR model trained to extract line from historical documents.",
-    },
-    "character_line_extraction": {
+    }
+    DEFAULT_MODEL_INFOS["character_line_extraction"] = {
         "name": "Character extraction",
         "model": "character_line_extraction",
         "desc": "DINO-DETR model trained to extract characters from historical documents. ⚠️ Will work only if used with cropped lines as input. Lines can be extracted using the Line extraction model.",
-    },
-}
+    }

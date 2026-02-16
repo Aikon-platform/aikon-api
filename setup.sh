@@ -26,6 +26,7 @@ if [ "$answer" = "yes" ]; then
     color_echo yellow "\nSystem packages..."
     if [ "$OS" = "Linux" ]; then
         sudo apt-get install redis-server python3.10 python3.10-venv python3.10-dev curl
+        sudo systemctl start redis-server
         curl -LsSf https://astral.sh/uv/install.sh | sh
     elif [ "$OS" = "Mac" ]; then
         brew install redis python@3.10 curl
@@ -49,37 +50,12 @@ if [ "$answer" = "yes" ]; then
     setup_env "$SCRIPT_DIR"/.env "${default_params[@]}"
     setup_env "$SCRIPT_DIR"/.env.dev "${default_params[@]}"
 fi
-echo -e "\n\n\n OK 1 \n\n\n"
 
 source "$SCRIPT_DIR"/.env
 source "$SCRIPT_DIR"/.env.dev
-echo -e "\n\n\n OK 2 \n\n\n"
 if [ "$TARGET" == "dev" ]; then
     color_echo yellow "\nPre-commit setup"
-    uv run pre-commit install
-fi
-
-set_redis() {
-    redis_psw="$1"
-    REDIS_CONF=$(redis-cli INFO | grep config_file | awk -F: '{print $2}' | tr -d '[:space:]')
-    color_echo yellow "\nModifying Redis configuration file $REDIS_CONF ..."
-
-    # use the same redis password for api and front
-    sudo_sed_repl_inplace "s~^REDIS_PASSWORD=.*~REDIS_PASSWORD=\"$redis_psw\"~" "../front/app/config/.env"
-
-    sudo_sed_repl_inplace "s/\nrequirepass [^ ]*/requirepass $redis_psw/" "$REDIS_CONF"
-    sudo_sed_repl_inplace "s/# requirepass [^ ]*/requirepass $redis_psw/" "$REDIS_CONF"
-
-    if [ "$OS" = "Linux" ]; then
-        sudo systemctl restart redis-server
-    elif [ "$OS" = "Mac" ]; then
-        brew services restart redis
-    fi
-}
-color_echo blue "\nDo you want to add a password to redis?"
-answer=$(printf "%s\n" "${options[@]}" | fzy)
-if [ "$answer" = "yes" ]; then
-    set_redis $REDIS_PASSWORD
+    uv run --directory="$SCRIPT_DIR" pre-commit install
 fi
 
 color_echo blue "\nDo you want to init submodules?"

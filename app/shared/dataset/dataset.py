@@ -13,7 +13,9 @@ from ..const import DATASETS_PATH
 from ..utils import hash_str
 
 from .document import Document, DocDict
-from .utils import DocInRange, Image, group_by_documents, ImageDict
+from .types import DocInRange, Image, ImageDict
+from .utils import group_by_documents
+
 
 class DatasetDict(TypedDict):
     uid: str
@@ -42,8 +44,8 @@ class Dataset:
 
     def __init__(
         self,
-        uid: str = None,
-        path: Union[Path, str] = None,
+        uid: str | None = None,
+        path: Union[Path, str] | None = None,
         documents: Optional[List[dict]] = None,
         load: bool = False,
         crops: Optional[List[dict]] = None,
@@ -207,7 +209,9 @@ class Dataset:
         return im_list
 
     @staticmethod
-    def serialize(*, images: List[Image] = None, documents: List[DocInRange] = None, **metadata):
+    def serialize(
+        *, images: List[Image] = None, documents: List[DocInRange] = None, **metadata
+    ):
         """
         Serialize a list of images or documents (as DocInRange) to a dictionary, useful for indexing pairs
         """

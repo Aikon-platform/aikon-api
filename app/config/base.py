@@ -7,7 +7,20 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 ENV = Env()
 Env.read_env(env_file=f"{BASE_DIR}/.env")
 
-INSTALLED_APPS = ENV("INSTALLED_APPS").split(",")
+try:
+    import torch
+
+    IS_CUDA = torch.cuda.is_available()
+except (ImportError, RuntimeError):
+    IS_CUDA = False
+
+INSTALLED_APPS = ENV.list("INSTALLED_APPS", default=[])
+if not IS_CUDA:
+    cuda_apps = {"vectorization", "dticlustering"}
+    removed = cuda_apps & set(INSTALLED_APPS)
+    INSTALLED_APPS = [app for app in INSTALLED_APPS if app not in cuda_apps]
+    if removed:
+        print(f"Warning: {', '.join(removed)} removed (CUDA unavailable)")
 
 data_path = Path(ENV("API_DATA_FOLDER", default=f"{BASE_DIR}/data"))
 API_DATA_FOLDER = (
@@ -26,7 +39,6 @@ class FLASK_CONFIG:
 
 
 BROKER_URL = f"redis:///{ENV('REDIS_DB_INDEX', default=0)}"
-# BROKER_URL = f"redis://:{ENV('REDIS_PASSWORD')}@localhost:6379/1"
 # BROKER_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/{ENV('REDIS_DB_INDEX', default=0)}"
 
 USE_NGINX_XACCEL = False

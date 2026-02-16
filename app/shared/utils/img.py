@@ -26,7 +26,6 @@ def save_img(
     img_filename: str,
     img_path: TPath,
     max_dim: int = MAX_SIZE,
-    img_format: str = "JPEG",
 ):
     """
     Save an image to a file
@@ -38,29 +37,27 @@ def save_img(
     :param img_filename: The filename of the image
     :param img_path: The directory to save the image
     :param max_dim: The maximum dimension of the image (default: 244)
-    :param img_format: The format to save the image as (default: "JPEG")
 
     :return: The saved image or False if the image could not be saved
     """
     try:
-        if img.mode != "RGB":
+        has_alpha = img.mode in ("RGBA", "LA", "PA")
+
+        if not has_alpha and img.mode != "RGB":
             img = img.convert("RGB")
 
         if img.width > max_dim or img.height > max_dim:
             img.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
 
-        # TODO use this way of resizing images and remove resize in segswap code
-        # tr_ = transforms.Resize((224, 224))
-        # img = cv2.imread(query_img)
-        # img = torch.from_numpy(img).permute(2, 0, 1)
-        # tr_img = tr_(img).permute(1, 2, 0).numpy()
-        # cv2.imwrite(query_img, tr_img)
+        if has_alpha:
+            img.save(f"{img_path}/{img_filename}.png", format="PNG")
+            return img, "png"
 
-        img.save(f"{img_path}/{img_filename}.jpg", format=img_format)
-        return img
+        img.save(f"{img_path}/{img_filename}.jpg", format="JPEG")
+        return img, "jpg"
     except Exception as e:
-        console(f"Failed to save {img_filename} as JPEG", e=e)
-        return False
+        console(f"Failed to save {img_filename}", e=e)
+        return False, None
 
 
 def download_image(
@@ -69,7 +66,7 @@ def download_image(
     target_filename: str,
     max_dim: int = MAX_SIZE,
     save_placeholder: bool = False,
-) -> None:
+) -> str:
     """
     Download an image from a URL and save it to a target file
     If the image is not valid, a placeholder image is saved instead
@@ -79,29 +76,23 @@ def download_image(
     :param target_dir: The directory to save the image
     :param target_filename: The filename of the image
     :param max_dim: The maximum dimension of the image (default: 244)
+    :param save_placeholder: Whether to save a placeholder image if the download fails
     """
     try:
         with requests.get(img_url, stream=True) as response:
             response.raw.decode_content = True
             img = Image.open(response.raw)
-            save_img(img, target_filename, target_dir, max_dim)
+            _, ext = save_img(img, target_filename, target_dir, max_dim)
+            return ext or "jpg"
 
-    except requests.exceptions.RequestException as e:
+    except (requests.exceptions.RequestException, Exception) as e:
         if save_placeholder:
             shutil.copyfile(
                 f"{UTILS_DIR}/img/placeholder.jpg",
-                f"{target_dir}/{target_filename}",
+                f"{target_dir}/{target_filename}.jpg",
             )
-        # log_failed_img(f"{doc_dir}/{img_name}", img_url)
-        console(f"[download_image] {img_url} is not a valid img file", e=e)
-    except Exception as e:
-        if save_placeholder:
-            shutil.copyfile(
-                f"{UTILS_DIR}/img/placeholder.jpg",
-                f"{target_dir}/{target_filename}",
-            )
-        # log_failed_img(f"{doc_dir}/{img_name}", img_url)
-        console(f"[download_image] {img_url} image was not downloaded", e=e)
+        console(f"[download_image] error downloading {img_url}", e=e)
+        return "jpg"
 
 
 def download_img(img_url, doc_id, img_name, img_path, max_dim=MAX_SIZE):

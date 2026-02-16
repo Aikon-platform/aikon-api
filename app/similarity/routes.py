@@ -106,6 +106,7 @@ def start_similarity(client_id):
         "segswap_prefilter": param.get("segswap_prefilter", True),
         "segswap_n": param.get("segswap_n", 10),
         "transpositions": param.get("transpositions", ["none"]),
+        "skip_pairs": param.get("skip_pairs", []),
         "client_id": client_id,
     }
 
