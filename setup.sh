@@ -55,7 +55,7 @@ source "$SCRIPT_DIR"/.env
 source "$SCRIPT_DIR"/.env.dev
 if [ "$TARGET" == "dev" ]; then
     color_echo yellow "\nPre-commit setup"
-    uv run --directory="$SCRIPT_DIR" pre-commit install
+    uv tool install pre-commit --with pre-commit-uv
 fi
 
 color_echo blue "\nDo you want to init submodules?"
