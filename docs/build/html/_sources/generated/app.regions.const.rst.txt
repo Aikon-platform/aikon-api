@@ -1,5 +1,5 @@
-app.regions.const
+app.region_extraction.const
 =================
 
-.. automodule:: app.regions.const
+.. automodule:: app.region_extraction.const
    :members:

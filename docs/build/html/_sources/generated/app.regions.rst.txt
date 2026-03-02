@@ -1,7 +1,7 @@
-app.regions
+app.region_extraction
 ===========
 
-.. automodule:: app.regions
+.. automodule:: app.region_extraction
    :members:
 .. rubric:: Modules
 

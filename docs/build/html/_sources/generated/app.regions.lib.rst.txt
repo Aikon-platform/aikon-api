@@ -1,7 +1,7 @@
-app.regions.lib
+app.region_extraction.lib
 ===============
 
-.. automodule:: app.regions.lib
+.. automodule:: app.region_extraction.lib
    :members:
 .. rubric:: Modules
 
@@ -9,4 +9,4 @@ app.regions.lib
    :toctree:
    :recursive:
 
-   regions
+   region_extraction

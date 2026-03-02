@@ -1,4 +1,4 @@
-app.shared.utils
+﻿app.shared.utils
 ================
 
 .. automodule:: app.shared.utils
@@ -9,10 +9,7 @@ app.shared.utils
    :toctree:
    :recursive:
 
-   bbox
-   download
    fileutils
-   iiif
    img
    logging
    modular

@@ -1,4 +1,4 @@
-app.shared.dataset
+﻿app.shared.dataset
 ==================
 
 .. automodule:: app.shared.dataset
@@ -11,3 +11,6 @@ app.shared.dataset
 
    dataset
    document
+   routes
+   types
+   utils

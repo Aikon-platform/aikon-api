@@ -1,46 +1,46 @@
 <!doctype html>
 <html class="no-js" lang="en" data-content_root="./">
-  <head><meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Usage" href="usage.html" />
+<link rel="index" title="Index" href="genindex.html"><link rel="search" title="Search" href="search.html"><link rel="next" title="Usage" href="usage.html">
 
-    <!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
+    <!-- Generated with Sphinx 8.1.3 and Furo 2025.12.19 -->
         <title>Discover-demo API documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=a746c00c" />
-    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=354aac6f" />
-    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=302659d7" />
-    
-    
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
+
+
 
 
 <style>
   body {
-    --color-code-background: #f8f8f8;
-  --color-code-foreground: black;
-  
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+
   }
   @media not print {
     body[data-theme="dark"] {
       --color-code-background: #202020;
   --color-code-foreground: #d0d0d0;
-  
+
     }
     @media (prefers-color-scheme: dark) {
       body:not([data-theme="light"]) {
         --color-code-background: #202020;
   --color-code-foreground: #d0d0d0;
-  
+
       }
     }
   }
 </style></head>
   <body>
-    
+
     <script>
       document.body.dataset.theme = localStorage.getItem("theme") || "auto";
     </script>
-    
+
 
 <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
   <symbol id="svg-toc" viewBox="0 0 24 24">
@@ -144,14 +144,10 @@
   </symbol>
 </svg>
 
-<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
-<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
-<label class="overlay sidebar-overlay" for="__navigation">
-  <div class="visually-hidden">Hide navigation sidebar</div>
-</label>
-<label class="overlay toc-overlay" for="__toc">
-  <div class="visually-hidden">Hide table of contents sidebar</div>
-</label>
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
 
 <a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
 
@@ -161,8 +157,7 @@
   <header class="mobile-header">
     <div class="header-left">
       <label class="nav-overlay-icon" for="__navigation">
-        <div class="visually-hidden">Toggle site navigation sidebar</div>
-        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
       </label>
     </div>
     <div class="header-center">
@@ -170,8 +165,7 @@
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
-        <button class="theme-toggle">
-          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
           <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
           <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
           <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
@@ -179,19 +173,17 @@
         </button>
       </div>
       <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
-        <div class="visually-hidden">Toggle table of contents sidebar</div>
-        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
       </label>
     </div>
   </header>
   <aside class="sidebar-drawer">
     <div class="sidebar-container">
-      
+
       <div class="sidebar-sticky"><a class="sidebar-brand" href="#">
-  
-  
+
   <span class="sidebar-brand-text">Discover-demo API  documentation</span>
-  
+
 </a><form class="sidebar-search-container" method="get" action="search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
   <input type="hidden" name="check_keywords" value="yes">
@@ -200,50 +192,103 @@
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
   <ul>
 <li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="api.html">API</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of API</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
-<li class="toctree-l2 has-children"><a class="reference internal" href="generated/app.html">app</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of app</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
-<li class="toctree-l3 has-children"><a class="reference internal" href="generated/app.config.html">app.config</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of app.config</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="api.html">API</a><input aria-label="Toggle navigation of API" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="generated/app.html">app</a><input aria-label="Toggle navigation of app" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="generated/app.config.html">app.config</a><input aria-label="Toggle navigation of app.config" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l4"><a class="reference internal" href="generated/app.config.base.html">app.config.base</a></li>
 <li class="toctree-l4"><a class="reference internal" href="generated/app.config.dev.html">app.config.dev</a></li>
 <li class="toctree-l4"><a class="reference internal" href="generated/app.config.prod.html">app.config.prod</a></li>
 </ul>
 </li>
-<li class="toctree-l3 has-children"><a class="reference internal" href="generated/app.dticlustering.html">app.dticlustering</a><input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle navigation of app.dticlustering</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="generated/app.dticlustering.html">app.dticlustering</a><input aria-label="Toggle navigation of app.dticlustering" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l4"><a class="reference internal" href="generated/app.dticlustering.const.html">app.dticlustering.const</a></li>
-<li class="toctree-l4"><a class="reference internal" href="generated/app.dticlustering.routes.html">app.dticlustering.routes</a></li>
-<li class="toctree-l4"><a class="reference internal" href="generated/app.dticlustering.tasks.html">app.dticlustering.tasks</a></li>
-<li class="toctree-l4 has-children"><a class="reference internal" href="generated/app.dticlustering.tests.html">app.dticlustering.tests</a><input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><div class="visually-hidden">Toggle navigation of app.dticlustering.tests</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4 has-children"><a class="reference internal" href="generated/app.dticlustering.tests.html">app.dticlustering.tests</a><input aria-label="Toggle navigation of app.dticlustering.tests" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l5"><a class="reference internal" href="generated/app.dticlustering.tests.training.html">app.dticlustering.tests.training</a></li>
 </ul>
 </li>
-<li class="toctree-l4"><a class="reference internal" href="generated/app.dticlustering.training.html">app.dticlustering.training</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="generated/app.main.html">app.main</a></li>
-<li class="toctree-l3 has-children"><a class="reference internal" href="generated/app.regions.html">app.regions</a><input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle navigation of app.regions</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
-<li class="toctree-l4"><a class="reference internal" href="generated/app.regions.const.html">app.regions.const</a></li>
-<li class="toctree-l4 has-children"><a class="reference internal" href="generated/app.regions.lib.html">app.regions.lib</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of app.regions.lib</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
-<li class="toctree-l5"><a class="reference internal" href="generated/app.regions.lib.regions.html">app.regions.lib.regions</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="generated/app.region_extraction.html">app.region_extraction</a><input aria-label="Toggle navigation of app.region_extraction" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="generated/app.region_extraction.const.html">app.region_extraction.const</a></li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="generated/app.region_extraction.lib.html">app.region_extraction.lib</a><input aria-label="Toggle navigation of app.region_extraction.lib" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="generated/app.region_extraction.lib.bbox.html">app.region_extraction.lib.bbox</a></li>
+<li class="toctree-l5 has-children"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.html">app.region_extraction.lib.dtlr</a><input aria-label="Toggle navigation of app.region_extraction.lib.dtlr" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l6 has-children"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.datasets.html">app.region_extraction.lib.dtlr.datasets</a><input aria-label="Toggle navigation of app.region_extraction.lib.dtlr.datasets" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.datasets.random_crop.html">app.region_extraction.lib.dtlr.datasets.random_crop</a></li>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.datasets.transforms.html">app.region_extraction.lib.dtlr.datasets.transforms</a></li>
 </ul>
 </li>
-<li class="toctree-l4"><a class="reference internal" href="generated/app.regions.routes.html">app.regions.routes</a></li>
-<li class="toctree-l4"><a class="reference internal" href="generated/app.regions.tasks.html">app.regions.tasks</a></li>
+<li class="toctree-l6 has-children"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.html">app.region_extraction.lib.dtlr.util</a><input aria-label="Toggle navigation of app.region_extraction.lib.dtlr.util" class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" role="switch" type="checkbox"/><label for="toctree-checkbox-10"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.box_loss.html">app.region_extraction.lib.dtlr.util.box_loss</a></li>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.box_ops.html">app.region_extraction.lib.dtlr.util.box_ops</a></li>
+<li class="toctree-l7 has-children"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.datasets.html">app.region_extraction.lib.dtlr.util.datasets</a><input aria-label="Toggle navigation of app.region_extraction.lib.dtlr.util.datasets" class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" role="switch" type="checkbox"/><label for="toctree-checkbox-11"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l8"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.datasets.random_crop.html">app.region_extraction.lib.dtlr.util.datasets.random_crop</a></li>
 </ul>
 </li>
-<li class="toctree-l3 has-children"><a class="reference internal" href="generated/app.shared.html">app.shared</a><input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of app.shared</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.get_param_dicts.html">app.region_extraction.lib.dtlr.util.get_param_dicts</a></li>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.logger.html">app.region_extraction.lib.dtlr.util.logger</a></li>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.misc.html">app.region_extraction.lib.dtlr.util.misc</a></li>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.plot_utils.html">app.region_extraction.lib.dtlr.util.plot_utils</a></li>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.slconfig.html">app.region_extraction.lib.dtlr.util.slconfig</a></li>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.slio.html">app.region_extraction.lib.dtlr.util.slio</a></li>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.static_data_path.html">app.region_extraction.lib.dtlr.util.static_data_path</a></li>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.time_counter.html">app.region_extraction.lib.dtlr.util.time_counter</a></li>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.visualizer.html">app.region_extraction.lib.dtlr.util.visualizer</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="generated/app.region_extraction.lib.extract.html">app.region_extraction.lib.extract</a></li>
+<li class="toctree-l5 has-children"><a class="reference internal" href="generated/app.region_extraction.lib.line_predictor.html">app.region_extraction.lib.line_predictor</a><input aria-label="Toggle navigation of app.region_extraction.lib.line_predictor" class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" role="switch" type="checkbox"/><label for="toctree-checkbox-12"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l6 has-children"><a class="reference internal" href="generated/app.region_extraction.lib.line_predictor.config.html">app.region_extraction.lib.line_predictor.config</a><input aria-label="Toggle navigation of app.region_extraction.lib.line_predictor.config" class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" role="switch" type="checkbox"/><label for="toctree-checkbox-13"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.line_predictor.config.DINO_4scale.html">app.region_extraction.lib.line_predictor.config.DINO_4scale</a></li>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.line_predictor.config.coco_transformer.html">app.region_extraction.lib.line_predictor.config.coco_transformer</a></li>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.line_predictor.config.slconfig.html">app.region_extraction.lib.line_predictor.config.slconfig</a></li>
+</ul>
+</li>
+<li class="toctree-l6 has-children"><a class="reference internal" href="generated/app.region_extraction.lib.line_predictor.datasets.html">app.region_extraction.lib.line_predictor.datasets</a><input aria-label="Toggle navigation of app.region_extraction.lib.line_predictor.datasets" class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" role="switch" type="checkbox"/><label for="toctree-checkbox-14"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.line_predictor.datasets.transforms.html">app.region_extraction.lib.line_predictor.datasets.transforms</a></li>
+</ul>
+</li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.region_extraction.lib.line_predictor.registry.html">app.region_extraction.lib.line_predictor.registry</a></li>
+<li class="toctree-l6 has-children"><a class="reference internal" href="generated/app.region_extraction.lib.line_predictor.util.html">app.region_extraction.lib.line_predictor.util</a><input aria-label="Toggle navigation of app.region_extraction.lib.line_predictor.util" class="toctree-checkbox" id="toctree-checkbox-15" name="toctree-checkbox-15" role="switch" type="checkbox"/><label for="toctree-checkbox-15"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.line_predictor.util.box_ops.html">app.region_extraction.lib.line_predictor.util.box_ops</a></li>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.line_predictor.util.misc.html">app.region_extraction.lib.line_predictor.util.misc</a></li>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.line_predictor.util.slio.html">app.region_extraction.lib.line_predictor.util.slio</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="generated/app.region_extraction.region_extraction.html">app.region_extraction.region_extraction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/app.region_extraction.routes.html">app.region_extraction.routes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/app.region_extraction.tasks.html">app.region_extraction.tasks</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="generated/app.search.html">app.search</a><input aria-label="Toggle navigation of app.search" class="toctree-checkbox" id="toctree-checkbox-16" name="toctree-checkbox-16" role="switch" type="checkbox"/><label for="toctree-checkbox-16"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="generated/app.search.const.html">app.search.const</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/app.search.routes.html">app.search.routes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/app.search.search.html">app.search.search</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/app.search.tasks.html">app.search.tasks</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/app.search.utils.html">app.search.utils</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="generated/app.shared.html">app.shared</a><input aria-label="Toggle navigation of app.shared" class="toctree-checkbox" id="toctree-checkbox-17" name="toctree-checkbox-17" role="switch" type="checkbox"/><label for="toctree-checkbox-17"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l4"><a class="reference internal" href="generated/app.shared.const.html">app.shared.const</a></li>
-<li class="toctree-l4 has-children"><a class="reference internal" href="generated/app.shared.dataset.html">app.shared.dataset</a><input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle navigation of app.shared.dataset</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4 has-children"><a class="reference internal" href="generated/app.shared.dataset.html">app.shared.dataset</a><input aria-label="Toggle navigation of app.shared.dataset" class="toctree-checkbox" id="toctree-checkbox-18" name="toctree-checkbox-18" role="switch" type="checkbox"/><label for="toctree-checkbox-18"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l5"><a class="reference internal" href="generated/app.shared.dataset.dataset.html">app.shared.dataset.dataset</a></li>
 <li class="toctree-l5"><a class="reference internal" href="generated/app.shared.dataset.document.html">app.shared.dataset.document</a></li>
+<li class="toctree-l5"><a class="reference internal" href="generated/app.shared.dataset.routes.html">app.shared.dataset.routes</a></li>
+<li class="toctree-l5"><a class="reference internal" href="generated/app.shared.dataset.types.html">app.shared.dataset.types</a></li>
+<li class="toctree-l5"><a class="reference internal" href="generated/app.shared.dataset.utils.html">app.shared.dataset.utils</a></li>
 </ul>
 </li>
 <li class="toctree-l4"><a class="reference internal" href="generated/app.shared.routes.html">app.shared.routes</a></li>
 <li class="toctree-l4"><a class="reference internal" href="generated/app.shared.tasks.html">app.shared.tasks</a></li>
-<li class="toctree-l4 has-children"><a class="reference internal" href="generated/app.shared.utils.html">app.shared.utils</a><input class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" role="switch" type="checkbox"/><label for="toctree-checkbox-10"><div class="visually-hidden">Toggle navigation of app.shared.utils</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
-<li class="toctree-l5"><a class="reference internal" href="generated/app.shared.utils.bbox.html">app.shared.utils.bbox</a></li>
-<li class="toctree-l5"><a class="reference internal" href="generated/app.shared.utils.download.html">app.shared.utils.download</a></li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="generated/app.shared.utils.html">app.shared.utils</a><input aria-label="Toggle navigation of app.shared.utils" class="toctree-checkbox" id="toctree-checkbox-19" name="toctree-checkbox-19" role="switch" type="checkbox"/><label for="toctree-checkbox-19"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l5"><a class="reference internal" href="generated/app.shared.utils.fileutils.html">app.shared.utils.fileutils</a></li>
-<li class="toctree-l5"><a class="reference internal" href="generated/app.shared.utils.iiif.html">app.shared.utils.iiif</a></li>
 <li class="toctree-l5"><a class="reference internal" href="generated/app.shared.utils.img.html">app.shared.utils.img</a></li>
 <li class="toctree-l5"><a class="reference internal" href="generated/app.shared.utils.logging.html">app.shared.utils.logging</a></li>
 <li class="toctree-l5"><a class="reference internal" href="generated/app.shared.utils.modular.html">app.shared.utils.modular</a></li>
@@ -251,25 +296,22 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l3 has-children"><a class="reference internal" href="generated/app.similarity.html">app.similarity</a><input class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" role="switch" type="checkbox"/><label for="toctree-checkbox-11"><div class="visually-hidden">Toggle navigation of app.similarity</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="generated/app.similarity.html">app.similarity</a><input aria-label="Toggle navigation of app.similarity" class="toctree-checkbox" id="toctree-checkbox-20" name="toctree-checkbox-20" role="switch" type="checkbox"/><label for="toctree-checkbox-20"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l4"><a class="reference internal" href="generated/app.similarity.const.html">app.similarity.const</a></li>
 <li class="toctree-l4"><a class="reference internal" href="generated/app.similarity.routes.html">app.similarity.routes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/app.similarity.similarity.html">app.similarity.similarity</a></li>
 <li class="toctree-l4"><a class="reference internal" href="generated/app.similarity.tasks.html">app.similarity.tasks</a></li>
-<li class="toctree-l4 has-children"><a class="reference internal" href="generated/app.similarity.tests.html">app.similarity.tests</a><input class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" role="switch" type="checkbox"/><label for="toctree-checkbox-12"><div class="visually-hidden">Toggle navigation of app.similarity.tests</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
-<li class="toctree-l5"><a class="reference internal" href="generated/app.similarity.tests.test_similarity.html">app.similarity.tests.test_similarity</a></li>
-<li class="toctree-l5"><a class="reference internal" href="generated/app.similarity.tests.test_utils.html">app.similarity.tests.test_utils</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/app.similarity.tests.html">app.similarity.tests</a></li>
 </ul>
 </li>
-</ul>
-</li>
-<li class="toctree-l3 has-children"><a class="reference internal" href="generated/app.vectorization.html">app.vectorization</a><input class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" role="switch" type="checkbox"/><label for="toctree-checkbox-13"><div class="visually-hidden">Toggle navigation of app.vectorization</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="generated/app.vectorization.html">app.vectorization</a><input aria-label="Toggle navigation of app.vectorization" class="toctree-checkbox" id="toctree-checkbox-21" name="toctree-checkbox-21" role="switch" type="checkbox"/><label for="toctree-checkbox-21"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l4"><a class="reference internal" href="generated/app.vectorization.const.html">app.vectorization.const</a></li>
 <li class="toctree-l4"><a class="reference internal" href="generated/app.vectorization.routes.html">app.vectorization.routes</a></li>
 <li class="toctree-l4"><a class="reference internal" href="generated/app.vectorization.tasks.html">app.vectorization.tasks</a></li>
 <li class="toctree-l4"><a class="reference internal" href="generated/app.vectorization.vectorization.html">app.vectorization.vectorization</a></li>
 </ul>
 </li>
-<li class="toctree-l3 has-children"><a class="reference internal" href="generated/app.watermarks.html">app.watermarks</a><input class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" role="switch" type="checkbox"/><label for="toctree-checkbox-14"><div class="visually-hidden">Toggle navigation of app.watermarks</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="generated/app.watermarks.html">app.watermarks</a><input aria-label="Toggle navigation of app.watermarks" class="toctree-checkbox" id="toctree-checkbox-22" name="toctree-checkbox-22" role="switch" type="checkbox"/><label for="toctree-checkbox-22"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l4"><a class="reference internal" href="generated/app.watermarks.const.html">app.watermarks.const</a></li>
 <li class="toctree-l4"><a class="reference internal" href="generated/app.watermarks.routes.html">app.watermarks.routes</a></li>
 <li class="toctree-l4"><a class="reference internal" href="generated/app.watermarks.sources.html">app.watermarks.sources</a></li>
@@ -287,7 +329,7 @@
 </div>
 
       </div>
-      
+
     </div>
   </aside>
   <div class="main">
@@ -307,8 +349,7 @@
   </a>
 </div>
 <div class="theme-toggle-container theme-toggle-content">
-            <button class="theme-toggle">
-              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
               <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
               <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
               <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
@@ -316,8 +357,7 @@
             </button>
           </div>
           <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
-            <div class="visually-hidden">Toggle table of contents sidebar</div>
-            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
           </label>
         </div>
         <article role="main" id="furo-main-content">
@@ -346,11 +386,6 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="generated/app.dticlustering.html">app.dticlustering</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="generated/app.dticlustering.const.html">app.dticlustering.const</a></li>
-<li class="toctree-l4"><a class="reference internal" href="generated/app.dticlustering.routes.html">app.dticlustering.routes</a><ul>
-<li class="toctree-l5"><a class="reference internal" href="generated/app.dticlustering.routes.html#app.dticlustering.routes.start_clustering"><code class="docutils literal notranslate"><span class="pre">start_clustering()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l4"><a class="reference internal" href="generated/app.dticlustering.tasks.html">app.dticlustering.tasks</a></li>
 <li class="toctree-l4"><a class="reference internal" href="generated/app.dticlustering.tests.html">app.dticlustering.tests</a><ul>
 <li class="toctree-l5"><a class="reference internal" href="generated/app.dticlustering.tests.training.html">app.dticlustering.tests.training</a><ul>
 <li class="toctree-l6"><a class="reference internal" href="generated/app.dticlustering.tests.training.html#app.dticlustering.tests.training.TestTraining"><code class="docutils literal notranslate"><span class="pre">TestTraining</span></code></a><ul>
@@ -362,80 +397,298 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l4"><a class="reference internal" href="generated/app.dticlustering.training.html">app.dticlustering.training</a><ul>
-<li class="toctree-l5"><a class="reference internal" href="generated/app.dticlustering.training.html#app.dticlustering.training.LoggedKMeansTrainer"><code class="docutils literal notranslate"><span class="pre">LoggedKMeansTrainer</span></code></a></li>
-<li class="toctree-l5"><a class="reference internal" href="generated/app.dticlustering.training.html#app.dticlustering.training.LoggedSpritesTrainer"><code class="docutils literal notranslate"><span class="pre">LoggedSpritesTrainer</span></code></a></li>
-<li class="toctree-l5"><a class="reference internal" href="generated/app.dticlustering.training.html#app.dticlustering.training.LoggingTrainerMixin"><code class="docutils literal notranslate"><span class="pre">LoggingTrainerMixin</span></code></a><ul>
-<li class="toctree-l6"><a class="reference internal" href="generated/app.dticlustering.training.html#app.dticlustering.training.LoggingTrainerMixin.qualitative_eval"><code class="docutils literal notranslate"><span class="pre">LoggingTrainerMixin.qualitative_eval()</span></code></a></li>
-<li class="toctree-l6"><a class="reference internal" href="generated/app.dticlustering.training.html#app.dticlustering.training.LoggingTrainerMixin.save_metric_plots"><code class="docutils literal notranslate"><span class="pre">LoggingTrainerMixin.save_metric_plots()</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l5"><a class="reference internal" href="generated/app.dticlustering.training.html#app.dticlustering.training.run_kmeans_training"><code class="docutils literal notranslate"><span class="pre">run_kmeans_training()</span></code></a></li>
-<li class="toctree-l5"><a class="reference internal" href="generated/app.dticlustering.training.html#app.dticlustering.training.run_sprites_training"><code class="docutils literal notranslate"><span class="pre">run_sprites_training()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/app.main.html">app.main</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="generated/app.main.html#app.main.CustomEncoder"><code class="docutils literal notranslate"><span class="pre">CustomEncoder</span></code></a><ul>
+<li class="toctree-l5"><a class="reference internal" href="generated/app.main.html#app.main.CustomEncoder.encode"><code class="docutils literal notranslate"><span class="pre">CustomEncoder.encode()</span></code></a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="generated/app.main.html">app.main</a></li>
-<li class="toctree-l3"><a class="reference internal" href="generated/app.regions.html">app.regions</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="generated/app.regions.const.html">app.regions.const</a></li>
-<li class="toctree-l4"><a class="reference internal" href="generated/app.regions.lib.html">app.regions.lib</a><ul>
-<li class="toctree-l5"><a class="reference internal" href="generated/app.regions.lib.regions.html">app.regions.lib.regions</a><ul>
-<li class="toctree-l6"><a class="reference internal" href="generated/app.regions.lib.regions.html#app.regions.lib.regions.ExtractRegions"><code class="docutils literal notranslate"><span class="pre">ExtractRegions</span></code></a><ul>
-<li class="toctree-l7"><a class="reference internal" href="generated/app.regions.lib.regions.html#app.regions.lib.regions.ExtractRegions.check_doc"><code class="docutils literal notranslate"><span class="pre">ExtractRegions.check_doc()</span></code></a></li>
-<li class="toctree-l7"><a class="reference internal" href="generated/app.regions.lib.regions.html#app.regions.lib.regions.ExtractRegions.dataset"><code class="docutils literal notranslate"><span class="pre">ExtractRegions.dataset</span></code></a></li>
-<li class="toctree-l7"><a class="reference internal" href="generated/app.regions.lib.regions.html#app.regions.lib.regions.ExtractRegions.extraction_model"><code class="docutils literal notranslate"><span class="pre">ExtractRegions.extraction_model</span></code></a></li>
-<li class="toctree-l7"><a class="reference internal" href="generated/app.regions.lib.regions.html#app.regions.lib.regions.ExtractRegions.model"><code class="docutils literal notranslate"><span class="pre">ExtractRegions.model</span></code></a></li>
-<li class="toctree-l7"><a class="reference internal" href="generated/app.regions.lib.regions.html#app.regions.lib.regions.ExtractRegions.process_doc"><code class="docutils literal notranslate"><span class="pre">ExtractRegions.process_doc()</span></code></a></li>
-<li class="toctree-l7"><a class="reference internal" href="generated/app.regions.lib.regions.html#app.regions.lib.regions.ExtractRegions.process_doc_imgs"><code class="docutils literal notranslate"><span class="pre">ExtractRegions.process_doc_imgs()</span></code></a></li>
-<li class="toctree-l7"><a class="reference internal" href="generated/app.regions.lib.regions.html#app.regions.lib.regions.ExtractRegions.process_img"><code class="docutils literal notranslate"><span class="pre">ExtractRegions.process_img()</span></code></a></li>
-<li class="toctree-l7"><a class="reference internal" href="generated/app.regions.lib.regions.html#app.regions.lib.regions.ExtractRegions.run_task"><code class="docutils literal notranslate"><span class="pre">ExtractRegions.run_task()</span></code></a></li>
-<li class="toctree-l7"><a class="reference internal" href="generated/app.regions.lib.regions.html#app.regions.lib.regions.ExtractRegions.send_annotations"><code class="docutils literal notranslate"><span class="pre">ExtractRegions.send_annotations()</span></code></a></li>
-<li class="toctree-l7"><a class="reference internal" href="generated/app.regions.lib.regions.html#app.regions.lib.regions.ExtractRegions.weights"><code class="docutils literal notranslate"><span class="pre">ExtractRegions.weights</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="generated/app.region_extraction.html">app.region_extraction</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="generated/app.region_extraction.const.html">app.region_extraction.const</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/app.region_extraction.lib.html">app.region_extraction.lib</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="generated/app.region_extraction.lib.bbox.html">app.region_extraction.lib.bbox</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.region_extraction.lib.bbox.html#app.region_extraction.lib.bbox.IIIFDocumentSegmentation"><code class="docutils literal notranslate"><span class="pre">IIIFDocumentSegmentation</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.region_extraction.lib.bbox.html#app.region_extraction.lib.bbox.IIIFPageSegmentationItem"><code class="docutils literal notranslate"><span class="pre">IIIFPageSegmentationItem</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.region_extraction.lib.bbox.html#app.region_extraction.lib.bbox.Segment"><code class="docutils literal notranslate"><span class="pre">Segment</span></code></a><ul>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.bbox.html#app.region_extraction.lib.bbox.Segment.auto_cast"><code class="docutils literal notranslate"><span class="pre">Segment.auto_cast()</span></code></a></li>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.bbox.html#app.region_extraction.lib.bbox.Segment.from_bbox"><code class="docutils literal notranslate"><span class="pre">Segment.from_bbox()</span></code></a></li>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.bbox.html#app.region_extraction.lib.bbox.Segment.serialize"><code class="docutils literal notranslate"><span class="pre">Segment.serialize()</span></code></a></li>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.bbox.html#app.region_extraction.lib.bbox.Segment.unserialize"><code class="docutils literal notranslate"><span class="pre">Segment.unserialize()</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l6"><a class="reference internal" href="generated/app.regions.lib.regions.html#app.regions.lib.regions.detect"><code class="docutils literal notranslate"><span class="pre">detect()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.region_extraction.lib.bbox.html#app.region_extraction.lib.bbox.base36_to_int"><code class="docutils literal notranslate"><span class="pre">base36_to_int()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.html">app.region_extraction.lib.dtlr</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.datasets.html">app.region_extraction.lib.dtlr.datasets</a><ul>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.datasets.random_crop.html">app.region_extraction.lib.dtlr.datasets.random_crop</a><ul>
+<li class="toctree-l8"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.datasets.random_crop.html#app.region_extraction.lib.dtlr.datasets.random_crop.find_IoU"><code class="docutils literal notranslate"><span class="pre">find_IoU()</span></code></a></li>
+<li class="toctree-l8"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.datasets.random_crop.html#app.region_extraction.lib.dtlr.datasets.random_crop.intersect"><code class="docutils literal notranslate"><span class="pre">intersect()</span></code></a></li>
+<li class="toctree-l8"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.datasets.random_crop.html#app.region_extraction.lib.dtlr.datasets.random_crop.random_crop"><code class="docutils literal notranslate"><span class="pre">random_crop()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.datasets.transforms.html">app.region_extraction.lib.dtlr.datasets.transforms</a><ul>
+<li class="toctree-l8"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.datasets.transforms.html#app.region_extraction.lib.dtlr.datasets.transforms.RandomSelect"><code class="docutils literal notranslate"><span class="pre">RandomSelect</span></code></a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li class="toctree-l4"><a class="reference internal" href="generated/app.regions.routes.html">app.regions.routes</a><ul>
-<li class="toctree-l5"><a class="reference internal" href="generated/app.regions.routes.html#app.regions.routes.cancel_regions_extraction"><code class="docutils literal notranslate"><span class="pre">cancel_regions_extraction()</span></code></a></li>
-<li class="toctree-l5"><a class="reference internal" href="generated/app.regions.routes.html#app.regions.routes.monitor_regions_extraction"><code class="docutils literal notranslate"><span class="pre">monitor_regions_extraction()</span></code></a></li>
-<li class="toctree-l5"><a class="reference internal" href="generated/app.regions.routes.html#app.regions.routes.qsizes_regions_extraction"><code class="docutils literal notranslate"><span class="pre">qsizes_regions_extraction()</span></code></a></li>
-<li class="toctree-l5"><a class="reference internal" href="generated/app.regions.routes.html#app.regions.routes.start_regions_extraction"><code class="docutils literal notranslate"><span class="pre">start_regions_extraction()</span></code></a></li>
-<li class="toctree-l5"><a class="reference internal" href="generated/app.regions.routes.html#app.regions.routes.status_regions_extraction"><code class="docutils literal notranslate"><span class="pre">status_regions_extraction()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.html">app.region_extraction.lib.dtlr.util</a><ul>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.box_loss.html">app.region_extraction.lib.dtlr.util.box_loss</a></li>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.box_ops.html">app.region_extraction.lib.dtlr.util.box_ops</a><ul>
+<li class="toctree-l8"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.box_ops.html#app.region_extraction.lib.dtlr.util.box_ops.generalized_box_iou"><code class="docutils literal notranslate"><span class="pre">generalized_box_iou()</span></code></a></li>
+<li class="toctree-l8"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.box_ops.html#app.region_extraction.lib.dtlr.util.box_ops.generalized_box_iou_pairwise"><code class="docutils literal notranslate"><span class="pre">generalized_box_iou_pairwise()</span></code></a></li>
+<li class="toctree-l8"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.box_ops.html#app.region_extraction.lib.dtlr.util.box_ops.masks_to_boxes"><code class="docutils literal notranslate"><span class="pre">masks_to_boxes()</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l4"><a class="reference internal" href="generated/app.regions.tasks.html">app.regions.tasks</a></li>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.datasets.html">app.region_extraction.lib.dtlr.util.datasets</a><ul>
+<li class="toctree-l8"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.datasets.random_crop.html">app.region_extraction.lib.dtlr.util.datasets.random_crop</a><ul>
+<li class="toctree-l9"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.datasets.random_crop.html#app.region_extraction.lib.dtlr.util.datasets.random_crop.find_IoU"><code class="docutils literal notranslate"><span class="pre">find_IoU()</span></code></a></li>
+<li class="toctree-l9"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.datasets.random_crop.html#app.region_extraction.lib.dtlr.util.datasets.random_crop.intersect"><code class="docutils literal notranslate"><span class="pre">intersect()</span></code></a></li>
+<li class="toctree-l9"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.datasets.random_crop.html#app.region_extraction.lib.dtlr.util.datasets.random_crop.random_crop"><code class="docutils literal notranslate"><span class="pre">random_crop()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.get_param_dicts.html">app.region_extraction.lib.dtlr.util.get_param_dicts</a></li>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.logger.html">app.region_extraction.lib.dtlr.util.logger</a><ul>
+<li class="toctree-l8"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.logger.html#app.region_extraction.lib.dtlr.util.logger.setup_logger"><code class="docutils literal notranslate"><span class="pre">setup_logger()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.misc.html">app.region_extraction.lib.dtlr.util.misc</a><ul>
+<li class="toctree-l8"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.misc.html#app.region_extraction.lib.dtlr.util.misc.SmoothedValue"><code class="docutils literal notranslate"><span class="pre">SmoothedValue</span></code></a><ul>
+<li class="toctree-l9"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.misc.html#app.region_extraction.lib.dtlr.util.misc.SmoothedValue.synchronize_between_processes"><code class="docutils literal notranslate"><span class="pre">SmoothedValue.synchronize_between_processes()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l8"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.misc.html#app.region_extraction.lib.dtlr.util.misc.accuracy"><code class="docutils literal notranslate"><span class="pre">accuracy()</span></code></a></li>
+<li class="toctree-l8"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.misc.html#app.region_extraction.lib.dtlr.util.misc.all_gather"><code class="docutils literal notranslate"><span class="pre">all_gather()</span></code></a></li>
+<li class="toctree-l8"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.misc.html#app.region_extraction.lib.dtlr.util.misc.interpolate"><code class="docutils literal notranslate"><span class="pre">interpolate()</span></code></a></li>
+<li class="toctree-l8"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.misc.html#app.region_extraction.lib.dtlr.util.misc.reduce_dict"><code class="docutils literal notranslate"><span class="pre">reduce_dict()</span></code></a></li>
+<li class="toctree-l8"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.misc.html#app.region_extraction.lib.dtlr.util.misc.setup_for_distributed"><code class="docutils literal notranslate"><span class="pre">setup_for_distributed()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.plot_utils.html">app.region_extraction.lib.dtlr.util.plot_utils</a><ul>
+<li class="toctree-l8"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.plot_utils.html#app.region_extraction.lib.dtlr.util.plot_utils.plot_logs"><code class="docutils literal notranslate"><span class="pre">plot_logs()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.slconfig.html">app.region_extraction.lib.dtlr.util.slconfig</a><ul>
+<li class="toctree-l8"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.slconfig.html#app.region_extraction.lib.dtlr.util.slconfig.ConfigDict"><code class="docutils literal notranslate"><span class="pre">ConfigDict</span></code></a></li>
+<li class="toctree-l8"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.slconfig.html#app.region_extraction.lib.dtlr.util.slconfig.DictAction"><code class="docutils literal notranslate"><span class="pre">DictAction</span></code></a></li>
+<li class="toctree-l8"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.slconfig.html#app.region_extraction.lib.dtlr.util.slconfig.SLConfig"><code class="docutils literal notranslate"><span class="pre">SLConfig</span></code></a><ul>
+<li class="toctree-l9"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.slconfig.html#app.region_extraction.lib.dtlr.util.slconfig.SLConfig.merge_from_dict"><code class="docutils literal notranslate"><span class="pre">SLConfig.merge_from_dict()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.slio.html">app.region_extraction.lib.dtlr.util.slio</a><ul>
+<li class="toctree-l8"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.slio.html#app.region_extraction.lib.dtlr.util.slio.is_str"><code class="docutils literal notranslate"><span class="pre">is_str()</span></code></a></li>
+<li class="toctree-l8"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.slio.html#app.region_extraction.lib.dtlr.util.slio.sldump"><code class="docutils literal notranslate"><span class="pre">sldump()</span></code></a></li>
+<li class="toctree-l8"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.slio.html#app.region_extraction.lib.dtlr.util.slio.slload"><code class="docutils literal notranslate"><span class="pre">slload()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.static_data_path.html">app.region_extraction.lib.dtlr.util.static_data_path</a></li>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.time_counter.html">app.region_extraction.lib.dtlr.util.time_counter</a><ul>
+<li class="toctree-l8"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.time_counter.html#app.region_extraction.lib.dtlr.util.time_counter.AverageMeter"><code class="docutils literal notranslate"><span class="pre">AverageMeter</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.dtlr.util.visualizer.html">app.region_extraction.lib.dtlr.util.visualizer</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="generated/app.region_extraction.lib.extract.html">app.region_extraction.lib.extract</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.region_extraction.lib.extract.html#app.region_extraction.lib.extract.BaseExtractor"><code class="docutils literal notranslate"><span class="pre">BaseExtractor</span></code></a><ul>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.extract.html#app.region_extraction.lib.extract.BaseExtractor.process_detections"><code class="docutils literal notranslate"><span class="pre">BaseExtractor.process_detections()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.region_extraction.lib.extract.html#app.region_extraction.lib.extract.DtlrExtractor"><code class="docutils literal notranslate"><span class="pre">DtlrExtractor</span></code></a><ul>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.extract.html#app.region_extraction.lib.extract.DtlrExtractor.T"><code class="docutils literal notranslate"><span class="pre">DtlrExtractor.T</span></code></a></li>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.extract.html#app.region_extraction.lib.extract.DtlrExtractor.transforms"><code class="docutils literal notranslate"><span class="pre">DtlrExtractor.transforms</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.region_extraction.lib.extract.html#app.region_extraction.lib.extract.FasterRCNNExtractor"><code class="docutils literal notranslate"><span class="pre">FasterRCNNExtractor</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.region_extraction.lib.extract.html#app.region_extraction.lib.extract.LineExtractor"><code class="docutils literal notranslate"><span class="pre">LineExtractor</span></code></a><ul>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.extract.html#app.region_extraction.lib.extract.LineExtractor.T"><code class="docutils literal notranslate"><span class="pre">LineExtractor.T</span></code></a></li>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.extract.html#app.region_extraction.lib.extract.LineExtractor.renorm"><code class="docutils literal notranslate"><span class="pre">LineExtractor.renorm()</span></code></a></li>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.extract.html#app.region_extraction.lib.extract.LineExtractor.transforms"><code class="docutils literal notranslate"><span class="pre">LineExtractor.transforms</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.region_extraction.lib.extract.html#app.region_extraction.lib.extract.OcrExtractor"><code class="docutils literal notranslate"><span class="pre">OcrExtractor</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.region_extraction.lib.extract.html#app.region_extraction.lib.extract.YOLOExtractor"><code class="docutils literal notranslate"><span class="pre">YOLOExtractor</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.region_extraction.lib.extract.html#app.region_extraction.lib.extract.get_img_dim"><code class="docutils literal notranslate"><span class="pre">get_img_dim()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.region_extraction.lib.extract.html#app.region_extraction.lib.extract.setup_source"><code class="docutils literal notranslate"><span class="pre">setup_source()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="generated/app.region_extraction.lib.line_predictor.html">app.region_extraction.lib.line_predictor</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.region_extraction.lib.line_predictor.config.html">app.region_extraction.lib.line_predictor.config</a><ul>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.line_predictor.config.DINO_4scale.html">app.region_extraction.lib.line_predictor.config.DINO_4scale</a></li>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.line_predictor.config.coco_transformer.html">app.region_extraction.lib.line_predictor.config.coco_transformer</a></li>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.line_predictor.config.slconfig.html">app.region_extraction.lib.line_predictor.config.slconfig</a><ul>
+<li class="toctree-l8"><a class="reference internal" href="generated/app.region_extraction.lib.line_predictor.config.slconfig.html#app.region_extraction.lib.line_predictor.config.slconfig.ConfigDict"><code class="docutils literal notranslate"><span class="pre">ConfigDict</span></code></a></li>
+<li class="toctree-l8"><a class="reference internal" href="generated/app.region_extraction.lib.line_predictor.config.slconfig.html#app.region_extraction.lib.line_predictor.config.slconfig.DictAction"><code class="docutils literal notranslate"><span class="pre">DictAction</span></code></a></li>
+<li class="toctree-l8"><a class="reference internal" href="generated/app.region_extraction.lib.line_predictor.config.slconfig.html#app.region_extraction.lib.line_predictor.config.slconfig.SLConfig"><code class="docutils literal notranslate"><span class="pre">SLConfig</span></code></a><ul>
+<li class="toctree-l9"><a class="reference internal" href="generated/app.region_extraction.lib.line_predictor.config.slconfig.html#app.region_extraction.lib.line_predictor.config.slconfig.SLConfig.merge_from_dict"><code class="docutils literal notranslate"><span class="pre">SLConfig.merge_from_dict()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.region_extraction.lib.line_predictor.datasets.html">app.region_extraction.lib.line_predictor.datasets</a><ul>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.line_predictor.datasets.transforms.html">app.region_extraction.lib.line_predictor.datasets.transforms</a><ul>
+<li class="toctree-l8"><a class="reference internal" href="generated/app.region_extraction.lib.line_predictor.datasets.transforms.html#app.region_extraction.lib.line_predictor.datasets.transforms.RandomApply"><code class="docutils literal notranslate"><span class="pre">RandomApply</span></code></a></li>
+<li class="toctree-l8"><a class="reference internal" href="generated/app.region_extraction.lib.line_predictor.datasets.transforms.html#app.region_extraction.lib.line_predictor.datasets.transforms.RandomSelect"><code class="docutils literal notranslate"><span class="pre">RandomSelect</span></code></a></li>
+<li class="toctree-l8"><a class="reference internal" href="generated/app.region_extraction.lib.line_predictor.datasets.transforms.html#app.region_extraction.lib.line_predictor.datasets.transforms.interpolate"><code class="docutils literal notranslate"><span class="pre">interpolate()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.region_extraction.lib.line_predictor.registry.html">app.region_extraction.lib.line_predictor.registry</a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.region_extraction.lib.line_predictor.util.html">app.region_extraction.lib.line_predictor.util</a><ul>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.line_predictor.util.box_ops.html">app.region_extraction.lib.line_predictor.util.box_ops</a><ul>
+<li class="toctree-l8"><a class="reference internal" href="generated/app.region_extraction.lib.line_predictor.util.box_ops.html#app.region_extraction.lib.line_predictor.util.box_ops.box_center_to_corners"><code class="docutils literal notranslate"><span class="pre">box_center_to_corners()</span></code></a></li>
+<li class="toctree-l8"><a class="reference internal" href="generated/app.region_extraction.lib.line_predictor.util.box_ops.html#app.region_extraction.lib.line_predictor.util.box_ops.box_convex_hull"><code class="docutils literal notranslate"><span class="pre">box_convex_hull()</span></code></a></li>
+<li class="toctree-l8"><a class="reference internal" href="generated/app.region_extraction.lib.line_predictor.util.box_ops.html#app.region_extraction.lib.line_predictor.util.box_ops.box_convex_hull_tensor"><code class="docutils literal notranslate"><span class="pre">box_convex_hull_tensor()</span></code></a></li>
+<li class="toctree-l8"><a class="reference internal" href="generated/app.region_extraction.lib.line_predictor.util.box_ops.html#app.region_extraction.lib.line_predictor.util.box_ops.box_corners_to_center"><code class="docutils literal notranslate"><span class="pre">box_corners_to_center()</span></code></a></li>
+<li class="toctree-l8"><a class="reference internal" href="generated/app.region_extraction.lib.line_predictor.util.box_ops.html#app.region_extraction.lib.line_predictor.util.box_ops.box_inter"><code class="docutils literal notranslate"><span class="pre">box_inter()</span></code></a></li>
+<li class="toctree-l8"><a class="reference internal" href="generated/app.region_extraction.lib.line_predictor.util.box_ops.html#app.region_extraction.lib.line_predictor.util.box_ops.box_inter_tensor"><code class="docutils literal notranslate"><span class="pre">box_inter_tensor()</span></code></a></li>
+<li class="toctree-l8"><a class="reference internal" href="generated/app.region_extraction.lib.line_predictor.util.box_ops.html#app.region_extraction.lib.line_predictor.util.box_ops.box_iou"><code class="docutils literal notranslate"><span class="pre">box_iou()</span></code></a></li>
+<li class="toctree-l8"><a class="reference internal" href="generated/app.region_extraction.lib.line_predictor.util.box_ops.html#app.region_extraction.lib.line_predictor.util.box_ops.cuts"><code class="docutils literal notranslate"><span class="pre">cuts()</span></code></a></li>
+<li class="toctree-l8"><a class="reference internal" href="generated/app.region_extraction.lib.line_predictor.util.box_ops.html#app.region_extraction.lib.line_predictor.util.box_ops.generalized_box_iou"><code class="docutils literal notranslate"><span class="pre">generalized_box_iou()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.line_predictor.util.misc.html">app.region_extraction.lib.line_predictor.util.misc</a><ul>
+<li class="toctree-l8"><a class="reference internal" href="generated/app.region_extraction.lib.line_predictor.util.misc.html#app.region_extraction.lib.line_predictor.util.misc.SmoothedValue"><code class="docutils literal notranslate"><span class="pre">SmoothedValue</span></code></a><ul>
+<li class="toctree-l9"><a class="reference internal" href="generated/app.region_extraction.lib.line_predictor.util.misc.html#app.region_extraction.lib.line_predictor.util.misc.SmoothedValue.synchronize_between_processes"><code class="docutils literal notranslate"><span class="pre">SmoothedValue.synchronize_between_processes()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l8"><a class="reference internal" href="generated/app.region_extraction.lib.line_predictor.util.misc.html#app.region_extraction.lib.line_predictor.util.misc.accuracy"><code class="docutils literal notranslate"><span class="pre">accuracy()</span></code></a></li>
+<li class="toctree-l8"><a class="reference internal" href="generated/app.region_extraction.lib.line_predictor.util.misc.html#app.region_extraction.lib.line_predictor.util.misc.all_gather"><code class="docutils literal notranslate"><span class="pre">all_gather()</span></code></a></li>
+<li class="toctree-l8"><a class="reference internal" href="generated/app.region_extraction.lib.line_predictor.util.misc.html#app.region_extraction.lib.line_predictor.util.misc.interpolate"><code class="docutils literal notranslate"><span class="pre">interpolate()</span></code></a></li>
+<li class="toctree-l8"><a class="reference internal" href="generated/app.region_extraction.lib.line_predictor.util.misc.html#app.region_extraction.lib.line_predictor.util.misc.reduce_dict"><code class="docutils literal notranslate"><span class="pre">reduce_dict()</span></code></a></li>
+<li class="toctree-l8"><a class="reference internal" href="generated/app.region_extraction.lib.line_predictor.util.misc.html#app.region_extraction.lib.line_predictor.util.misc.setup_for_distributed"><code class="docutils literal notranslate"><span class="pre">setup_for_distributed()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.region_extraction.lib.line_predictor.util.slio.html">app.region_extraction.lib.line_predictor.util.slio</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="generated/app.region_extraction.region_extraction.html">app.region_extraction.region_extraction</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="generated/app.region_extraction.region_extraction.html#app.region_extraction.region_extraction.ExtractRegions"><code class="docutils literal notranslate"><span class="pre">ExtractRegions</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.region_extraction.region_extraction.html#app.region_extraction.region_extraction.ExtractRegions.initialize"><code class="docutils literal notranslate"><span class="pre">ExtractRegions.initialize()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.region_extraction.region_extraction.html#app.region_extraction.region_extraction.ExtractRegions.process_doc"><code class="docutils literal notranslate"><span class="pre">ExtractRegions.process_doc()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.region_extraction.region_extraction.html#app.region_extraction.region_extraction.ExtractRegions.process_doc_imgs"><code class="docutils literal notranslate"><span class="pre">ExtractRegions.process_doc_imgs()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.region_extraction.region_extraction.html#app.region_extraction.region_extraction.ExtractRegions.process_img"><code class="docutils literal notranslate"><span class="pre">ExtractRegions.process_img()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.region_extraction.region_extraction.html#app.region_extraction.region_extraction.ExtractRegions.run_task"><code class="docutils literal notranslate"><span class="pre">ExtractRegions.run_task()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.region_extraction.region_extraction.html#app.region_extraction.region_extraction.ExtractRegions.terminate"><code class="docutils literal notranslate"><span class="pre">ExtractRegions.terminate()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="generated/app.region_extraction.routes.html">app.region_extraction.routes</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="generated/app.region_extraction.routes.html#app.region_extraction.routes.cancel_regions_extraction"><code class="docutils literal notranslate"><span class="pre">cancel_regions_extraction()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="generated/app.region_extraction.routes.html#app.region_extraction.routes.monitor_regions_extraction"><code class="docutils literal notranslate"><span class="pre">monitor_regions_extraction()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="generated/app.region_extraction.routes.html#app.region_extraction.routes.qsizes_regions_extraction"><code class="docutils literal notranslate"><span class="pre">qsizes_regions_extraction()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="generated/app.region_extraction.routes.html#app.region_extraction.routes.start_regions_extraction"><code class="docutils literal notranslate"><span class="pre">start_regions_extraction()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="generated/app.region_extraction.routes.html#app.region_extraction.routes.status_regions_extraction"><code class="docutils literal notranslate"><span class="pre">status_regions_extraction()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="generated/app.region_extraction.tasks.html">app.region_extraction.tasks</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="generated/app.search.html">app.search</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="generated/app.search.const.html">app.search.const</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/app.search.routes.html">app.search.routes</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="generated/app.search.routes.html#app.search.routes.clear_index"><code class="docutils literal notranslate"><span class="pre">clear_index()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="generated/app.search.routes.html#app.search.routes.qsizes_search"><code class="docutils literal notranslate"><span class="pre">qsizes_search()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="generated/app.search.routes.html#app.search.routes.result_index"><code class="docutils literal notranslate"><span class="pre">result_index()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="generated/app.search.routes.html#app.search.routes.result_query"><code class="docutils literal notranslate"><span class="pre">result_query()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="generated/app.search.routes.html#app.search.routes.start_indexing"><code class="docutils literal notranslate"><span class="pre">start_indexing()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="generated/app.search.routes.html#app.search.routes.start_query"><code class="docutils literal notranslate"><span class="pre">start_query()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="generated/app.search.search.html">app.search.search</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="generated/app.search.search.html#app.search.search.DatasetIndex"><code class="docutils literal notranslate"><span class="pre">DatasetIndex</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.search.search.html#app.search.search.DatasetIndex.build"><code class="docutils literal notranslate"><span class="pre">DatasetIndex.build()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.search.search.html#app.search.search.DatasetIndex.compute_cosine_similarity"><code class="docutils literal notranslate"><span class="pre">DatasetIndex.compute_cosine_similarity()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.search.search.html#app.search.search.DatasetIndex.id_for_dataset"><code class="docutils literal notranslate"><span class="pre">DatasetIndex.id_for_dataset()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.search.search.html#app.search.search.DatasetIndex.init_extractor"><code class="docutils literal notranslate"><span class="pre">DatasetIndex.init_extractor()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.search.search.html#app.search.search.DatasetIndex.path_for_id"><code class="docutils literal notranslate"><span class="pre">DatasetIndex.path_for_id()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.search.search.html#app.search.search.DatasetIndex.query"><code class="docutils literal notranslate"><span class="pre">DatasetIndex.query()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.search.search.html#app.search.search.DatasetIndex.save"><code class="docutils literal notranslate"><span class="pre">DatasetIndex.save()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="generated/app.search.search.html#app.search.search.IndexDataset"><code class="docutils literal notranslate"><span class="pre">IndexDataset</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.search.search.html#app.search.search.IndexDataset.index_dataset"><code class="docutils literal notranslate"><span class="pre">IndexDataset.index_dataset()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.search.search.html#app.search.search.IndexDataset.run_task"><code class="docutils literal notranslate"><span class="pre">IndexDataset.run_task()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="generated/app.search.search.html#app.search.search.QueryIndex"><code class="docutils literal notranslate"><span class="pre">QueryIndex</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.search.search.html#app.search.search.QueryIndex.run_task"><code class="docutils literal notranslate"><span class="pre">QueryIndex.run_task()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="generated/app.search.tasks.html">app.search.tasks</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generated/app.search.utils.html">app.search.utils</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="generated/app.shared.html">app.shared</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="generated/app.shared.const.html">app.shared.const</a></li>
 <li class="toctree-l4"><a class="reference internal" href="generated/app.shared.dataset.html">app.shared.dataset</a><ul>
 <li class="toctree-l5"><a class="reference internal" href="generated/app.shared.dataset.dataset.html">app.shared.dataset.dataset</a><ul>
-<li class="toctree-l6"><a class="reference internal" href="generated/app.shared.dataset.dataset.html#app.shared.dataset.dataset.Dataset"><code class="docutils literal notranslate"><span class="pre">Dataset</span></code></a><ul>
-<li class="toctree-l7"><a class="reference internal" href="generated/app.shared.dataset.dataset.html#app.shared.dataset.dataset.Dataset.list_images"><code class="docutils literal notranslate"><span class="pre">Dataset.list_images()</span></code></a></li>
-<li class="toctree-l7"><a class="reference internal" href="generated/app.shared.dataset.dataset.html#app.shared.dataset.dataset.Dataset.load"><code class="docutils literal notranslate"><span class="pre">Dataset.load()</span></code></a></li>
-<li class="toctree-l7"><a class="reference internal" href="generated/app.shared.dataset.dataset.html#app.shared.dataset.dataset.Dataset.results_path"><code class="docutils literal notranslate"><span class="pre">Dataset.results_path</span></code></a></li>
-<li class="toctree-l7"><a class="reference internal" href="generated/app.shared.dataset.dataset.html#app.shared.dataset.dataset.Dataset.save"><code class="docutils literal notranslate"><span class="pre">Dataset.save()</span></code></a></li>
-</ul>
-</li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.shared.dataset.dataset.html#app.shared.dataset.dataset.TypedDict"><code class="docutils literal notranslate"><span class="pre">TypedDict()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.shared.dataset.dataset.html#app.shared.dataset.dataset.cast"><code class="docutils literal notranslate"><span class="pre">cast()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l5"><a class="reference internal" href="generated/app.shared.dataset.document.html">app.shared.dataset.document</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.shared.dataset.document.html#app.shared.dataset.document.DocDict"><code class="docutils literal notranslate"><span class="pre">DocDict</span></code></a></li>
 <li class="toctree-l6"><a class="reference internal" href="generated/app.shared.dataset.document.html#app.shared.dataset.document.Document"><code class="docutils literal notranslate"><span class="pre">Document</span></code></a><ul>
 <li class="toctree-l7"><a class="reference internal" href="generated/app.shared.dataset.document.html#app.shared.dataset.document.Document.download"><code class="docutils literal notranslate"><span class="pre">Document.download()</span></code></a></li>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.shared.dataset.document.html#app.shared.dataset.document.Document.from_dict"><code class="docutils literal notranslate"><span class="pre">Document.from_dict()</span></code></a></li>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.shared.dataset.document.html#app.shared.dataset.document.Document.get_absolute_url"><code class="docutils literal notranslate"><span class="pre">Document.get_absolute_url()</span></code></a></li>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.shared.dataset.document.html#app.shared.dataset.document.Document.get_download_url"><code class="docutils literal notranslate"><span class="pre">Document.get_download_url()</span></code></a></li>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.shared.dataset.document.html#app.shared.dataset.document.Document.images"><code class="docutils literal notranslate"><span class="pre">Document.images</span></code></a></li>
 <li class="toctree-l7"><a class="reference internal" href="generated/app.shared.dataset.document.html#app.shared.dataset.document.Document.list_images"><code class="docutils literal notranslate"><span class="pre">Document.list_images()</span></code></a></li>
-<li class="toctree-l7"><a class="reference internal" href="generated/app.shared.dataset.document.html#app.shared.dataset.document.Document.mapping"><code class="docutils literal notranslate"><span class="pre">Document.mapping</span></code></a></li>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.shared.dataset.document.html#app.shared.dataset.document.Document.list_images_from_path"><code class="docutils literal notranslate"><span class="pre">Document.list_images_from_path()</span></code></a></li>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.shared.dataset.document.html#app.shared.dataset.document.Document.load_images"><code class="docutils literal notranslate"><span class="pre">Document.load_images()</span></code></a></li>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.shared.dataset.document.html#app.shared.dataset.document.Document.prepare_crops"><code class="docutils literal notranslate"><span class="pre">Document.prepare_crops()</span></code></a></li>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.shared.dataset.document.html#app.shared.dataset.document.Document.sanity_check"><code class="docutils literal notranslate"><span class="pre">Document.sanity_check()</span></code></a></li>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.shared.dataset.document.html#app.shared.dataset.document.Document.save_images"><code class="docutils literal notranslate"><span class="pre">Document.save_images()</span></code></a></li>
+<li class="toctree-l7"><a class="reference internal" href="generated/app.shared.dataset.document.html#app.shared.dataset.document.Document.to_dict"><code class="docutils literal notranslate"><span class="pre">Document.to_dict()</span></code></a></li>
 </ul>
 </li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="generated/app.shared.dataset.routes.html">app.shared.dataset.routes</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.shared.dataset.routes.html#app.shared.dataset.routes.annotation_file"><code class="docutils literal notranslate"><span class="pre">annotation_file()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.shared.dataset.routes.html#app.shared.dataset.routes.dataset_info"><code class="docutils literal notranslate"><span class="pre">dataset_info()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.shared.dataset.routes.html#app.shared.dataset.routes.document_download"><code class="docutils literal notranslate"><span class="pre">document_download()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.shared.dataset.routes.html#app.shared.dataset.routes.document_info"><code class="docutils literal notranslate"><span class="pre">document_info()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="generated/app.shared.dataset.types.html">app.shared.dataset.types</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.shared.dataset.types.html#app.shared.dataset.types.DocInRange"><code class="docutils literal notranslate"><span class="pre">DocInRange</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.shared.dataset.types.html#app.shared.dataset.types.Image"><code class="docutils literal notranslate"><span class="pre">Image</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.shared.dataset.types.html#app.shared.dataset.types.ImageDict"><code class="docutils literal notranslate"><span class="pre">ImageDict</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="generated/app.shared.dataset.utils.html">app.shared.dataset.utils</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.shared.dataset.utils.html#app.shared.dataset.utils.group_by_documents"><code class="docutils literal notranslate"><span class="pre">group_by_documents()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.shared.dataset.utils.html#app.shared.dataset.utils.pdf_to_img"><code class="docutils literal notranslate"><span class="pre">pdf_to_img()</span></code></a></li>
 </ul>
 </li>
 </ul>
 </li>
 <li class="toctree-l4"><a class="reference internal" href="generated/app.shared.routes.html">app.shared.routes</a><ul>
 <li class="toctree-l5"><a class="reference internal" href="generated/app.shared.routes.html#app.shared.routes.cancel_task"><code class="docutils literal notranslate"><span class="pre">cancel_task()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="generated/app.shared.routes.html#app.shared.routes.clear_queues"><code class="docutils literal notranslate"><span class="pre">clear_queues()</span></code></a></li>
 <li class="toctree-l5"><a class="reference internal" href="generated/app.shared.routes.html#app.shared.routes.error_wrapper"><code class="docutils literal notranslate"><span class="pre">error_wrapper()</span></code></a></li>
 <li class="toctree-l5"><a class="reference internal" href="generated/app.shared.routes.html#app.shared.routes.monitor"><code class="docutils literal notranslate"><span class="pre">monitor()</span></code></a></li>
 <li class="toctree-l5"><a class="reference internal" href="generated/app.shared.routes.html#app.shared.routes.qsizes"><code class="docutils literal notranslate"><span class="pre">qsizes()</span></code></a></li>
@@ -446,69 +699,50 @@
 </ul>
 </li>
 <li class="toctree-l4"><a class="reference internal" href="generated/app.shared.tasks.html">app.shared.tasks</a><ul>
-<li class="toctree-l5"><a class="reference internal" href="generated/app.shared.tasks.html#app.shared.tasks.LoggedTask"><code class="docutils literal notranslate"><span class="pre">LoggedTask</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="generated/app.shared.tasks.html#app.shared.tasks.LoggedTask"><code class="docutils literal notranslate"><span class="pre">LoggedTask</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.shared.tasks.html#app.shared.tasks.LoggedTask.run_task"><code class="docutils literal notranslate"><span class="pre">LoggedTask.run_task()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.shared.tasks.html#app.shared.tasks.LoggedTask.task_update"><code class="docutils literal notranslate"><span class="pre">LoggedTask.task_update()</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l4"><a class="reference internal" href="generated/app.shared.utils.html">app.shared.utils</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="generated/app.shared.utils.html#app.shared.utils.clear_cuda"><code class="docutils literal notranslate"><span class="pre">clear_cuda()</span></code></a></li>
 <li class="toctree-l5"><a class="reference internal" href="generated/app.shared.utils.html#app.shared.utils.get_device"><code class="docutils literal notranslate"><span class="pre">get_device()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="generated/app.shared.utils.html#app.shared.utils.get_json"><code class="docutils literal notranslate"><span class="pre">get_json()</span></code></a></li>
 <li class="toctree-l5"><a class="reference internal" href="generated/app.shared.utils.html#app.shared.utils.hash_str"><code class="docutils literal notranslate"><span class="pre">hash_str()</span></code></a></li>
-<li class="toctree-l5"><a class="reference internal" href="generated/app.shared.utils.bbox.html">app.shared.utils.bbox</a><ul>
-<li class="toctree-l6"><a class="reference internal" href="generated/app.shared.utils.bbox.html#app.shared.utils.bbox.IIIFDocumentSegmentation"><code class="docutils literal notranslate"><span class="pre">IIIFDocumentSegmentation</span></code></a></li>
-<li class="toctree-l6"><a class="reference internal" href="generated/app.shared.utils.bbox.html#app.shared.utils.bbox.IIIFPageSegmentationItem"><code class="docutils literal notranslate"><span class="pre">IIIFPageSegmentationItem</span></code></a></li>
-<li class="toctree-l6"><a class="reference internal" href="generated/app.shared.utils.bbox.html#app.shared.utils.bbox.Segment"><code class="docutils literal notranslate"><span class="pre">Segment</span></code></a><ul>
-<li class="toctree-l7"><a class="reference internal" href="generated/app.shared.utils.bbox.html#app.shared.utils.bbox.Segment.auto_cast"><code class="docutils literal notranslate"><span class="pre">Segment.auto_cast()</span></code></a></li>
-<li class="toctree-l7"><a class="reference internal" href="generated/app.shared.utils.bbox.html#app.shared.utils.bbox.Segment.from_bbox"><code class="docutils literal notranslate"><span class="pre">Segment.from_bbox()</span></code></a></li>
-<li class="toctree-l7"><a class="reference internal" href="generated/app.shared.utils.bbox.html#app.shared.utils.bbox.Segment.serialize"><code class="docutils literal notranslate"><span class="pre">Segment.serialize()</span></code></a></li>
-<li class="toctree-l7"><a class="reference internal" href="generated/app.shared.utils.bbox.html#app.shared.utils.bbox.Segment.unserialize"><code class="docutils literal notranslate"><span class="pre">Segment.unserialize()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l6"><a class="reference internal" href="generated/app.shared.utils.bbox.html#app.shared.utils.bbox.base36_to_int"><code class="docutils literal notranslate"><span class="pre">base36_to_int()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l5"><a class="reference internal" href="generated/app.shared.utils.download.html">app.shared.utils.download</a><ul>
-<li class="toctree-l6"><a class="reference internal" href="generated/app.shared.utils.download.html#app.shared.utils.download.download_dataset"><code class="docutils literal notranslate"><span class="pre">download_dataset()</span></code></a></li>
-</ul>
-</li>
+<li class="toctree-l5"><a class="reference internal" href="generated/app.shared.utils.html#app.shared.utils.natural_sort"><code class="docutils literal notranslate"><span class="pre">natural_sort()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="generated/app.shared.utils.html#app.shared.utils.sort_naturally"><code class="docutils literal notranslate"><span class="pre">sort_naturally()</span></code></a></li>
 <li class="toctree-l5"><a class="reference internal" href="generated/app.shared.utils.fileutils.html">app.shared.utils.fileutils</a><ul>
 <li class="toctree-l6"><a class="reference internal" href="generated/app.shared.utils.fileutils.html#app.shared.utils.fileutils.check_dir"><code class="docutils literal notranslate"><span class="pre">check_dir()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.shared.utils.fileutils.html#app.shared.utils.fileutils.check_if_file"><code class="docutils literal notranslate"><span class="pre">check_if_file()</span></code></a></li>
 <li class="toctree-l6"><a class="reference internal" href="generated/app.shared.utils.fileutils.html#app.shared.utils.fileutils.clear_dir"><code class="docutils literal notranslate"><span class="pre">clear_dir()</span></code></a></li>
 <li class="toctree-l6"><a class="reference internal" href="generated/app.shared.utils.fileutils.html#app.shared.utils.fileutils.create_dirs_if_not"><code class="docutils literal notranslate"><span class="pre">create_dirs_if_not()</span></code></a></li>
 <li class="toctree-l6"><a class="reference internal" href="generated/app.shared.utils.fileutils.html#app.shared.utils.fileutils.create_file_if_not"><code class="docutils literal notranslate"><span class="pre">create_file_if_not()</span></code></a></li>
 <li class="toctree-l6"><a class="reference internal" href="generated/app.shared.utils.fileutils.html#app.shared.utils.fileutils.create_files_if_not"><code class="docutils literal notranslate"><span class="pre">create_files_if_not()</span></code></a></li>
 <li class="toctree-l6"><a class="reference internal" href="generated/app.shared.utils.fileutils.html#app.shared.utils.fileutils.delete_directory"><code class="docutils literal notranslate"><span class="pre">delete_directory()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.shared.utils.fileutils.html#app.shared.utils.fileutils.delete_empty_dirs"><code class="docutils literal notranslate"><span class="pre">delete_empty_dirs()</span></code></a></li>
 <li class="toctree-l6"><a class="reference internal" href="generated/app.shared.utils.fileutils.html#app.shared.utils.fileutils.delete_path"><code class="docutils literal notranslate"><span class="pre">delete_path()</span></code></a></li>
 <li class="toctree-l6"><a class="reference internal" href="generated/app.shared.utils.fileutils.html#app.shared.utils.fileutils.download_file"><code class="docutils literal notranslate"><span class="pre">download_file()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.shared.utils.fileutils.html#app.shared.utils.fileutils.download_model_if_not"><code class="docutils literal notranslate"><span class="pre">download_model_if_not()</span></code></a></li>
 <li class="toctree-l6"><a class="reference internal" href="generated/app.shared.utils.fileutils.html#app.shared.utils.fileutils.empty_file"><code class="docutils literal notranslate"><span class="pre">empty_file()</span></code></a></li>
 <li class="toctree-l6"><a class="reference internal" href="generated/app.shared.utils.fileutils.html#app.shared.utils.fileutils.file_age"><code class="docutils literal notranslate"><span class="pre">file_age()</span></code></a></li>
 <li class="toctree-l6"><a class="reference internal" href="generated/app.shared.utils.fileutils.html#app.shared.utils.fileutils.get_all_files"><code class="docutils literal notranslate"><span class="pre">get_all_files()</span></code></a></li>
 <li class="toctree-l6"><a class="reference internal" href="generated/app.shared.utils.fileutils.html#app.shared.utils.fileutils.get_file_ext"><code class="docutils literal notranslate"><span class="pre">get_file_ext()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.shared.utils.fileutils.html#app.shared.utils.fileutils.get_model"><code class="docutils literal notranslate"><span class="pre">get_model()</span></code></a></li>
 <li class="toctree-l6"><a class="reference internal" href="generated/app.shared.utils.fileutils.html#app.shared.utils.fileutils.is_too_old"><code class="docutils literal notranslate"><span class="pre">is_too_old()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.shared.utils.fileutils.html#app.shared.utils.fileutils.list_known_models"><code class="docutils literal notranslate"><span class="pre">list_known_models()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.shared.utils.fileutils.html#app.shared.utils.fileutils.process_directory"><code class="docutils literal notranslate"><span class="pre">process_directory()</span></code></a></li>
 <li class="toctree-l6"><a class="reference internal" href="generated/app.shared.utils.fileutils.html#app.shared.utils.fileutils.sanitize_str"><code class="docutils literal notranslate"><span class="pre">sanitize_str()</span></code></a></li>
 <li class="toctree-l6"><a class="reference internal" href="generated/app.shared.utils.fileutils.html#app.shared.utils.fileutils.sanitize_url"><code class="docutils literal notranslate"><span class="pre">sanitize_url()</span></code></a></li>
 <li class="toctree-l6"><a class="reference internal" href="generated/app.shared.utils.fileutils.html#app.shared.utils.fileutils.xaccel_send_from_directory"><code class="docutils literal notranslate"><span class="pre">xaccel_send_from_directory()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l5"><a class="reference internal" href="generated/app.shared.utils.iiif.html">app.shared.utils.iiif</a><ul>
-<li class="toctree-l6"><a class="reference internal" href="generated/app.shared.utils.iiif.html#app.shared.utils.iiif.IIIFDownloader"><code class="docutils literal notranslate"><span class="pre">IIIFDownloader</span></code></a><ul>
-<li class="toctree-l7"><a class="reference internal" href="generated/app.shared.utils.iiif.html#app.shared.utils.iiif.IIIFDownloader.check_url"><code class="docutils literal notranslate"><span class="pre">IIIFDownloader.check_url()</span></code></a></li>
-<li class="toctree-l7"><a class="reference internal" href="generated/app.shared.utils.iiif.html#app.shared.utils.iiif.IIIFDownloader.download_manifest"><code class="docutils literal notranslate"><span class="pre">IIIFDownloader.download_manifest()</span></code></a></li>
-<li class="toctree-l7"><a class="reference internal" href="generated/app.shared.utils.iiif.html#app.shared.utils.iiif.IIIFDownloader.get_manifest_id"><code class="docutils literal notranslate"><span class="pre">IIIFDownloader.get_manifest_id()</span></code></a></li>
-<li class="toctree-l7"><a class="reference internal" href="generated/app.shared.utils.iiif.html#app.shared.utils.iiif.IIIFDownloader.run"><code class="docutils literal notranslate"><span class="pre">IIIFDownloader.run()</span></code></a></li>
-<li class="toctree-l7"><a class="reference internal" href="generated/app.shared.utils.iiif.html#app.shared.utils.iiif.IIIFDownloader.save_iiif_img"><code class="docutils literal notranslate"><span class="pre">IIIFDownloader.save_iiif_img()</span></code></a></li>
-<li class="toctree-l7"><a class="reference internal" href="generated/app.shared.utils.iiif.html#app.shared.utils.iiif.IIIFDownloader.save_img"><code class="docutils literal notranslate"><span class="pre">IIIFDownloader.save_img()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l6"><a class="reference internal" href="generated/app.shared.utils.iiif.html#app.shared.utils.iiif.get_id"><code class="docutils literal notranslate"><span class="pre">get_id()</span></code></a></li>
-<li class="toctree-l6"><a class="reference internal" href="generated/app.shared.utils.iiif.html#app.shared.utils.iiif.get_iiif_resources"><code class="docutils literal notranslate"><span class="pre">get_iiif_resources()</span></code></a></li>
-<li class="toctree-l6"><a class="reference internal" href="generated/app.shared.utils.iiif.html#app.shared.utils.iiif.get_img_rsrc"><code class="docutils literal notranslate"><span class="pre">get_img_rsrc()</span></code></a></li>
-<li class="toctree-l6"><a class="reference internal" href="generated/app.shared.utils.iiif.html#app.shared.utils.iiif.get_json"><code class="docutils literal notranslate"><span class="pre">get_json()</span></code></a></li>
-<li class="toctree-l6"><a class="reference internal" href="generated/app.shared.utils.iiif.html#app.shared.utils.iiif.get_reduced_size"><code class="docutils literal notranslate"><span class="pre">get_reduced_size()</span></code></a></li>
-<li class="toctree-l6"><a class="reference internal" href="generated/app.shared.utils.iiif.html#app.shared.utils.iiif.is_iiif_manifest"><code class="docutils literal notranslate"><span class="pre">is_iiif_manifest()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.shared.utils.fileutils.html#app.shared.utils.fileutils.zip_on_the_fly"><code class="docutils literal notranslate"><span class="pre">zip_on_the_fly()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l5"><a class="reference internal" href="generated/app.shared.utils.img.html">app.shared.utils.img</a><ul>
 <li class="toctree-l6"><a class="reference internal" href="generated/app.shared.utils.img.html#app.shared.utils.img.download_image"><code class="docutils literal notranslate"><span class="pre">download_image()</span></code></a></li>
-<li class="toctree-l6"><a class="reference internal" href="generated/app.shared.utils.img.html#app.shared.utils.img.get_json"><code class="docutils literal notranslate"><span class="pre">get_json()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.shared.utils.img.html#app.shared.utils.img.download_images"><code class="docutils literal notranslate"><span class="pre">download_images()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.shared.utils.img.html#app.shared.utils.img.get_img_paths"><code class="docutils literal notranslate"><span class="pre">get_img_paths()</span></code></a></li>
 <li class="toctree-l6"><a class="reference internal" href="generated/app.shared.utils.img.html#app.shared.utils.img.save_img"><code class="docutils literal notranslate"><span class="pre">save_img()</span></code></a></li>
 </ul>
 </li>
@@ -546,8 +780,8 @@
 </ul>
 </li>
 <li class="toctree-l6"><a class="reference internal" href="generated/app.shared.utils.logging.html#app.shared.utils.logging.base_logger"><code class="docutils literal notranslate"><span class="pre">base_logger</span></code></a></li>
-<li class="toctree-l6"><a class="reference internal" href="generated/app.shared.utils.logging.html#app.shared.utils.logging.console"><code class="docutils literal notranslate"><span class="pre">console()</span></code></a></li>
 <li class="toctree-l6"><a class="reference internal" href="generated/app.shared.utils.logging.html#app.shared.utils.logging.notifying"><code class="docutils literal notranslate"><span class="pre">notifying()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.shared.utils.logging.html#app.shared.utils.logging.sanitize"><code class="docutils literal notranslate"><span class="pre">sanitize()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l5"><a class="reference internal" href="generated/app.shared.utils.modular.html">app.shared.utils.modular</a><ul>
@@ -567,18 +801,27 @@
 <li class="toctree-l5"><a class="reference internal" href="generated/app.similarity.routes.html#app.similarity.routes.start_similarity"><code class="docutils literal notranslate"><span class="pre">start_similarity()</span></code></a></li>
 </ul>
 </li>
+<li class="toctree-l4"><a class="reference internal" href="generated/app.similarity.similarity.html">app.similarity.similarity</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="generated/app.similarity.similarity.html#app.similarity.similarity.ComputeSimilarity"><code class="docutils literal notranslate"><span class="pre">ComputeSimilarity</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.similarity.similarity.html#app.similarity.similarity.ComputeSimilarity.check_parameters"><code class="docutils literal notranslate"><span class="pre">ComputeSimilarity.check_parameters()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.similarity.similarity.html#app.similarity.similarity.ComputeSimilarity.compute_cosine_similarity"><code class="docutils literal notranslate"><span class="pre">ComputeSimilarity.compute_cosine_similarity()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.similarity.similarity.html#app.similarity.similarity.ComputeSimilarity.compute_segswap_similarity"><code class="docutils literal notranslate"><span class="pre">ComputeSimilarity.compute_segswap_similarity()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.similarity.similarity.html#app.similarity.similarity.ComputeSimilarity.compute_similarity"><code class="docutils literal notranslate"><span class="pre">ComputeSimilarity.compute_similarity()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.similarity.similarity.html#app.similarity.similarity.ComputeSimilarity.format_results"><code class="docutils literal notranslate"><span class="pre">ComputeSimilarity.format_results()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.similarity.similarity.html#app.similarity.similarity.ComputeSimilarity.get_doc_uid"><code class="docutils literal notranslate"><span class="pre">ComputeSimilarity.get_doc_uid()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.similarity.similarity.html#app.similarity.similarity.ComputeSimilarity.get_features"><code class="docutils literal notranslate"><span class="pre">ComputeSimilarity.get_features()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.similarity.similarity.html#app.similarity.similarity.ComputeSimilarity.run_task"><code class="docutils literal notranslate"><span class="pre">ComputeSimilarity.run_task()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.similarity.similarity.html#app.similarity.similarity.ComputeSimilarity.skip"><code class="docutils literal notranslate"><span class="pre">ComputeSimilarity.skip()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.similarity.similarity.html#app.similarity.similarity.ComputeSimilarity.store"><code class="docutils literal notranslate"><span class="pre">ComputeSimilarity.store()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="generated/app.similarity.similarity.html#app.similarity.similarity.DocIndex"><code class="docutils literal notranslate"><span class="pre">DocIndex</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="generated/app.similarity.similarity.html#app.similarity.similarity.SimParameters"><code class="docutils literal notranslate"><span class="pre">SimParameters</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="generated/app.similarity.similarity.html#app.similarity.similarity.SimilarityResults"><code class="docutils literal notranslate"><span class="pre">SimilarityResults</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l4"><a class="reference internal" href="generated/app.similarity.tasks.html">app.similarity.tasks</a></li>
-<li class="toctree-l4"><a class="reference internal" href="generated/app.similarity.tests.html">app.similarity.tests</a><ul>
-<li class="toctree-l5"><a class="reference internal" href="generated/app.similarity.tests.test_similarity.html">app.similarity.tests.test_similarity</a><ul>
-<li class="toctree-l6"><a class="reference internal" href="generated/app.similarity.tests.test_similarity.html#app.similarity.tests.test_similarity.TestLoggedComputeSimilarity"><code class="docutils literal notranslate"><span class="pre">TestLoggedComputeSimilarity</span></code></a><ul>
-<li class="toctree-l7"><a class="reference internal" href="generated/app.similarity.tests.test_similarity.html#app.similarity.tests.test_similarity.TestLoggedComputeSimilarity.setUp"><code class="docutils literal notranslate"><span class="pre">TestLoggedComputeSimilarity.setUp()</span></code></a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l5"><a class="reference internal" href="generated/app.similarity.tests.test_utils.html">app.similarity.tests.test_utils</a></li>
-</ul>
-</li>
+<li class="toctree-l4"><a class="reference internal" href="generated/app.similarity.tests.html">app.similarity.tests</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="generated/app.vectorization.html">app.vectorization</a><ul>
@@ -590,8 +833,9 @@
 </li>
 <li class="toctree-l4"><a class="reference internal" href="generated/app.vectorization.tasks.html">app.vectorization.tasks</a></li>
 <li class="toctree-l4"><a class="reference internal" href="generated/app.vectorization.vectorization.html">app.vectorization.vectorization</a><ul>
-<li class="toctree-l5"><a class="reference internal" href="generated/app.vectorization.vectorization.html#app.vectorization.vectorization.LoggedComputeVectorization"><code class="docutils literal notranslate"><span class="pre">LoggedComputeVectorization</span></code></a><ul>
-<li class="toctree-l6"><a class="reference internal" href="generated/app.vectorization.vectorization.html#app.vectorization.vectorization.LoggedComputeVectorization.send_zip"><code class="docutils literal notranslate"><span class="pre">LoggedComputeVectorization.send_zip()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="generated/app.vectorization.vectorization.html#app.vectorization.vectorization.ComputeVectorization"><code class="docutils literal notranslate"><span class="pre">ComputeVectorization</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.vectorization.vectorization.html#app.vectorization.vectorization.ComputeVectorization.create_zip"><code class="docutils literal notranslate"><span class="pre">ComputeVectorization.create_zip()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="generated/app.vectorization.vectorization.html#app.vectorization.vectorization.ComputeVectorization.run_task"><code class="docutils literal notranslate"><span class="pre">ComputeVectorization.run_task()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -617,7 +861,7 @@
         </article>
       </div>
       <footer>
-        
+
         <div class="related-pages">
           <a class="next-page" href="usage.html">
               <div class="page-info">
@@ -628,7 +872,7 @@
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          
+
         </div>
         <div class="bottom-of-page">
           <div class="left-details">
@@ -636,26 +880,26 @@
                 Copyright &#169; 2024, Ségolène Albouy, Robin Champenois
             </div>
             Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
-            
+
             <a href="https://github.com/pradyunsg/furo">Furo</a>
-            
+
           </div>
           <div class="right-details">
-            
+
           </div>
         </div>
-        
+
       </footer>
     </div>
     <aside class="toc-drawer no-toc">
-      
-      
-      
+
+
+
     </aside>
   </div>
 </div><script src="_static/documentation_options.js?v=5929fcd5"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
-    <script src="_static/scripts/furo.js?v=5fa4622c"></script>
+    <script src="_static/scripts/furo.js?v=46bd48cc"></script>
     </body>
 </html>
