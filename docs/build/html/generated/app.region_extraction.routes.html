@@ -367,7 +367,7 @@
 <p>Routes:</p>
 <ul class="simple">
 <li><dl class="simple">
-<dt>POST <code class="docutils literal notranslate"><span class="pre">/regions/start</span></code>:</dt><dd><p>Starts the regions extraction process for a dataset.</p>
+<dt>POST <code class="docutils literal notranslate"><span class="pre">/region_extraction/start</span></code>:</dt><dd><p>Starts the regions extraction process for a dataset.</p>
 <ul>
 <li><dl class="simple">
 <dt>Parameters:</dt><dd><ul>
@@ -387,7 +387,7 @@
 </dl>
 </li>
 <li><dl class="simple">
-<dt>POST <code class="docutils literal notranslate"><span class="pre">/regions/&lt;tracking_id&gt;/cancel</span></code>:</dt><dd><p>Cancel a regions extraction task.</p>
+<dt>POST <code class="docutils literal notranslate"><span class="pre">/region_extraction/&lt;tracking_id&gt;/cancel</span></code>:</dt><dd><p>Cancel a regions extraction task.</p>
 <ul>
 <li><dl class="simple">
 <dt>Parameters:</dt><dd><ul>
@@ -402,7 +402,7 @@
 </dl>
 </li>
 <li><dl class="simple">
-<dt>GET <code class="docutils literal notranslate"><span class="pre">/regions/&lt;tracking_id&gt;/status</span></code>:</dt><dd><p>Get the status of a regions extraction task.</p>
+<dt>GET <code class="docutils literal notranslate"><span class="pre">/region_extraction/&lt;tracking_id&gt;/status</span></code>:</dt><dd><p>Get the status of a regions extraction task.</p>
 <ul>
 <li><p>Response: JSON object containing the status of the task.</p></li>
 </ul>
@@ -410,7 +410,7 @@
 </dl>
 </li>
 <li><dl class="simple">
-<dt>GET <code class="docutils literal notranslate"><span class="pre">/regions/qsizes</span></code>:</dt><dd><p>List the queues of the broker and the number of tasks in each queue.</p>
+<dt>GET <code class="docutils literal notranslate"><span class="pre">/region_extraction/qsizes</span></code>:</dt><dd><p>List the queues of the broker and the number of tasks in each queue.</p>
 <ul>
 <li><p>Response: JSON object containing the queue sizes.</p></li>
 </ul>
@@ -418,7 +418,7 @@
 </dl>
 </li>
 <li><dl class="simple">
-<dt>GET <code class="docutils literal notranslate"><span class="pre">/regions/monitor</span></code>:</dt><dd><p>Monitor the tasks of the broker.</p>
+<dt>GET <code class="docutils literal notranslate"><span class="pre">/region_extraction/monitor</span></code>:</dt><dd><p>Monitor the tasks of the broker.</p>
 <ul>
 <li><p>Response: JSON object containing the monitoring information.</p></li>
 </ul>
@@ -426,7 +426,7 @@
 </dl>
 </li>
 <li><dl class="simple">
-<dt>GET <code class="docutils literal notranslate"><span class="pre">/regions/models</span></code>:</dt><dd><p>Get the list of available models.</p>
+<dt>GET <code class="docutils literal notranslate"><span class="pre">/region_extraction/models</span></code>:</dt><dd><p>Get the list of available models.</p>
 <ul>
 <li><p>Response: JSON object containing the models and their modification dates.</p></li>
 </ul>
@@ -434,7 +434,7 @@
 </dl>
 </li>
 <li><dl class="simple">
-<dt>POST <code class="docutils literal notranslate"><span class="pre">/regions/clear</span></code>:</dt><dd><p>Clear the images of a dataset.</p>
+<dt>POST <code class="docutils literal notranslate"><span class="pre">/region_extraction/clear</span></code>:</dt><dd><p>Clear the images of a dataset.</p>
 <ul>
 <li><dl class="simple">
 <dt>Parameters:</dt><dd><ul>

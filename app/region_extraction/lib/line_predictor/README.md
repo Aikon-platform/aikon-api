@@ -23,7 +23,7 @@ In order to use line predictor for extraction, you first need to compile CUDA op
 3. Activate python environment in the `api/` root folder
     ```bash
     source venv/bin/activate
-    cd app/regions/lib/line_predictor
+    cd app/region_extraction/lib/line_predictor
     ```
 4. Inside `line_predictor/` folder, run
     ```bash

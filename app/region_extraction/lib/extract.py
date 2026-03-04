@@ -228,7 +228,7 @@ class BaseExtractor:
             image_tensor.shape[2:], detections[:, :4], original_image.shape
         ).round()
 
-        # NOTE the original, non-numpy version of those conversions can be found here: https://github.com/Aikon-platform/aikon-api/blob/80b7b6cc71c425778c693ccf0d0d66a8f188532e/app/regions/lib/extract.py
+        # NOTE the original, non-numpy version of those conversions can be found here: https://github.com/Aikon-platform/aikon-api/blob/80b7b6cc71c425778c693ccf0d0d66a8f188532e/app/region_extraction/lib/extract.py
 
         detections = (
             detections.cpu().numpy()

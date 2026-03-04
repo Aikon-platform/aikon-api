@@ -30,7 +30,7 @@ fi
 # if region in INSTALLED_APPS, and build is not already done
 if [[ "$INSTALLED_APPS" == *"regions"* ]] && [[ $is_build -eq 0 ]]; then
     color_echo blue "Building operators for regions module..."
-    cd "$ROOT_DIR"/api/app/regions/lib/line_predictor/dino/ops/
+    cd "$ROOT_DIR"/api/app/region_extraction/lib/line_predictor/dino/ops/
     python setup.py build install || {
         color_echo red "Failed to build regions operators"
     }

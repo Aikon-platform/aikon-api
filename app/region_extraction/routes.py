@@ -15,34 +15,34 @@ Routes:
         - ``model``: The model to use for the extraction.
     - Response: JSON object containing the task ID and experiment ID.
 
-- POST ``/regions/<tracking_id>/cancel``:
+- POST ``/region_extraction/<tracking_id>/cancel``:
     Cancel a regions extraction task.
 
     - Parameters:
         - ``tracking_id``: The task ID.
     - Response: JSON object indicating the cancellation status.
 
-- GET ``/regions/<tracking_id>/status``:
+- GET ``/region_extraction/<tracking_id>/status``:
     Get the status of a regions extraction task.
 
     - Response: JSON object containing the status of the task.
 
-- GET ``/regions/qsizes``:
+- GET ``/region_extraction/qsizes``:
     List the queues of the broker and the number of tasks in each queue.
 
     - Response: JSON object containing the queue sizes.
 
-- GET ``/regions/monitor``:
+- GET ``/region_extraction/monitor``:
     Monitor the tasks of the broker.
 
     - Response: JSON object containing the monitoring information.
 
-- GET ``/regions/models``:
+- GET ``/region_extraction/models``:
     Get the list of available models.
 
     - Response: JSON object containing the models and their modification dates.
 
-- POST ``/regions/clear``:
+- POST ``/region_extraction/clear``:
     Clear the images of a dataset.
 
     - Parameters:
