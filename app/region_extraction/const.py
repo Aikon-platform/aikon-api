@@ -4,7 +4,7 @@ Module-specific constants for the regions app
 from ..shared.utils.fileutils import create_dirs_if_not, download_model_if_not
 from ..config.base import ENV, BASE_DIR, API_DATA_FOLDER, IS_CUDA
 
-DEMO_NAME = "regions"
+DEMO_NAME = "region_extraction"
 
 # Path to regions/ folder
 DEMO_DIR = BASE_DIR / "app" / DEMO_NAME

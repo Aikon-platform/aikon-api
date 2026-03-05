@@ -28,11 +28,11 @@ fi
 
 
 # if region in INSTALLED_APPS, and build is not already done
-if [[ "$INSTALLED_APPS" == *"regions"* ]] && [[ $is_build -eq 0 ]]; then
-    color_echo blue "Building operators for regions module..."
+if [[ "$INSTALLED_APPS" == *"region_extraction"* ]] && [[ $is_build -eq 0 ]]; then
+    color_echo blue "Building operators for region extraction module..."
     cd "$ROOT_DIR"/api/app/region_extraction/lib/line_predictor/dino/ops/
     python setup.py build install || {
-        color_echo red "Failed to build regions operators"
+        color_echo red "Failed to build region extraction operators"
     }
     # DTLR code should work without the need to build, and use line_predictor's build
 fi
