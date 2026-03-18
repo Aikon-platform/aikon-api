@@ -43,6 +43,61 @@ Mostly copy-paste from https://github.com/XiSHEN0220/SegSwap
 }
 """
 
+# ── Shared forward pass for encoder layers ───────────────────────────────────
+
+
+def frwd(featx, featy, encoder_layer, self_attn_only=True, x_mask=None, y_mask=None):
+    """
+    Shared forward logic for inner-attention and cross-attention encoder layers.
+    Device is inferred from input tensors — no hardcoded CUDA dependency.
+
+    self_attn_only=True  → inner attention (block-diagonal mask, each image attends only to itself)
+    self_attn_only=False → cross attention (off-diagonal mask, each image attends only to the other)
+    """
+    bx, cx, hx, wx = featx.size()
+    by, cy, hy, wy = featy.size()
+    device = featx.device
+
+    ## input of transformer should be : seq_len * batch_size * feat_dim
+    featx = featx.flatten(2).permute(2, 0, 1)
+    featy = featy.flatten(2).permute(2, 0, 1)
+
+    x_mask = (
+        x_mask.flatten(2).squeeze(1)
+        if x_mask is not None
+        else torch.zeros(bx, hx * wx, dtype=torch.bool, device=device)
+    )
+    y_mask = (
+        y_mask.flatten(2).squeeze(1)
+        if y_mask is not None
+        else torch.zeros(by, hy * wy, dtype=torch.bool, device=device)
+    )
+
+    ## input of transformer: (seq_len*2) * batch_size * feat_dim
+    len_seq_x, len_seq_y = featx.size()[0], featy.size()[0]
+
+    output = torch.cat([featx, featy], dim=0)
+    src_key_padding_mask = torch.cat((x_mask, y_mask), dim=1)
+
+    total = hx * wx + hy * wy
+    with torch.no_grad():
+        src_mask = torch.full(
+            (total, total), self_attn_only, dtype=torch.bool, device=device
+        )
+        src_mask[: hx * wx, : hx * wx] = not self_attn_only
+        src_mask[hx * wx :, hx * wx :] = not self_attn_only
+
+    output = encoder_layer(
+        output, src_mask=src_mask, src_key_padding_mask=src_key_padding_mask
+    )
+
+    outx = output.narrow(0, 0, len_seq_x).permute(1, 2, 0).view(bx, cx, hx, wx)
+    outy = output.narrow(0, len_seq_x, len_seq_y).permute(1, 2, 0).view(by, cy, hy, wy)
+    x_mask = x_mask.view(bx, 1, hx, wx)
+    y_mask = y_mask.view(by, 1, hy, wy)
+    return outx, outy, x_mask, y_mask
+
+
 # --- Positional encoding--- #
 # --- Borrowed from Detr--- #
 
@@ -147,7 +202,6 @@ def load_backbone(param):
     backbone = torch.nn.Sequential(*resnet_module_list[: last_layer_idx + 1])
     backbone.load_state_dict(param["backbone"])
     backbone.eval()
-    #backbone.cuda()
     return backbone
 
 
@@ -162,13 +216,12 @@ def load_encoder(param):
         layer_type=["I", "C", "I", "C", "I", "N"],
         drop_feat=0.1,
     )
-    #net_encoder.cuda()
     net_encoder.load_state_dict(param["encoder"])
     net_encoder.eval()
-    #net_encoder.cuda()
     return net_encoder
 
 
+@torch.no_grad()
 def compute_score(
     tensor1,
     tensor2,
@@ -179,33 +232,27 @@ def compute_score(
     nb_feat_h=MAX_SIZE // SEG_STRIDE,
     nb_feat_w=MAX_SIZE // SEG_STRIDE,
 ):
-    with torch.no_grad():
-        feat1 = backbone(tensor1)  ## features
-        feat1 = F.normalize(feat1)  ## l2 normalization
-        feat2 = backbone(tensor2)  ## features
-        feat2 = F.normalize(feat2)  ## l2 normalization
-        out1, out2 = net_encoder(feat1, feat2)  ## predictions
-        m1_final, m2_final = consistent_mask(
-            out1[:, 2:].cpu().numpy(),
-            out2[:, 2:].cpu().numpy(),
-            out1.cpu(),
-            out2.cpu(),
-        )
-        x2_pred = (
-            np.round(out1[:, 0, y_grid, x_grid].cpu() * (nb_feat_w - 1))
-            .numpy()
-            .astype(int)
-        )
-        y2_pred = (
-            np.round(out1[:, 1, y_grid, x_grid].cpu() * (nb_feat_h - 1))
-            .numpy()
-            .astype(int)
-        )
+    feat1 = F.normalize(backbone(tensor1))
+    feat2 = F.normalize(backbone(tensor2))
+    out1, out2 = net_encoder(feat1, feat2)
 
-        m1_final_ = m1_final[:, 0, y_grid, x_grid]
-        return score_local_feat_match(
-            feat1.cpu(), x_grid, y_grid, feat2.cpu(), x2_pred, y2_pred, m1_final_
-        )
+    m1_final, m2_final = consistent_mask(
+        out1[:, 2:].cpu().numpy(),
+        out2[:, 2:].cpu().numpy(),
+        out1.cpu(),
+        out2.cpu(),
+    )
+    x2_pred = np.round(
+        out1[:, 0, y_grid, x_grid].cpu().numpy() * (nb_feat_w - 1)
+    ).astype(int)
+    y2_pred = np.round(
+        out1[:, 1, y_grid, x_grid].cpu().numpy() * (nb_feat_h - 1)
+    ).astype(int)
+
+    m1_final_ = m1_final[:, 0, y_grid, x_grid]
+    return score_local_feat_match(
+        feat1.cpu(), x_grid, y_grid, feat2.cpu(), x2_pred, y2_pred, m1_final_
+    )
 
 
 def save_mask(q_img, sim_imgs, img_dir, m2_final):
@@ -312,55 +359,20 @@ class EncoderLayerInnerAttention(nn.Module):
         input y_mask: B, 1, H, W, mask == True will be ignored
         """
 
-        bx, cx, hx, wx = x.size()
-
-        by, cy, hy, wy = y.size()
-
         posx = self.posEncoder(x)
         posy = self.posEncoder(y)
 
         featx = self.feat_weight * x + self.pos_weight * posx
         featy = self.feat_weight * y + self.pos_weight * posy
 
-        ## input of transformer should be : seq_len * batch_size * feat_dim
-        featx = featx.flatten(2).permute(2, 0, 1)
-        featy = featy.flatten(2).permute(2, 0, 1)
-        x_mask = (
-            x_mask.flatten(2).squeeze(1)
-            if x_mask is not None
-            else torch.cuda.BoolTensor(bx, hx * wx).fill_(False)
+        return frwd(
+            featx,
+            featy,
+            self.inner_encoder_layer,
+            self_attn_only=True,
+            x_mask=x_mask,
+            y_mask=y_mask,
         )
-        y_mask = (
-            y_mask.flatten(2).squeeze(1)
-            if y_mask is not None
-            else torch.cuda.BoolTensor(by, hy * wy).fill_(False)
-        )
-
-        ## input of transformer: (seq_len*2) * batch_size * feat_dim
-        len_seq_x, len_seq_y = featx.size()[0], featy.size()[0]
-
-        output = torch.cat([featx, featy], dim=0)
-        src_key_padding_mask = torch.cat((x_mask, y_mask), dim=1)
-        with torch.no_grad():
-            src_mask = torch.cuda.BoolTensor(
-                hx * wx + hy * wy, hx * wx + hy * wy
-            ).fill_(True)
-            src_mask[: hx * wx, : hx * wx] = False
-            src_mask[hx * wx :, hx * wx :] = False
-
-        output = self.inner_encoder_layer(
-            output, src_mask=src_mask, src_key_padding_mask=src_key_padding_mask
-        )
-
-        outx, outy = output.narrow(0, 0, len_seq_x), output.narrow(
-            0, len_seq_x, len_seq_y
-        )
-        outx, outy = outx.permute(1, 2, 0).view(bx, cx, hx, wx), outy.permute(
-            1, 2, 0
-        ).view(by, cy, hy, wy)
-        x_mask, y_mask = x_mask.view(bx, 1, hx, wx), y_mask.view(bx, 1, hy, wy)
-
-        return outx, outy, x_mask, y_mask
 
 
 class EncoderLayerCrossAttention(nn.Module):
@@ -387,48 +399,14 @@ class EncoderLayerCrossAttention(nn.Module):
         input y_mask: B, 1, H, W, mask == True will be ignored
         """
 
-        bx, cx, hx, wx = featx.size()
-        by, cy, hy, wy = featy.size()
-
-        ## input of transformer should be : seq_len * batch_size * feat_dim
-        featx = featx.flatten(2).permute(2, 0, 1)
-        featy = featy.flatten(2).permute(2, 0, 1)
-        x_mask = (
-            x_mask.flatten(2).squeeze(1)
-            if x_mask is not None
-            else torch.cuda.BoolTensor(bx, hx * wx).fill_(False)
+        return frwd(
+            featx,
+            featy,
+            self.cross_encoder_layer,
+            self_attn_only=False,
+            x_mask=x_mask,
+            y_mask=y_mask,
         )
-        y_mask = (
-            y_mask.flatten(2).squeeze(1)
-            if y_mask is not None
-            else torch.cuda.BoolTensor(by, hy * wy).fill_(False)
-        )
-
-        ## input of transformer: (seq_len*2) * batch_size * feat_dim
-        len_seq_x, len_seq_y = featx.size()[0], featy.size()[0]
-
-        output = torch.cat([featx, featy], dim=0)
-        src_key_padding_mask = torch.cat((x_mask, y_mask), dim=1)
-        with torch.no_grad():
-            src_mask = torch.cuda.BoolTensor(
-                hx * wx + hy * wy, hx * wx + hy * wy
-            ).fill_(False)
-            src_mask[: hx * wx, : hx * wx] = True
-            src_mask[hx * wx :, hx * wx :] = True
-
-        output = self.cross_encoder_layer(
-            output, src_mask=src_mask, src_key_padding_mask=src_key_padding_mask
-        )
-
-        outx, outy = output.narrow(0, 0, len_seq_x), output.narrow(
-            0, len_seq_x, len_seq_y
-        )
-        outx, outy = outx.permute(1, 2, 0).view(bx, cx, hx, wx), outy.permute(
-            1, 2, 0
-        ).view(by, cy, hy, wy)
-        x_mask, y_mask = x_mask.view(bx, 1, hx, wx), y_mask.view(bx, 1, hy, wy)
-
-        return outx, outy, x_mask, y_mask
 
 
 class EncoderLayerEmpty(nn.Module):

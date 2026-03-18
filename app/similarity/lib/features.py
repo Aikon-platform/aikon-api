@@ -2,7 +2,6 @@ import os
 
 from pathlib import Path
 import torch
-from sklearn.decomposition import PCA
 from sklearn.preprocessing import MinMaxScaler
 
 from .const import FEAT_NET
@@ -15,7 +14,6 @@ class FeatureExtractor:
     def __init__(self, model_path=None, feat_net=FEAT_NET, device="cpu"):
         """
         Load a pre-trained model for features extraction
-        # TODO ADD CLIP
         """
 
         self.feat_net = feat_net
@@ -63,9 +61,9 @@ class FeatureExtractor:
 
         self.initialize()
         features = []
-        for img in data_loader:
-            features.append(self._calc_feats(img).detach().cpu())
-            # feats = self._calc_feats(img).detach().cpu()
+        for batch in data_loader:
+            features.append(self._calc_feats(batch).detach().cpu())
+            # feats = self._calc_feats(batch).detach().cpu()
             # for feat in feats:
             #     yield feat
             # if cache_dir is not None:
@@ -82,17 +80,3 @@ class FeatureExtractor:
 
         clear_cuda()
         return features
-
-
-def scale_feats(features, n_components):
-    # UNUSED ???
-    scaler = MinMaxScaler()
-    features = scaler.fit_transform(features)
-
-    if n_components >= 1:
-        pca = PCA(n_components=int(n_components), whiten=True, random_state=0)
-    elif n_components > 0:
-        pca = PCA(n_components=n_components, whiten=True, random_state=0)
-    else:
-        pca = PCA(n_components=None, whiten=True, random_state=0)
-    return pca.fit_transform(features)
