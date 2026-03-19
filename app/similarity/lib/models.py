@@ -153,6 +153,50 @@ IMAGENET_TRANSFORM = transforms.Compose(
 # ── Model registry ───────────────────────────────────────────────────────────
 
 MODELS = {
+    "dinov2_vitb14": {
+        "loader": _load_dinov2_vitb14,
+        "transform": IMAGENET_TRANSFORM,
+        "arch": "dinov2",
+        "default_layer": "last",
+        "layers": VIT_LAYERS + ["last"],
+        "patch_size": 14,
+        "info": {
+            "name": "DINOv2 ViT-Base 14",
+            "desc": "Self-supervised Vision Transformer with strong transfer features.",
+        },
+    },
+    "dino_deitsmall16_pretrain": {
+        "loader": _load_dino_deitsmall16,
+        "url": "https://dl.fbaipublicfiles.com/dino/dino_deitsmall16_pretrain/dino_deitsmall16_pretrain.pth",
+        "transform": IMAGENET_TRANSFORM,
+        "arch": "vit_hook",
+        "default_layer": 8,
+        "layers": VIT_LAYERS,
+        "patch_size": 16,
+        "info": {
+            "name": "DINO DeiT-Small 16",
+            "desc": "Data-efficient Image Transformer.",
+        },
+    },
+    "clip_vitb32": {
+        "loader": _load_clip_vitb32,
+        "transform": transforms.Compose(
+            [
+                transforms.Resize((224, 224)),
+                transforms.Normalize(
+                    mean=[0.48145466, 0.4578275, 0.40821073],
+                    std=[0.26862954, 0.26130258, 0.27577711],
+                ),
+            ]
+        ),
+        "arch": "fixed",
+        "default_layer": "final",
+        "layers": ["final"],
+        "info": {
+            "name": "CLIP ViT-B/32",
+            "desc": "Vision-language model trained on image-text pairs.",
+        },
+    },
     "resnet50": {
         "loader": _load_resnet50,
         "url": "https://download.pytorch.org/models/resnet50-19c8e357.pth",
@@ -175,50 +219,6 @@ MODELS = {
         "info": {
             "name": "MoCo v2 800ep",
             "desc": "A contrastive learning model for image classification.",
-        },
-    },
-    "dino_deitsmall16_pretrain": {
-        "loader": _load_dino_deitsmall16,
-        "url": "https://dl.fbaipublicfiles.com/dino/dino_deitsmall16_pretrain/dino_deitsmall16_pretrain.pth",
-        "transform": IMAGENET_TRANSFORM,
-        "arch": "vit_hook",
-        "default_layer": 8,
-        "layers": VIT_LAYERS,
-        "patch_size": 16,
-        "info": {
-            "name": "DINO DeiT-Small 16",
-            "desc": "Data-efficient Image Transformer.",
-        },
-    },
-    "dinov2_vitb14": {
-        "loader": _load_dinov2_vitb14,
-        "transform": IMAGENET_TRANSFORM,
-        "arch": "dinov2",
-        "default_layer": "last",
-        "layers": VIT_LAYERS + ["last"],
-        "patch_size": 14,
-        "info": {
-            "name": "DINOv2 ViT-Base 14",
-            "desc": "Self-supervised Vision Transformer with strong transfer features.",
-        },
-    },
-    "clip_vitb32": {
-        "loader": _load_clip_vitb32,
-        "transform": transforms.Compose(
-            [
-                transforms.Resize((224, 224)),
-                transforms.Normalize(
-                    mean=[0.48145466, 0.4578275, 0.40821073],
-                    std=[0.26862954, 0.26130258, 0.27577711],
-                ),
-            ]
-        ),
-        "arch": "fixed",
-        "default_layer": "final",
-        "layers": ["final"],
-        "info": {
-            "name": "CLIP ViT-B/32",
-            "desc": "Vision-language model trained on image-text pairs.",
         },
     },
     **{
