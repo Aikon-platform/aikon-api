@@ -476,7 +476,7 @@ def list_known_models(model_path, default_model_info={}):
     """
     models = {}
     if not model_path.exists():
-        return models
+        return default_model_info
 
     for file in model_path.iterdir():
         if file.is_file() and file.suffix in [".pth", ".pt"]:
@@ -490,13 +490,15 @@ def list_known_models(model_path, default_model_info={}):
                     "path": str(file),
                     "date": time.ctime(os.path.getmtime(file)),
                     "model": file.stem,
-                    "name": file.stem,
-                    "desc": "No description available",
+                    "name": default_model_info.get(file.stem, {}).get(
+                        "name", file.stem
+                    ),
+                    "desc": default_model_info.get(file.stem, {}).get(
+                        "desc", "No description available"
+                    ),
                 }
 
-    models = {
-        **models,
+    return {
         **default_model_info,
+        **models,
     }
-
-    return models

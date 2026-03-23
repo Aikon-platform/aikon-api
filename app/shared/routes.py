@@ -7,14 +7,13 @@ import json
 import uuid
 
 import orjson
-from flask import request, send_from_directory, jsonify, Request
+from flask import request, send_from_directory, jsonify, Request, Response
 from dramatiq import Actor, Broker
 from dramatiq_abort import abort
 from dramatiq.results import ResultMissing, ResultFailure
 from dramatiq.brokers.redis import RedisBroker
 from dramatiq.message import Message
 
-import redis
 import traceback
 from typing import Tuple, Optional
 
@@ -316,7 +315,9 @@ def models(model_path, default_model_info=None):
     models_info = list_known_models(model_path, default_model_info)
 
     try:
-        return jsonify(models_info)
+        return Response(
+            json.dumps(models_info, sort_keys=False), mimetype="application/json"
+        )
     except Exception:
         return jsonify("No models.")
 
