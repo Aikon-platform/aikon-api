@@ -229,9 +229,6 @@ class ComputeSimilarity(LoggedTask):
         self.feat_net = parameters.get("feat_net", FEAT_NET) if parameters else FEAT_NET
         self.topk = int(parameters.get("cosine_n_filter", COS_TOPK))
         self.algorithm = parameters.get("algorithm", "cosine")
-        if self.algorithm == "segswap" and not IS_CUDA:
-            self.log("CUDA not available, falling back to cosine similarity")
-            self.algorithm = "cosine"
 
         # Whether to perform pre-filter using cosine similarity to keep only best matches before running segswap
         self.segswap_prefilter = parameters.get("segswap_prefilter", True)
@@ -410,7 +407,11 @@ class ComputeSimilarity(LoggedTask):
             n_transpositions=len(self.transpositions),
         )
 
-        if self.algorithm == "segswap" and IS_CUDA:
+        if self.algorithm == "segswap":
+            if not IS_CUDA:
+                self.log(
+                    "Warning: SegSwap on CPU will be slow. Consider using cosine similarity."
+                )
             pairs = self.compute_segswap_similarity(
                 source_paths, pairs, cos_topk=topk, device=self.device
             )
@@ -523,7 +524,7 @@ class ComputeSimilarity(LoggedTask):
         source_images: List[str],
         input_pairs: BlockSimMatrix,
         cos_topk,
-        device="cuda",
+        device=None,
     ) -> BlockSimMatrix:
         """
         Compute the similarity between pairs of images using the SegSwap algorithm

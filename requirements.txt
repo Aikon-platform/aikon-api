@@ -15,6 +15,7 @@ httpx
 iiif-download>=0.1.15
 python-dotenv
 packaging
+open-clip-torch
 
 addict
 cython
