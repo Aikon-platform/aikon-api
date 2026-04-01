@@ -1,6 +1,6 @@
-app.regions.routes.clear\_images
+app.region_extraction.routes.clear\_images
 ================================
 
-.. currentmodule:: app.regions.routes
+.. currentmodule:: app.region_extraction.routes
 
 .. autofunction:: clear_images

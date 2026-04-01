@@ -1,4 +1,4 @@
-app.similarity
+﻿app.similarity
 ==============
 
 .. automodule:: app.similarity
@@ -11,5 +11,6 @@ app.similarity
 
    const
    routes
+   similarity
    tasks
    tests

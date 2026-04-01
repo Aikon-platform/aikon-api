@@ -1,0 +1,5 @@
+﻿app.region\_extraction.routes
+=============================
+
+.. automodule:: app.region_extraction.routes
+   :members:

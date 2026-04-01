@@ -13,28 +13,28 @@ import app.main, app
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'Discover-demo API'
-copyright = '2024, Ségolène Albouy, Robin Champenois'
-author = 'Ségolène Albouy, Robin Champenois'
+project = "Discover-demo API"
+copyright = "2024, Ségolène Albouy, Robin Champenois"
+author = "Ségolène Albouy, Robin Champenois"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.autosummary',
-    'sphinx.ext.napoleon',
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
+    "sphinx.ext.napoleon",
 ]
 
-templates_path = ['_templates']
+templates_path = ["_templates"]
 exclude_patterns = []
 
 autosummary_mock_imports = [
-    'app.regions.lib.yolov5',
+    "app.region_extraction.lib.yolov5",
 ]
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = 'furo'
-html_static_path = ['_static']
+html_theme = "furo"
+html_static_path = ["_static"]
