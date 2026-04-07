@@ -45,7 +45,14 @@ def document_download(dtype, uid):
         # relative path beginning with "images/..."
         (str(im.path.relative_to(relpath)), im.path)
         for im in document.list_images()
-    ] + [("images.json", document.images_info_path)]
+        if im.path.exists()
+    ]
+
+    if not files:
+        return jsonify({"error": f"No images found for document {uid}"}), 404
+
+    if document.images_info_path.exists():
+        files.append(("images.json", document.images_info_path))
 
     return Response(
         stream_with_context(zip_on_the_fly(files)),
