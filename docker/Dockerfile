@@ -1,5 +1,5 @@
 # Final image (change image based on the version showed with $ nvidia-smi)
-FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04
+FROM nvidia/cuda:12.6.3-cudnn-devel-ubuntu22.04
 
 #RUN echo "195.221.193.4 apt-cache.enpc.fr" >> /etc/hosts
 
