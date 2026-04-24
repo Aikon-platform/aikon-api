@@ -1,3 +1,4 @@
+import itertools
 from collections import OrderedDict
 from typing import (
     Optional,
@@ -116,7 +117,13 @@ class SparseDocSimMatrix:
     def extend_from_dense_scores(
         self, scores: np.ndarray, topk: int, tr_i: np.ndarray, tr_j: np.ndarray
     ):
+        """
+        Retain top-K matches from both row and column perspectives, merged into sparse matrix
+        A pair (i, j) is kept if j is in row i top-K or i is in column j top-K.
+        """
         _extend_from_dense_scores(self, scores, topk, tr_i, tr_j)
+        if self.doc1 != self.doc2:
+            _extend_from_dense_scores(self.transposed(), scores.T, topk, tr_i.T, tr_j.T)
 
 
 class TransposedSimMatrix:
@@ -130,11 +137,6 @@ class TransposedSimMatrix:
     def __setitem__(self, key: Tuple[int, int], value: SimScore) -> None:
         i, j = key
         self.obj[j, i] = value
-
-    def extend_from_dense_scores(
-        self, scores: np.ndarray, topk: int, tr_i: np.ndarray, tr_j: np.ndarray
-    ):
-        _extend_from_dense_scores(self, scores, topk, tr_i, tr_j)
 
     def untransposed(self) -> SparseDocSimMatrix:
         return self.obj
@@ -482,39 +484,37 @@ class ComputeSimilarity(LoggedTask):
         Returns:
             A BlockSimMatrix object with the similarity scores, grouped by pairs of documents
         """
-        doc_images = self.doc_images
+        doc_images = sorted(self.doc_images, key=lambda d: d.document.uid)
 
         self.log(f"Computing cosine similarity for {len(doc_images)} documents")
 
         all_scores = BlockSimMatrix()
-        for doc1 in doc_images:
-            for doc2 in doc_images:
-                if self.skip(doc1.document.uid, doc2.document.uid):
-                    self.log(
-                        f"Skipping cosine computation for: {doc1.document.uid} - {doc2.document.uid}"
-                    )
-                    continue
-
-                sim_matrix = 1.0 - cdist(
-                    features[doc1.slice(scale_by=n_transpositions)],
-                    features[doc2.slice(scale_by=n_transpositions)],
-                    metric="cosine",
+        for doc1, doc2 in itertools.combinations_with_replacement(doc_images, 2):
+            if self.skip(doc1.document.uid, doc2.document.uid):
+                self.log(
+                    f"Skipping cosine computation for: {doc1.document.uid} - {doc2.document.uid}"
                 )
+                continue
 
-                if n_transpositions > 1:
-                    sim_matrix, tr_i, tr_j = handle_transpositions(
-                        sim_matrix, n_transpositions, n_transpositions
-                    )
-                else:
-                    tr_i = tr_j = np.zeros_like(sim_matrix)
+            sim_matrix = 1.0 - cdist(
+                features[doc1.slice(scale_by=n_transpositions)],
+                features[doc2.slice(scale_by=n_transpositions)],
+                metric="cosine",
+            )
 
-                if doc1 == doc2:
-                    np.fill_diagonal(sim_matrix, -1000)  # Exclude self-matches
+            if n_transpositions > 1:
+                sim_matrix, tr_i, tr_j = handle_transpositions(
+                    sim_matrix, n_transpositions, n_transpositions
+                )
+            else:
+                tr_i = tr_j = np.zeros_like(sim_matrix)
 
-                pairs = all_scores[doc1, doc2]
-                pairs.extend_from_dense_scores(sim_matrix, topk, tr_i, tr_j)
+            if doc1 == doc2:
+                np.fill_diagonal(sim_matrix, -1000)
 
-                self.store(pairs.untransposed(), algorithm="cosine")
+            pairs = all_scores[doc1, doc2]
+            pairs.extend_from_dense_scores(sim_matrix, topk, tr_i, tr_j)
+            self.store(pairs, algorithm="cosine")
 
         return all_scores
 
