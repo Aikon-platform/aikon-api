@@ -1,8 +1,8 @@
 from pathlib import Path
 
-from ..config.base import ENV, BASE_DIR, API_DATA_FOLDER, XACCEL_PREFIX
-from ..regions.const import EXT_DATA_FOLDER
-from ..similarity.const import SIM_DATA_FOLDER
+from app.config.base import ENV, BASE_DIR, API_DATA_FOLDER, XACCEL_PREFIX
+from app.region_extraction.const import EXT_DATA_FOLDER
+from app.similarity.const import SIM_DATA_FOLDER
 
 DEMO_NAME = "watermarks"
 

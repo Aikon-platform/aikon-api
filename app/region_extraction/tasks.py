@@ -4,11 +4,11 @@ Region extraction tasks
 import dramatiq
 from typing import Optional
 
-from ..config import TIME_LIMIT
-from .const import EXT_QUEUE
-from .regions import ExtractRegions
-from ..shared.utils.logging import notifying, TLogger, LoggerHelper
-from ..shared.dataset import Dataset
+from app.config import TIME_LIMIT
+from app.shared.utils.logging import notifying, TLogger, LoggerHelper
+from app.shared.dataset import Dataset
+from app.region_extraction.const import EXT_QUEUE
+from app.region_extraction.region_extraction import ExtractRegions
 
 
 @dramatiq.actor(
@@ -38,7 +38,7 @@ def extract_objects(
     """
     dataset = Dataset(dataset_uid, load=True)
 
-    regions_extraction_task = ExtractRegions(
+    region_extraction_task = ExtractRegions(
         model=model,
         postprocess=postprocess,
         dataset=dataset,
@@ -48,14 +48,14 @@ def extract_objects(
         notifier=notifier,
         **kwargs
     )
-    success = regions_extraction_task.run_task()
+    success = region_extraction_task.run_task()
     if success:
         # json to be dispatch to frontend with @notifying
         return {
             "dataset_url": dataset.get_absolute_url(),
-            "results_url": regions_extraction_task.results_url,
-            "error": regions_extraction_task.error_list,
+            "results_url": region_extraction_task.results_url,
+            "error": region_extraction_task.error_list,
         }
 
     # json to be dispatch to frontend with @notifying
-    return {"error": regions_extraction_task.error_list}
+    return {"error": region_extraction_task.error_list}

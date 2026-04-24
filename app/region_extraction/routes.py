@@ -1,10 +1,10 @@
 """
-Routes for the regions extraction API.
+Routes for the region extraction API.
 
 Routes:
 
-- POST ``/regions/start``:
-    Starts the regions extraction process for a dataset.
+- POST ``/region_extraction/start``:
+    Starts the region extraction process for a dataset.
 
     - Parameters:
         - ``experiment_id``: The ID of the experiment.
@@ -15,34 +15,34 @@ Routes:
         - ``model``: The model to use for the extraction.
     - Response: JSON object containing the task ID and experiment ID.
 
-- POST ``/regions/<tracking_id>/cancel``:
-    Cancel a regions extraction task.
+- POST ``/region_extraction/<tracking_id>/cancel``:
+    Cancel a region extraction task.
 
     - Parameters:
         - ``tracking_id``: The task ID.
     - Response: JSON object indicating the cancellation status.
 
-- GET ``/regions/<tracking_id>/status``:
-    Get the status of a regions extraction task.
+- GET ``/region_extraction/<tracking_id>/status``:
+    Get the status of a region extraction task.
 
     - Response: JSON object containing the status of the task.
 
-- GET ``/regions/qsizes``:
+- GET ``/region_extraction/qsizes``:
     List the queues of the broker and the number of tasks in each queue.
 
     - Response: JSON object containing the queue sizes.
 
-- GET ``/regions/monitor``:
+- GET ``/region_extraction/monitor``:
     Monitor the tasks of the broker.
 
     - Response: JSON object containing the monitoring information.
 
-- GET ``/regions/models``:
+- GET ``/region_extraction/models``:
     Get the list of available models.
 
     - Response: JSON object containing the models and their modification dates.
 
-- POST ``/regions/clear``:
+- POST ``/region_extraction/clear``:
     Clear the images of a dataset.
 
     - Parameters:
@@ -55,18 +55,18 @@ from pathlib import Path
 
 from flask import request, Blueprint
 
-from .tasks import extract_objects
-from ..shared import routes as shared_routes
-from .const import MODEL_PATH, DEFAULT_MODEL_INFOS
-from ..shared.const import DOCUMENTS_PATH, SHARED_XACCEL_PREFIX
-from ..shared.utils.fileutils import delete_path, clear_dir
+from app.region_extraction.tasks import extract_objects
+from app.region_extraction.const import MODEL_PATH, DEFAULT_MODEL_INFOS
+from app.shared.const import DOCUMENTS_PATH, SHARED_XACCEL_PREFIX
+from app.shared.utils.fileutils import delete_path, clear_dir
+from app.shared import routes as shared_routes
 
-blueprint = Blueprint("regions", __name__, url_prefix="/regions")
+blueprint = Blueprint("region_extraction", __name__, url_prefix="/region_extraction")
 
 
 @blueprint.route("start", methods=["POST"])
 @shared_routes.error_wrapper
-def start_regions_extraction():
+def start_region_extraction():
     """
     Extract regions for images from a list of IIIF URLs.
 
@@ -105,7 +105,7 @@ def start_regions_extraction():
 
 
 @blueprint.route("<tracking_id>/cancel", methods=["POST"])
-def cancel_regions_extraction(tracking_id: str):
+def cancel_region_extraction(tracking_id: str):
     """
     Cancel a regions extraction task
     """
@@ -113,7 +113,7 @@ def cancel_regions_extraction(tracking_id: str):
 
 
 @blueprint.route("<tracking_id>/status", methods=["GET"])
-def status_regions_extraction(tracking_id: str):
+def status_region_extraction(tracking_id: str):
     """
     Get the status of a regions extraction task
     """
@@ -121,7 +121,7 @@ def status_regions_extraction(tracking_id: str):
 
 
 @blueprint.route("qsizes", methods=["GET"])
-def qsizes_regions_extraction():
+def qsizes_region_extraction():
     """
     List the queues of the broker and the number of tasks in each queue
     """
@@ -129,7 +129,7 @@ def qsizes_regions_extraction():
 
 
 @blueprint.route("monitor", methods=["GET"])
-def monitor_regions_extraction():
+def monitor_region_extraction():
     """
     Monitor the tasks of the broker
     """

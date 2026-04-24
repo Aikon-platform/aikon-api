@@ -1,18 +1,19 @@
 """
-Module-specific constants for the regions app
+Module-specific constants for the region_extraction app
 """
-from ..shared.utils.fileutils import create_dirs_if_not, download_model_if_not
-from ..config.base import ENV, BASE_DIR, API_DATA_FOLDER, IS_CUDA
+from app.shared.utils.fileutils import create_dirs_if_not, download_model_if_not
+from app.config.base import ENV, BASE_DIR, API_DATA_FOLDER, IS_CUDA
 
-DEMO_NAME = "regions"
+DEMO_NAME = "region_extraction"
 
-# Path to regions/ folder
+# Path to region_exraction/ folder
 DEMO_DIR = BASE_DIR / "app" / DEMO_NAME
 LIB_PATH = DEMO_DIR / "lib"
 
 EXT_QUEUE = "queue0"  # see docker-confs/supervisord.conf
 
-EXT_DATA_FOLDER = API_DATA_FOLDER / DEMO_NAME
+# NOTE: we keep the legacy name "regions" to avoid having to migrate our data folder
+EXT_DATA_FOLDER = API_DATA_FOLDER / "regions"
 # EXT_XACCEL_PREFIX = Path(ENV("EXT_XACCEL_PREFIX", default="/media/regions"))
 # SHARED_XACCEL_PREFIX is used for exposing annotations
 

@@ -5,16 +5,16 @@ import torch
 from pathlib import Path
 from typing import Optional, Dict
 
-from .const import DEFAULT_MODEL, MODEL_PATH, DEFAULT_MODEL_INFOS
-from .lib.extract import (
+from app.region_extraction.const import DEFAULT_MODEL, MODEL_PATH, DEFAULT_MODEL_INFOS
+from app.region_extraction.lib.extract import (
     YOLOExtractor,
     FasterRCNNExtractor,
     LineExtractor,
     DtlrExtractor,
 )
-from ..shared.tasks import LoggedTask
-from ..shared.dataset import Document, Dataset, Image as DImage
-from ..shared.utils.fileutils import get_model, list_known_models
+from app.shared.tasks import LoggedTask
+from app.shared.dataset import Document, Dataset, Image as DImage
+from app.shared.utils.fileutils import get_model, list_known_models
 
 # EXTRACTOR_POSTPROCESS_KWARGS = {
 #     "watermarks": {
