@@ -82,8 +82,9 @@ def start_similarity(client_id):
                 "feat_net": "model.pt",
                 "feat_set": "set",
                 "feat_layer": "layer",
-                "segswap_prefilter": true, # if algorithm is "segswap"
-                "segswap_n": 0, # if algorithm is "segswap"
+                "cosine_n_filter": 20,
+                "segswap_prefilter": true,
+                "segswap_n": 10,
                 "transpositions": ["none", "rot90"]
             }
         }

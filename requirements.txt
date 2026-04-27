@@ -15,6 +15,7 @@ httpx
 iiif-download>=0.1.15
 python-dotenv
 packaging
+open-clip-torch
 
 addict
 cython
@@ -45,5 +46,6 @@ fvcore
 torch>=2.2
 torchvision
 torchaudio
---extra-index-url https://download.pytorch.org/whl/cu130
+--extra-index-url https://download.pytorch.org/whl/cu126
+# --extra-index-url https://download.pytorch.org/whl/cu130
 # Match pytorch with your cuda version / container image: https://pytorch.org/get-started/locally/
