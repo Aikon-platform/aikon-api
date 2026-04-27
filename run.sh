@@ -103,12 +103,11 @@ fi
 
 export CUDA_VISIBLE_DEVICES=${DEVICE_NB:-0}
 
-venv/bin/flask --app app.main run --debug -p "${API_PORT:-5000}" &
+uv run --directory="$API_DIR" flask --app app.main run --debug -p "${API_PORT:-5000}" &
 FLASK_PID=$!
 PIDS+=($FLASK_PID)
 
-venv/bin/dramatiq app.main -t 1 -p 1 &
-#venv/bin/dramatiq app.main -t 1 -p 1 --watch . &
+uv run --directory="$API_DIR" dramatiq app.main -t 1 -p 1 &
 DRAMATIQ_PID=$!
 PIDS+=($DRAMATIQ_PID)
 

@@ -266,11 +266,11 @@ setup_env() {
         if [ "$answer" = "yes" ]; then
             rm "${template_file}.hash"
             setup_env $env_file
-            exit 0
+            # exit 0
         fi
         color_echo yellow "\nSkipping $env_file update..."
         export_env "$env_file" "${DEFAULT_PARAMS[@]}"
-        exit 0
+        # exit 0
     fi
 
     if [ -z "$INSTALL_MODE" ]; then
