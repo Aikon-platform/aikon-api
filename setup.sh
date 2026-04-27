@@ -1,10 +1,10 @@
 #!/bin/bash
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-
-INSTALL_MODE=${INSTALL_MODE:-"full_install"}
 source "$SCRIPT_DIR"/docker/utils.sh
 source "../front/app/config/.env"
+
+INSTALL_MODE=${INSTALL_MODE:-"full_install"}
 
 color_echo cyan "Running a $INSTALL_MODE for the API! 🚀"
 
@@ -27,36 +27,35 @@ if [ "$answer" = "yes" ]; then
     if [ "$OS" = "Linux" ]; then
         sudo apt-get install redis-server python3.10 python3.10-venv python3.10-dev curl
         sudo systemctl start redis-server
+        curl -LsSf https://astral.sh/uv/install.sh | sh
     elif [ "$OS" = "Mac" ]; then
         brew install redis python@3.10 curl
         brew services start redis
+        curl -LsSf https://astral.sh/uv/install.sh | sh
     fi
 fi
 
-color_echo blue "\nDo you want to install python virtual environment?"
+color_echo blue "\nDo you want to setup python virtual environment?"
 answer=$(printf "%s\n" "${options[@]}" | fzy)
 if [ "$answer" = "yes" ]; then
     color_echo yellow "\nAPI virtual env..."
-    python3.10 -m venv venv
-    venv/bin/pip install "wheel>=0.45.1"
-    venv/bin/pip install -r requirements-dev.txt
-    venv/bin/pip install python-dotenv
+    uv sync --group=dev --directory="$SCRIPT_DIR"
 fi
 
 color_echo blue "\nDo you want to setup environment variable?"
 answer=$(printf "%s\n" "${options[@]}" | fzy)
 if [ "$answer" = "yes" ]; then
     color_echo yellow "\nSetting up .env files"
-
-    default_param=("API_PORT" "PROD_URL" "API_DATA_FOLDER" "TARGET" "DOCKER" "YOLO_CONFIG_DIR")
+    default_params=("API_PORT" "PROD_URL" "API_DATA_FOLDER" "TARGET" "DOCKER" "YOLO_CONFIG_DIR")
     setup_env "$SCRIPT_DIR"/.env "${default_params[@]}"
     setup_env "$SCRIPT_DIR"/.env.dev "${default_params[@]}"
 fi
 
+source "$SCRIPT_DIR"/.env
+source "$SCRIPT_DIR"/.env.dev
 if [ "$TARGET" == "dev" ]; then
-    color_echo yellow "\nPre-commit install"
-    venv/bin/pip install pre-commit
-    pre-commit install
+    color_echo yellow "\nPre-commit setup"
+    uv tool install pre-commit --with pre-commit-uv
 fi
 
 color_echo blue "\nDo you want to init submodules?"
