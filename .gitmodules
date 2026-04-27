@@ -6,7 +6,7 @@
 	path = app/dticlustering/lib
 	url = git@github.com:Segolene-Albouy/dti-sprites.git
 	branch = hydra
-[submodule "app/regions/lib/dtlr"]
-	path = app/regions/lib/dtlr
+[submodule "app/region_extraction/lib/dtlr"]
+	path = app/region_extraction/lib/dtlr
 	url = git@github.com:paulhectork/DTLR.git
 	branch = aikon-api

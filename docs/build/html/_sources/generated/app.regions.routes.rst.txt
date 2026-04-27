@@ -1,5 +1,5 @@
-app.regions.routes
+app.region_extraction.routes
 ==================
 
-.. automodule:: app.regions.routes
+.. automodule:: app.region_extraction.routes
    :members:

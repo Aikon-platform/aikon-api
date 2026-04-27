@@ -12,7 +12,8 @@
    config
    dticlustering
    main
-   regions
+   region_extraction
+   search
    shared
    similarity
    vectorization

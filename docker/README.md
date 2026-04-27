@@ -128,7 +128,7 @@ sudo chown -R $DOCKER_USER:$DOCKER_USER $RESULT_PATH
 Download models on Hugging face
 
 - **Regions**: [Historical Illustration Extraction](https://huggingface.co/seglinglin/Historical-Illustration-Extraction/tree/main)
-    - Download the models inside `$DATA_FOLDER/regions/models`
+    - Download the models inside `$DATA_FOLDER/region_extraction/models`
 - **Vectorization**: [Historical Diagram Vectorization](https://huggingface.co/seglinglin/Historical-Diagram-Vectorization/tree/main)
     - Download the model AND config inside `$DATA_FOLDER/vectorization/models`
 - **Similarity**: [Historical Document Backbone](https://huggingface.co/seglinglin/Historical-Document-Backbone/tree/main)
@@ -155,7 +155,7 @@ docker exec -it aikonapi /bin/bash
 /home/aikonapi# python /home/${USER}/api/app/vectorization/lib/src/models/dino/ops/test.py
 
 # for regions
-/home/aikonapi# cd /home/${USER}/api/app/regions/lib/line_predictor/
+/home/aikonapi# cd /home/${USER}/api/app/region_extraction/lib/line_predictor/
 /home/aikonapi# python ./dino/ops/setup.py build install
 ```
 Then restart the container with `docker restart $CONTAINER_NAME`
