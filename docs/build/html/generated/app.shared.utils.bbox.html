@@ -1,46 +1,46 @@
 <!doctype html>
 <html class="no-js" lang="en" data-content_root="../">
-  <head><meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="app.shared.utils.download" href="app.shared.utils.download.html" /><link rel="prev" title="app.shared.utils" href="app.shared.utils.html" />
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html">
 
-    <!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
+    <!-- Generated with Sphinx 8.1.3 and Furo 2025.12.19 -->
         <title>app.shared.utils.bbox - Discover-demo API documentation</title>
-      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=a746c00c" />
-    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=354aac6f" />
-    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=302659d7" />
-    
-    
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
+
+
 
 
 <style>
   body {
-    --color-code-background: #f8f8f8;
-  --color-code-foreground: black;
-  
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+
   }
   @media not print {
     body[data-theme="dark"] {
       --color-code-background: #202020;
   --color-code-foreground: #d0d0d0;
-  
+
     }
     @media (prefers-color-scheme: dark) {
       body:not([data-theme="light"]) {
         --color-code-background: #202020;
   --color-code-foreground: #d0d0d0;
-  
+
       }
     }
   }
 </style></head>
   <body>
-    
+
     <script>
       document.body.dataset.theme = localStorage.getItem("theme") || "auto";
     </script>
-    
+
 
 <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
   <symbol id="svg-toc" viewBox="0 0 24 24">
@@ -144,14 +144,10 @@
   </symbol>
 </svg>
 
-<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
-<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
-<label class="overlay sidebar-overlay" for="__navigation">
-  <div class="visually-hidden">Hide navigation sidebar</div>
-</label>
-<label class="overlay toc-overlay" for="__toc">
-  <div class="visually-hidden">Hide table of contents sidebar</div>
-</label>
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
 
 <a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
 
@@ -161,8 +157,7 @@
   <header class="mobile-header">
     <div class="header-left">
       <label class="nav-overlay-icon" for="__navigation">
-        <div class="visually-hidden">Toggle site navigation sidebar</div>
-        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
       </label>
     </div>
     <div class="header-center">
@@ -170,80 +165,130 @@
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
-        <button class="theme-toggle">
-          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
           <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
           <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
           <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon" for="__toc">
-        <div class="visually-hidden">Toggle table of contents sidebar</div>
-        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
       </label>
     </div>
   </header>
   <aside class="sidebar-drawer">
     <div class="sidebar-container">
-      
+
       <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
-  
-  
+
   <span class="sidebar-brand-text">Discover-demo API  documentation</span>
-  
+
 </a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
   <input type="hidden" name="check_keywords" value="yes">
   <input type="hidden" name="area" value="default">
 </form>
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
-  <ul class="current">
+  <ul>
 <li class="toctree-l1"><a class="reference internal" href="../usage.html">Usage</a></li>
-<li class="toctree-l1 current has-children"><a class="reference internal" href="../api.html">API</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of API</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
-<li class="toctree-l2 current has-children"><a class="reference internal" href="app.html">app</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of app</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
-<li class="toctree-l3 has-children"><a class="reference internal" href="app.config.html">app.config</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of app.config</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../api.html">API</a><input aria-label="Toggle navigation of API" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="app.html">app</a><input aria-label="Toggle navigation of app" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="app.config.html">app.config</a><input aria-label="Toggle navigation of app.config" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l4"><a class="reference internal" href="app.config.base.html">app.config.base</a></li>
 <li class="toctree-l4"><a class="reference internal" href="app.config.dev.html">app.config.dev</a></li>
 <li class="toctree-l4"><a class="reference internal" href="app.config.prod.html">app.config.prod</a></li>
 </ul>
 </li>
-<li class="toctree-l3 has-children"><a class="reference internal" href="app.dticlustering.html">app.dticlustering</a><input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle navigation of app.dticlustering</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="app.dticlustering.html">app.dticlustering</a><input aria-label="Toggle navigation of app.dticlustering" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l4"><a class="reference internal" href="app.dticlustering.const.html">app.dticlustering.const</a></li>
-<li class="toctree-l4"><a class="reference internal" href="app.dticlustering.routes.html">app.dticlustering.routes</a></li>
-<li class="toctree-l4"><a class="reference internal" href="app.dticlustering.tasks.html">app.dticlustering.tasks</a></li>
-<li class="toctree-l4 has-children"><a class="reference internal" href="app.dticlustering.tests.html">app.dticlustering.tests</a><input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><div class="visually-hidden">Toggle navigation of app.dticlustering.tests</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4 has-children"><a class="reference internal" href="app.dticlustering.tests.html">app.dticlustering.tests</a><input aria-label="Toggle navigation of app.dticlustering.tests" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l5"><a class="reference internal" href="app.dticlustering.tests.training.html">app.dticlustering.tests.training</a></li>
 </ul>
 </li>
-<li class="toctree-l4"><a class="reference internal" href="app.dticlustering.training.html">app.dticlustering.training</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="app.main.html">app.main</a></li>
-<li class="toctree-l3 has-children"><a class="reference internal" href="app.regions.html">app.regions</a><input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle navigation of app.regions</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
-<li class="toctree-l4"><a class="reference internal" href="app.regions.const.html">app.regions.const</a></li>
-<li class="toctree-l4 has-children"><a class="reference internal" href="app.regions.lib.html">app.regions.lib</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of app.regions.lib</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
-<li class="toctree-l5"><a class="reference internal" href="app.regions.lib.regions.html">app.regions.lib.regions</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="app.region_extraction.html">app.region_extraction</a><input aria-label="Toggle navigation of app.region_extraction" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="app.region_extraction.const.html">app.region_extraction.const</a></li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="app.region_extraction.lib.html">app.region_extraction.lib</a><input aria-label="Toggle navigation of app.region_extraction.lib" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="app.region_extraction.lib.bbox.html">app.region_extraction.lib.bbox</a></li>
+<li class="toctree-l5 has-children"><a class="reference internal" href="app.region_extraction.lib.dtlr.html">app.region_extraction.lib.dtlr</a><input aria-label="Toggle navigation of app.region_extraction.lib.dtlr" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l6 has-children"><a class="reference internal" href="app.region_extraction.lib.dtlr.datasets.html">app.region_extraction.lib.dtlr.datasets</a><input aria-label="Toggle navigation of app.region_extraction.lib.dtlr.datasets" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l7"><a class="reference internal" href="app.region_extraction.lib.dtlr.datasets.random_crop.html">app.region_extraction.lib.dtlr.datasets.random_crop</a></li>
+<li class="toctree-l7"><a class="reference internal" href="app.region_extraction.lib.dtlr.datasets.transforms.html">app.region_extraction.lib.dtlr.datasets.transforms</a></li>
 </ul>
 </li>
-<li class="toctree-l4"><a class="reference internal" href="app.regions.routes.html">app.regions.routes</a></li>
-<li class="toctree-l4"><a class="reference internal" href="app.regions.tasks.html">app.regions.tasks</a></li>
+<li class="toctree-l6 has-children"><a class="reference internal" href="app.region_extraction.lib.dtlr.util.html">app.region_extraction.lib.dtlr.util</a><input aria-label="Toggle navigation of app.region_extraction.lib.dtlr.util" class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" role="switch" type="checkbox"/><label for="toctree-checkbox-10"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l7"><a class="reference internal" href="app.region_extraction.lib.dtlr.util.box_loss.html">app.region_extraction.lib.dtlr.util.box_loss</a></li>
+<li class="toctree-l7"><a class="reference internal" href="app.region_extraction.lib.dtlr.util.box_ops.html">app.region_extraction.lib.dtlr.util.box_ops</a></li>
+<li class="toctree-l7 has-children"><a class="reference internal" href="app.region_extraction.lib.dtlr.util.datasets.html">app.region_extraction.lib.dtlr.util.datasets</a><input aria-label="Toggle navigation of app.region_extraction.lib.dtlr.util.datasets" class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" role="switch" type="checkbox"/><label for="toctree-checkbox-11"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l8"><a class="reference internal" href="app.region_extraction.lib.dtlr.util.datasets.random_crop.html">app.region_extraction.lib.dtlr.util.datasets.random_crop</a></li>
 </ul>
 </li>
-<li class="toctree-l3 current has-children"><a class="reference internal" href="app.shared.html">app.shared</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of app.shared</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l7"><a class="reference internal" href="app.region_extraction.lib.dtlr.util.get_param_dicts.html">app.region_extraction.lib.dtlr.util.get_param_dicts</a></li>
+<li class="toctree-l7"><a class="reference internal" href="app.region_extraction.lib.dtlr.util.logger.html">app.region_extraction.lib.dtlr.util.logger</a></li>
+<li class="toctree-l7"><a class="reference internal" href="app.region_extraction.lib.dtlr.util.misc.html">app.region_extraction.lib.dtlr.util.misc</a></li>
+<li class="toctree-l7"><a class="reference internal" href="app.region_extraction.lib.dtlr.util.plot_utils.html">app.region_extraction.lib.dtlr.util.plot_utils</a></li>
+<li class="toctree-l7"><a class="reference internal" href="app.region_extraction.lib.dtlr.util.slconfig.html">app.region_extraction.lib.dtlr.util.slconfig</a></li>
+<li class="toctree-l7"><a class="reference internal" href="app.region_extraction.lib.dtlr.util.slio.html">app.region_extraction.lib.dtlr.util.slio</a></li>
+<li class="toctree-l7"><a class="reference internal" href="app.region_extraction.lib.dtlr.util.static_data_path.html">app.region_extraction.lib.dtlr.util.static_data_path</a></li>
+<li class="toctree-l7"><a class="reference internal" href="app.region_extraction.lib.dtlr.util.time_counter.html">app.region_extraction.lib.dtlr.util.time_counter</a></li>
+<li class="toctree-l7"><a class="reference internal" href="app.region_extraction.lib.dtlr.util.visualizer.html">app.region_extraction.lib.dtlr.util.visualizer</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="app.region_extraction.lib.extract.html">app.region_extraction.lib.extract</a></li>
+<li class="toctree-l5 has-children"><a class="reference internal" href="app.region_extraction.lib.line_predictor.html">app.region_extraction.lib.line_predictor</a><input aria-label="Toggle navigation of app.region_extraction.lib.line_predictor" class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" role="switch" type="checkbox"/><label for="toctree-checkbox-12"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l6 has-children"><a class="reference internal" href="app.region_extraction.lib.line_predictor.config.html">app.region_extraction.lib.line_predictor.config</a><input aria-label="Toggle navigation of app.region_extraction.lib.line_predictor.config" class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" role="switch" type="checkbox"/><label for="toctree-checkbox-13"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l7"><a class="reference internal" href="app.region_extraction.lib.line_predictor.config.DINO_4scale.html">app.region_extraction.lib.line_predictor.config.DINO_4scale</a></li>
+<li class="toctree-l7"><a class="reference internal" href="app.region_extraction.lib.line_predictor.config.coco_transformer.html">app.region_extraction.lib.line_predictor.config.coco_transformer</a></li>
+<li class="toctree-l7"><a class="reference internal" href="app.region_extraction.lib.line_predictor.config.slconfig.html">app.region_extraction.lib.line_predictor.config.slconfig</a></li>
+</ul>
+</li>
+<li class="toctree-l6 has-children"><a class="reference internal" href="app.region_extraction.lib.line_predictor.datasets.html">app.region_extraction.lib.line_predictor.datasets</a><input aria-label="Toggle navigation of app.region_extraction.lib.line_predictor.datasets" class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" role="switch" type="checkbox"/><label for="toctree-checkbox-14"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l7"><a class="reference internal" href="app.region_extraction.lib.line_predictor.datasets.transforms.html">app.region_extraction.lib.line_predictor.datasets.transforms</a></li>
+</ul>
+</li>
+<li class="toctree-l6"><a class="reference internal" href="app.region_extraction.lib.line_predictor.registry.html">app.region_extraction.lib.line_predictor.registry</a></li>
+<li class="toctree-l6 has-children"><a class="reference internal" href="app.region_extraction.lib.line_predictor.util.html">app.region_extraction.lib.line_predictor.util</a><input aria-label="Toggle navigation of app.region_extraction.lib.line_predictor.util" class="toctree-checkbox" id="toctree-checkbox-15" name="toctree-checkbox-15" role="switch" type="checkbox"/><label for="toctree-checkbox-15"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l7"><a class="reference internal" href="app.region_extraction.lib.line_predictor.util.box_ops.html">app.region_extraction.lib.line_predictor.util.box_ops</a></li>
+<li class="toctree-l7"><a class="reference internal" href="app.region_extraction.lib.line_predictor.util.misc.html">app.region_extraction.lib.line_predictor.util.misc</a></li>
+<li class="toctree-l7"><a class="reference internal" href="app.region_extraction.lib.line_predictor.util.slio.html">app.region_extraction.lib.line_predictor.util.slio</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="app.region_extraction.region_extraction.html">app.region_extraction.region_extraction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="app.region_extraction.routes.html">app.region_extraction.routes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="app.region_extraction.tasks.html">app.region_extraction.tasks</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="app.search.html">app.search</a><input aria-label="Toggle navigation of app.search" class="toctree-checkbox" id="toctree-checkbox-16" name="toctree-checkbox-16" role="switch" type="checkbox"/><label for="toctree-checkbox-16"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="app.search.const.html">app.search.const</a></li>
+<li class="toctree-l4"><a class="reference internal" href="app.search.routes.html">app.search.routes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="app.search.search.html">app.search.search</a></li>
+<li class="toctree-l4"><a class="reference internal" href="app.search.tasks.html">app.search.tasks</a></li>
+<li class="toctree-l4"><a class="reference internal" href="app.search.utils.html">app.search.utils</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="app.shared.html">app.shared</a><input aria-label="Toggle navigation of app.shared" class="toctree-checkbox" id="toctree-checkbox-17" name="toctree-checkbox-17" role="switch" type="checkbox"/><label for="toctree-checkbox-17"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l4"><a class="reference internal" href="app.shared.const.html">app.shared.const</a></li>
-<li class="toctree-l4 has-children"><a class="reference internal" href="app.shared.dataset.html">app.shared.dataset</a><input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle navigation of app.shared.dataset</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4 has-children"><a class="reference internal" href="app.shared.dataset.html">app.shared.dataset</a><input aria-label="Toggle navigation of app.shared.dataset" class="toctree-checkbox" id="toctree-checkbox-18" name="toctree-checkbox-18" role="switch" type="checkbox"/><label for="toctree-checkbox-18"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l5"><a class="reference internal" href="app.shared.dataset.dataset.html">app.shared.dataset.dataset</a></li>
 <li class="toctree-l5"><a class="reference internal" href="app.shared.dataset.document.html">app.shared.dataset.document</a></li>
+<li class="toctree-l5"><a class="reference internal" href="app.shared.dataset.routes.html">app.shared.dataset.routes</a></li>
+<li class="toctree-l5"><a class="reference internal" href="app.shared.dataset.types.html">app.shared.dataset.types</a></li>
+<li class="toctree-l5"><a class="reference internal" href="app.shared.dataset.utils.html">app.shared.dataset.utils</a></li>
 </ul>
 </li>
 <li class="toctree-l4"><a class="reference internal" href="app.shared.routes.html">app.shared.routes</a></li>
 <li class="toctree-l4"><a class="reference internal" href="app.shared.tasks.html">app.shared.tasks</a></li>
-<li class="toctree-l4 current has-children"><a class="reference internal" href="app.shared.utils.html">app.shared.utils</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" role="switch" type="checkbox"/><label for="toctree-checkbox-10"><div class="visually-hidden">Toggle navigation of app.shared.utils</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
-<li class="toctree-l5 current current-page"><a class="current reference internal" href="#">app.shared.utils.bbox</a></li>
-<li class="toctree-l5"><a class="reference internal" href="app.shared.utils.download.html">app.shared.utils.download</a></li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="app.shared.utils.html">app.shared.utils</a><input aria-label="Toggle navigation of app.shared.utils" class="toctree-checkbox" id="toctree-checkbox-19" name="toctree-checkbox-19" role="switch" type="checkbox"/><label for="toctree-checkbox-19"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l5"><a class="reference internal" href="app.shared.utils.fileutils.html">app.shared.utils.fileutils</a></li>
-<li class="toctree-l5"><a class="reference internal" href="app.shared.utils.iiif.html">app.shared.utils.iiif</a></li>
 <li class="toctree-l5"><a class="reference internal" href="app.shared.utils.img.html">app.shared.utils.img</a></li>
 <li class="toctree-l5"><a class="reference internal" href="app.shared.utils.logging.html">app.shared.utils.logging</a></li>
 <li class="toctree-l5"><a class="reference internal" href="app.shared.utils.modular.html">app.shared.utils.modular</a></li>
@@ -251,25 +296,22 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l3 has-children"><a class="reference internal" href="app.similarity.html">app.similarity</a><input class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" role="switch" type="checkbox"/><label for="toctree-checkbox-11"><div class="visually-hidden">Toggle navigation of app.similarity</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="app.similarity.html">app.similarity</a><input aria-label="Toggle navigation of app.similarity" class="toctree-checkbox" id="toctree-checkbox-20" name="toctree-checkbox-20" role="switch" type="checkbox"/><label for="toctree-checkbox-20"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l4"><a class="reference internal" href="app.similarity.const.html">app.similarity.const</a></li>
 <li class="toctree-l4"><a class="reference internal" href="app.similarity.routes.html">app.similarity.routes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="app.similarity.similarity.html">app.similarity.similarity</a></li>
 <li class="toctree-l4"><a class="reference internal" href="app.similarity.tasks.html">app.similarity.tasks</a></li>
-<li class="toctree-l4 has-children"><a class="reference internal" href="app.similarity.tests.html">app.similarity.tests</a><input class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" role="switch" type="checkbox"/><label for="toctree-checkbox-12"><div class="visually-hidden">Toggle navigation of app.similarity.tests</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
-<li class="toctree-l5"><a class="reference internal" href="app.similarity.tests.test_similarity.html">app.similarity.tests.test_similarity</a></li>
-<li class="toctree-l5"><a class="reference internal" href="app.similarity.tests.test_utils.html">app.similarity.tests.test_utils</a></li>
+<li class="toctree-l4"><a class="reference internal" href="app.similarity.tests.html">app.similarity.tests</a></li>
 </ul>
 </li>
-</ul>
-</li>
-<li class="toctree-l3 has-children"><a class="reference internal" href="app.vectorization.html">app.vectorization</a><input class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" role="switch" type="checkbox"/><label for="toctree-checkbox-13"><div class="visually-hidden">Toggle navigation of app.vectorization</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="app.vectorization.html">app.vectorization</a><input aria-label="Toggle navigation of app.vectorization" class="toctree-checkbox" id="toctree-checkbox-21" name="toctree-checkbox-21" role="switch" type="checkbox"/><label for="toctree-checkbox-21"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l4"><a class="reference internal" href="app.vectorization.const.html">app.vectorization.const</a></li>
 <li class="toctree-l4"><a class="reference internal" href="app.vectorization.routes.html">app.vectorization.routes</a></li>
 <li class="toctree-l4"><a class="reference internal" href="app.vectorization.tasks.html">app.vectorization.tasks</a></li>
 <li class="toctree-l4"><a class="reference internal" href="app.vectorization.vectorization.html">app.vectorization.vectorization</a></li>
 </ul>
 </li>
-<li class="toctree-l3 has-children"><a class="reference internal" href="app.watermarks.html">app.watermarks</a><input class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" role="switch" type="checkbox"/><label for="toctree-checkbox-14"><div class="visually-hidden">Toggle navigation of app.watermarks</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="app.watermarks.html">app.watermarks</a><input aria-label="Toggle navigation of app.watermarks" class="toctree-checkbox" id="toctree-checkbox-22" name="toctree-checkbox-22" role="switch" type="checkbox"/><label for="toctree-checkbox-22"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l4"><a class="reference internal" href="app.watermarks.const.html">app.watermarks.const</a></li>
 <li class="toctree-l4"><a class="reference internal" href="app.watermarks.routes.html">app.watermarks.routes</a></li>
 <li class="toctree-l4"><a class="reference internal" href="app.watermarks.sources.html">app.watermarks.sources</a></li>
@@ -287,7 +329,7 @@
 </div>
 
       </div>
-      
+
     </div>
   </aside>
   <div class="main">
@@ -307,100 +349,29 @@
   </a>
 </div>
 <div class="theme-toggle-container theme-toggle-content">
-            <button class="theme-toggle">
-              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
               <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
               <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
               <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon" for="__toc">
-            <div class="visually-hidden">Toggle table of contents sidebar</div>
-            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="module-app.shared.utils.bbox">
-<span id="app-shared-utils-bbox"></span><h1>app.shared.utils.bbox<a class="headerlink" href="#module-app.shared.utils.bbox" title="Link to this heading">¶</a></h1>
-<p>Utilities for smart bounding box handling</p>
-<dl class="py class">
-<dt class="sig sig-object py" id="app.shared.utils.bbox.IIIFDocumentSegmentation">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">app.shared.utils.bbox.</span></span><span class="sig-name descname"><span class="pre">IIIFDocumentSegmentation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">manifest_url</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">segments</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.shared.utils.bbox.IIIFDocumentSegmentation" title="Link to this definition">¶</a></dt>
-<dd><p>A wrapper for segmentation data of a IIIF document</p>
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="app.shared.utils.bbox.IIIFPageSegmentationItem">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">app.shared.utils.bbox.</span></span><span class="sig-name descname"><span class="pre">IIIFPageSegmentationItem</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">page_uid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bbox</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.shared.utils.bbox.IIIFPageSegmentationItem" title="Link to this definition">¶</a></dt>
-<dd><p>A segmentation item of a IIIF document page</p>
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="app.shared.utils.bbox.Segment">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">app.shared.utils.bbox.</span></span><span class="sig-name descname"><span class="pre">Segment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">left</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">top</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">height</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">precision</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.shared.utils.bbox.Segment" title="Link to this definition">¶</a></dt>
-<dd><p>A bounding box segment (x, y, w, h) in relative (0-1) format,
-or None for full size</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="app.shared.utils.bbox.Segment.auto_cast">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">auto_cast</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bbox</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">TSegment</span></span></span><a class="headerlink" href="#app.shared.utils.bbox.Segment.auto_cast" title="Link to this definition">¶</a></dt>
-<dd><p>Cast to segment from various input types (str, tuple, Segment, None)</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="app.shared.utils.bbox.Segment.from_bbox">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_bbox</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">array</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">precision</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">TSegment</span></span></span><a class="headerlink" href="#app.shared.utils.bbox.Segment.from_bbox" title="Link to this definition">¶</a></dt>
-<dd><p>Create a segment from a bounding box tuple</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="app.shared.utils.bbox.Segment.serialize">
-<span class="sig-name descname"><span class="pre">serialize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">precision</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#app.shared.utils.bbox.Segment.serialize" title="Link to this definition">¶</a></dt>
-<dd><p>Serialize the segment to a string, using the given precision in base36 encoding</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="app.shared.utils.bbox.Segment.unserialize">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">unserialize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">TSegment</span></span></span><a class="headerlink" href="#app.shared.utils.bbox.Segment.unserialize" title="Link to this definition">¶</a></dt>
-<dd><p>Create a segment from a serialized string</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="app.shared.utils.bbox.base36_to_int">
-<span class="sig-prename descclassname"><span class="pre">app.shared.utils.bbox.</span></span><span class="sig-name descname"><span class="pre">base36_to_int</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">s</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#app.shared.utils.bbox.base36_to_int" title="Link to this definition">¶</a></dt>
-<dd><p>Convert a base 36 string to an int.
-Raise ValueError if the input won’t fit into an int.</p>
-</dd></dl>
-
+          <section id="app-shared-utils-bbox">
+<h1>app.shared.utils.bbox<a class="headerlink" href="#app-shared-utils-bbox" title="Link to this heading">¶</a></h1>
 </section>
 
         </article>
       </div>
       <footer>
-        
+
         <div class="related-pages">
-          <a class="next-page" href="app.shared.utils.download.html">
-              <div class="page-info">
-                <div class="context">
-                  <span>Next</span>
-                </div>
-                <div class="title">app.shared.utils.download</div>
-              </div>
-              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
-            </a>
-          <a class="prev-page" href="app.shared.utils.html">
-              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
-              <div class="page-info">
-                <div class="context">
-                  <span>Previous</span>
-                </div>
-                
-                <div class="title">app.shared.utils</div>
-                
-              </div>
-            </a>
+
+
         </div>
         <div class="bottom-of-page">
           <div class="left-details">
@@ -408,54 +379,26 @@ Raise ValueError if the input won’t fit into an int.</p>
                 Copyright &#169; 2024, Ségolène Albouy, Robin Champenois
             </div>
             Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
-            
+
             <a href="https://github.com/pradyunsg/furo">Furo</a>
-            
+
           </div>
           <div class="right-details">
-            
-          </div>
-        </div>
-        
-      </footer>
-    </div>
-    <aside class="toc-drawer">
-      
-      
-      <div class="toc-sticky toc-scroll">
-        <div class="toc-title-container">
-          <span class="toc-title">
-            On this page
-          </span>
-        </div>
-        <div class="toc-tree-container">
-          <div class="toc-tree">
-            <ul>
-<li><a class="reference internal" href="#">app.shared.utils.bbox</a><ul>
-<li><a class="reference internal" href="#app.shared.utils.bbox.IIIFDocumentSegmentation"><code class="docutils literal notranslate"><span class="pre">IIIFDocumentSegmentation</span></code></a></li>
-<li><a class="reference internal" href="#app.shared.utils.bbox.IIIFPageSegmentationItem"><code class="docutils literal notranslate"><span class="pre">IIIFPageSegmentationItem</span></code></a></li>
-<li><a class="reference internal" href="#app.shared.utils.bbox.Segment"><code class="docutils literal notranslate"><span class="pre">Segment</span></code></a><ul>
-<li><a class="reference internal" href="#app.shared.utils.bbox.Segment.auto_cast"><code class="docutils literal notranslate"><span class="pre">Segment.auto_cast()</span></code></a></li>
-<li><a class="reference internal" href="#app.shared.utils.bbox.Segment.from_bbox"><code class="docutils literal notranslate"><span class="pre">Segment.from_bbox()</span></code></a></li>
-<li><a class="reference internal" href="#app.shared.utils.bbox.Segment.serialize"><code class="docutils literal notranslate"><span class="pre">Segment.serialize()</span></code></a></li>
-<li><a class="reference internal" href="#app.shared.utils.bbox.Segment.unserialize"><code class="docutils literal notranslate"><span class="pre">Segment.unserialize()</span></code></a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#app.shared.utils.bbox.base36_to_int"><code class="docutils literal notranslate"><span class="pre">base36_to_int()</span></code></a></li>
-</ul>
-</li>
-</ul>
 
           </div>
         </div>
-      </div>
-      
-      
+
+      </footer>
+    </div>
+    <aside class="toc-drawer no-toc">
+
+
+
     </aside>
   </div>
 </div><script src="../_static/documentation_options.js?v=5929fcd5"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
-    <script src="../_static/scripts/furo.js?v=5fa4622c"></script>
+    <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
     </body>
 </html>
