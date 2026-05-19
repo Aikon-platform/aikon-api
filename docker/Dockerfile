@@ -1,5 +1,5 @@
 # Final image (change image based on the version showed with $ nvidia-smi)
-FROM nvidia/cuda:12.6.3-cudnn-devel-ubuntu22.04
+FROM nvidia/cuda:13.0.3-cudnn-devel-ubuntu22.04
 
 ARG HTTP_PROXY
 ARG HTTPS_PROXY
