@@ -71,12 +71,14 @@ Keep it secret and safe.
 ### 🚀 Scripted install
 
 ```bash
+cp .env.template .env.prod
+cd docker/
 bash docker.sh build
 ```
 
 This script will:
 1. On first run:
-   1. Help you fill `.env.prod` and `docker/.env` files
+   1. Help you fill `docker/.env` file
    2. Generate `nginx.conf` and `superivsord.conf` files
    3. Create and set permissions for the data folder where the container will store results
 2. Build the Dockerfile:
