@@ -58,7 +58,7 @@ When installed as part of the bundle in `local` mode, the container joins the fr
 
 ## Citation
 
-If you find [this work](https://link.springer.com/article/10.1007/s10032-026-00581-x) useful, please consider citing:
+If you find this work useful, please consider citing:
 
 ```bibtex
 @article{albouy2026aikon,
@@ -76,11 +76,10 @@ If you find [this work](https://link.springer.com/article/10.1007/s10032-026-005
         Husson, Matthieu and
         Aubry, Mathieu
     },
-    url={https://hal.science/hal-05248250},
-    year={2025},
-    month={Sep},
-    number={hal-05248250},
-    journal={HAL Pre-Print},
+    url={https://doi.org/10.1007/s10032-026-00581-x},
+    year={2026},
+    month={June},
+    journal={International Journal on Document Analysis and Recognition (IJDAR)},
     keyword={Digital Humanities, Computer Vision, Historical Documents, Visual Analysis},
 }
 ```
