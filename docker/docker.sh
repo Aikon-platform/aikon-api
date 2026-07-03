@@ -39,8 +39,7 @@ build_image() {
         --build-arg API_PORT=$API_PORT \
         --build-arg HTTP_PROXY=${HTTP_PROXY:-} \
         --build-arg HTTPS_PROXY=${HTTPS_PROXY:-} \
-        --build-arg NO_PROXY=${NO_PROXY:-} \
-        --build-arg HUGGING_FACE_HUB_TOKEN=${HUGGING_FACE_HUB_TOKEN} || {
+        --build-arg NO_PROXY=${NO_PROXY:-} || {
             color_echo red "\nDocker build failed"
             exit 1;
         }
