@@ -3,7 +3,7 @@
 AIKON API installer — works standalone (no front files needed) or delegated
 from the root install.py (which passes --root-env to share its configuration).
 
-    python install.py [--mode local|dev|prod] [--root-env PATH] [--yes]
+    python install.py [--mode local|dev|prod] [--root-env PATH] [--defaults]
 
 local/prod = build and start the docker container
 dev        = create the venv on the host, then `python run.py`
@@ -75,7 +75,7 @@ def render(template: Path, out: Path, mapping: dict) -> None:
     out.write_text(text)
 
 
-def resolve(mode: str, root_env: Path, yes: bool) -> dict:
+def resolve(mode: str, root_env: Path, use_defaults: bool) -> dict:
     current = (
         {k: v for k, (v, _) in parse_env(ENV_FILE).items()} if ENV_FILE.exists() else {}
     )
@@ -86,7 +86,7 @@ def resolve(mode: str, root_env: Path, yes: bool) -> dict:
             next((rk for rk, ak in ROOT_MAP.items() if ak == key), ""),
             current.get(key, default),
         )
-        if key in PROMPTED[mode] and key not in ROOT_MAP.values() and not yes:
+        if key in PROMPTED[mode] and key not in ROOT_MAP.values() and not use_defaults:
             user = input(f"{key} — {desc}\n  [{val or 'empty'}]: ").strip()
             val = user or val
         v[key] = val
@@ -159,7 +159,7 @@ if __name__ == "__main__":
         type=Path,
         help="root .env when installed as part of the full aikon bundle",
     )
-    parser.add_argument("--yes", action="store_true")
+    parser.add_argument("--defaults", action="store_true")
     args = parser.parse_args()
 
     mode = args.mode or (
@@ -168,7 +168,7 @@ if __name__ == "__main__":
     if mode not in MODES:
         sys.exit(f"Invalid mode '{mode}'")
 
-    v = resolve(mode, args.root_env, args.yes or mode == "local")
+    v = resolve(mode, args.root_env, args.defaults or mode == "local")
     if mode == "dev":
         setup_dev(v)
     else:
