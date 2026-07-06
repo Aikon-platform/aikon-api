@@ -95,15 +95,18 @@ def resolve(mode: str, root_env: Path, use_defaults: bool) -> dict:
     v["TARGET"] = mode  # legacy alias, in case the api code still reads TARGET
     docker = mode != "dev"
     v["DOCKER"] = str(docker)
-    # in a bundle install the root .env is the source of truth: DATA_FOLDER
+    # in a bundle install the root .env is the source of truth: the api data folder
     # derives from its DATA_DIR (standalone customizations are overwritten)
-    v["DATA_FOLDER"] = str(
+    data_folder = str(
         Path(
             Path(root["DATA_DIR"]) / "api" if root else v["DATA_FOLDER"] or API / "data"
         ).resolve()
     )
-    v["API_DATA_FOLDER"] = "/data/" if docker else "data/"
-    v["YOLO_CONFIG_DIR"] = v["YOLO_CONFIG_DIR"] or f"{v['API_DATA_FOLDER']}yolotmp/"
+    v["DATA_FOLDER"] = data_folder  # host path mounted at /data
+    v["API_DATA_FOLDER"] = "/data/" if docker else data_folder  # path read by base.py
+    v["YOLO_CONFIG_DIR"] = v["YOLO_CONFIG_DIR"] or str(
+        Path(v["API_DATA_FOLDER"]) / "yolotmp"
+    )
     v["REDIS_HOST"] = (
         "host.docker.internal"
         if docker and not root
