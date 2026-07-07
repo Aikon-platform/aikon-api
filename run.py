@@ -12,6 +12,7 @@ dev        : runs flask + dramatiq on the host until Ctrl+C
 import os
 import shutil
 import signal
+import socket
 import subprocess
 import sys
 import time
@@ -54,6 +55,15 @@ def read_env() -> dict:
 
 def sh(cmd: list, check: bool = True) -> int:
     return subprocess.run(cmd, cwd=API, check=check).returncode
+
+
+def kill_stale(*patterns: str) -> None:
+    if WIN:
+        return
+    for p in patterns:
+        if not subprocess.run(["pkill", "-f", p], capture_output=True).returncode:
+            print(f"killed stale '{p}'")
+    time.sleep(1)
 
 
 def docker_run() -> None:
@@ -128,12 +138,24 @@ def stop(name: str, proc: subprocess.Popen) -> None:
             proc.pid, signal.SIGTERM
         )
         proc.wait(timeout=10)
-    except (subprocess.TimeoutExpired, ProcessLookupError):
-        proc.kill()
+    except subprocess.TimeoutExpired:
+        proc.kill() if WIN else os.killpg(proc.pid, signal.SIGKILL)
+        proc.wait()
+    except ProcessLookupError:
+        pass
     print(f"stopped {name}")
 
 
+def redis_up() -> bool:
+    with socket.socket() as s:
+        return s.connect_ex(("127.0.0.1", int(ENV.get("REDIS_PORT", 6379)))) == 0
+
+
 def run_dev() -> None:
+    kill_stale("dramatiq app.main", "flask --app app.main")
+    if not redis_up():
+        sys.exit(
+            f"redis not reachable on :{ENV.get('REDIS_PORT', 6379)} — start the services first (python run.py from the root)")
     os.environ["CUDA_VISIBLE_DEVICES"] = ENV.get("DEVICE_NB") or "0"
     procs = {name: spawn(name, cmd, cwd) for name, cmd, cwd in DEV_PROCS}
     print(f"\n→ api at http://localhost:{ENV['API_PORT']}  (Ctrl+C to stop)\n")
