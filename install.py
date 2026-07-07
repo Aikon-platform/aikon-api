@@ -108,12 +108,12 @@ def resolve(mode: str, root_env: Path, use_defaults: bool) -> dict:
         Path(v["API_DATA_FOLDER"]) / "yolotmp"
     )
     v["REDIS_HOST"] = (
-        "host.docker.internal"
-        if docker and not root
-        else "redis"
-        if docker
+        "host.docker.internal" if docker and not root
+        else "redis" if docker
         else "localhost"
     )
+    if docker:
+        v["REDIS_PORT"] = "6379"
     if root:
         v["PROD_URL"] = root.get("PROD_API_URL", "").split("://")[-1] or v["PROD_URL"]
         v["BUNDLED"] = "True"  # api container joins the front compose network
