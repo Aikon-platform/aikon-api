@@ -14,6 +14,13 @@ ARG USERID
 
 ARG API_PORT
 
+# uv config: install python + venv under the user's home, compile bytecode
+ENV UV_NO_DEV=1
+ENV UV_COMPILE_BYTECODE=1
+ENV UV_CACHE_DIR=/home/${USER}/.uv_cache
+ENV UV_PROJECT_ENVIRONMENT=/home/${USER}/.venv
+ENV UV_PYTHON_INSTALL_DIR=/opt/uv-python
+
 RUN useradd -u ${USERID} -m -d /home/${USER} ${USER}
 
 ## Silence error messages
@@ -26,12 +33,6 @@ SHELL ["/bin/bash", "-c"]
 ENV TZ=Europe/Paris
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-RUN apt-get update && \
-    apt-get install -y software-properties-common && \
-    add-apt-repository -y ppa:deadsnakes/ppa && \
-    apt-get update && \
-    apt install -y python3.10
-
 RUN apt-get update && apt-get install -y \
     unzip \
     wget \
@@ -41,34 +42,30 @@ RUN apt-get update && apt-get install -y \
     libsm6 \
     libxext6 \
     build-essential \
-    python3.10-dev \
-    python3.10-venv \
     redis-server \
     nginx \
     git \
-    poppler-utils
+    poppler-utils \
+    && rm -rf /var/lib/apt/lists/*
+
+# install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 WORKDIR /home/${USER}
 
 ## Set nvidia
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
 
-## Copy requirements and install them
-# (Before copying the rest so that this part is not rerun unless requirements change)
-COPY --chown=${USER} ./requirements.txt ./requirements.txt
-COPY --chown=${USER} ./requirements-prod.txt ./requirements-prod.txt
-RUN python3.10 -m venv venv && \
-    source venv/bin/activate && \
-    pip install --upgrade pip && \
-    pip install -r requirements-prod.txt
+## Copy lockfiles and install deps
+# (Before copying the rest so that this part is not rerun unless the lock changes)
+COPY --chown=${USER} ./pyproject.toml ./uv.lock ./
+RUN uv python install 3.11 && uv sync --locked --group=prod
 
 # Copy the entire project code
 COPY --chown=${USER} ./ ./api/
 
-WORKDIR /home/${USER}
-
 # Copy additional configurations
-COPY --chown=${USER} ./.env.prod ./api/.env
+COPY --chown=${USER} ./.env ./api/.env
 COPY docker/nginx.conf /etc/nginx/conf.d/${USER}.conf
 COPY docker/supervisord.conf ./supervisord.conf
 
@@ -78,9 +75,7 @@ EXPOSE ${API_PORT}
 # Set matplotlib tmp dir
 ENV MPLCONFIGDIR=/home/${USER}/.config/matplotlib
 
-COPY docker/utils.sh /home/${USER}/utils.sh
 COPY docker/start.sh /home/${USER}/start.sh
-RUN chmod +x /home/${USER}/utils.sh
 RUN chmod +x /home/${USER}/start.sh
 
 CMD ["/home/aikonapi/start.sh"]
