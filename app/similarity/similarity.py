@@ -395,6 +395,9 @@ class ComputeSimilarity(LoggedTask):
         source_paths = [str(i.path) for i in self.images]
         doc_ids = self.dataset.doc_uid
 
+        if len(self.images) == 0:
+            raise Exception(f"No images found for {self.dataset.uid}")
+
         self.log(
             f"Prepared {len(self.images)} images to be processed from {len(doc_ids)} documents ({', '.join(doc_ids)})"
         )
