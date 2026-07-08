@@ -20,6 +20,7 @@ ENV UV_COMPILE_BYTECODE=1
 ENV UV_CACHE_DIR=/home/${USER}/.uv_cache
 ENV UV_PROJECT_ENVIRONMENT=/home/${USER}/.venv
 ENV UV_PYTHON_INSTALL_DIR=/opt/uv-python
+ENV HF_HOME=/home/${USER}/.cache/huggingface
 
 RUN useradd -u ${USERID} -m -d /home/${USER} ${USER}
 

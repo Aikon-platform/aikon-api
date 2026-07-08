@@ -1,6 +1,6 @@
 [program:worker]
 ; Queues are named after the process number, and attributed in app_name/const.py
-environment=dramatiq_prom_port=919%(process_num)d,PYTHONPATH=/home/aikonapi
+environment=dramatiq_prom_port=919%(process_num)d,PYTHONPATH=/home/aikonapi,HOME=/home/aikonapi,HF_HOME=/home/aikonapi/.cache/huggingface
 command = /home/aikonapi/.venv/bin/dramatiq app.main -p 1 -t 1 -Q queue%(process_num)d
 ; Set number of processes depending on the number of queues
 numprocs = NB_PROCS

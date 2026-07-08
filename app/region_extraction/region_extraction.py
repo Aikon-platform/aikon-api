@@ -97,6 +97,9 @@ class ExtractRegions(LoggedTask):
         if self.model not in MODEL_MAPPER:
             raise ValueError(f"Model {self.model} is not supported for extraction.")
 
+        if self.weights is None or not Path(self.weights).exists():
+            raise FileNotFoundError(f"Weights for {self.model} not found (download likely failed)")
+
         self.extractor = MODEL_MAPPER[self.model]["model_class"](
             self.weights, **self.extractor_kwargs
         )
