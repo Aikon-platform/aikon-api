@@ -25,14 +25,13 @@ answer=$(printf "%s\n" "${options[@]}" | fzy)
 if [ "$answer" = "yes" ]; then
     color_echo yellow "\nSystem packages..."
     if [ "$OS" = "Linux" ]; then
-        sudo apt-get install redis-server python3.10 python3.10-venv python3.10-dev curl
+        sudo apt-get install redis-server curl
         sudo systemctl start redis-server
-        curl -LsSf https://astral.sh/uv/install.sh | sh
     elif [ "$OS" = "Mac" ]; then
-        brew install redis python@3.10 curl
+        brew install redis curl
         brew services start redis
-        curl -LsSf https://astral.sh/uv/install.sh | sh
     fi
+    which uv > /dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh;
 fi
 
 color_echo blue "\nDo you want to setup python virtual environment?"
@@ -42,7 +41,7 @@ if [ "$answer" = "yes" ]; then
     uv sync --group=dev --directory="$SCRIPT_DIR"
 fi
 
-color_echo blue "\nDo you want to setup environment variable?"
+color_echo blue "\nDo you want to setup environment variables?"
 answer=$(printf "%s\n" "${options[@]}" | fzy)
 if [ "$answer" = "yes" ]; then
     color_echo yellow "\nSetting up .env files"
