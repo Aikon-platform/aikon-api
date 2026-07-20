@@ -38,6 +38,8 @@ PROMPTED = {
         "CONTAINER_HOST",
         "DEVICE_NB",
         "CUDA_HOME",
+        "HTTP_PROXY",
+        "HTTPS_PROXY",
     ),
 }
 # root .env key → api key, applied when --root-env is given (bundle install)
