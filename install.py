@@ -34,6 +34,7 @@ PROMPTED = {
     "prod": (
         "INSTALLED_APPS",
         "DATA_FOLDER",
+        "API_PORT",
         "PROD_URL",
         "CONTAINER_HOST",
         "DEVICE_NB",
