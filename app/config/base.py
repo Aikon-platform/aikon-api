@@ -38,7 +38,11 @@ class FLASK_CONFIG:
     pass
 
 
-BROKER_URL = f"redis:///{ENV('REDIS_DB_INDEX', default=0)}"
-# BROKER_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/{ENV('REDIS_DB_INDEX', default=0)}"
+# BROKER_URL = f"redis:///{ENV('REDIS_DB_INDEX', default=0)}"
+# # BROKER_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/{ENV('REDIS_DB_INDEX', default=0)}"
+
+REDIS_HOST = ENV("REDIS_HOST", default="localhost")
+REDIS_PORT = ENV("REDIS_PORT", default=6379)
+BROKER_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/{ENV('REDIS_DB_INDEX', default=0)}"
 
 USE_NGINX_XACCEL = False
