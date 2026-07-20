@@ -1,5 +1,5 @@
-app.regions.lib.regions
+app.region_extraction.lib.region_extraction
 =======================
 
-.. automodule:: app.regions.lib.regions
+.. automodule:: app.region_extraction.lib.region_extraction
    :members:

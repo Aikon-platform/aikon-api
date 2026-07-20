@@ -1,17 +1,24 @@
 #!/bin/bash
+# API Docker entrypoint
 
 set -e
 
 ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-source "$ROOT_DIR"/utils.sh
 source "$ROOT_DIR"/api/.env
 
-# Create necessary directories at startup
-mkdir -p "$ROOT_DIR"/var/dramatiq/
-mkdir -p "$ROOT_DIR"/.config/matplotlib
-chown -R $USER "$ROOT_DIR"/.config/matplotlib
+color_echo() {
+    case "$1" in
+        green)  echo -e "\033[1;92m$2\033[0m";;
+        red)    echo -e "\033[1;91m$2\033[0m";;
+        blue)   echo -e "\033[1;94m$2\033[0m";;
+        *)      echo "$2";;
+    esac
+}
 
-source "$ROOT_DIR"/venv/bin/activate
+mkdir -p "$ROOT_DIR"/var/dramatiq/ "$ROOT_DIR"/.config/matplotlib
+chown -R "$USER" "$ROOT_DIR"/.config/matplotlib
+
+source /home/aikonapi/.venv/bin/activate
 
 is_build=0
 
@@ -26,13 +33,12 @@ if [[ "$INSTALLED_APPS" == *"vectorization"* ]]; then
     is_build=1
 fi
 
-
 # if region in INSTALLED_APPS, and build is not already done
-if [[ "$INSTALLED_APPS" == *"regions"* ]] && [[ $is_build -eq 0 ]]; then
-    color_echo blue "Building operators for regions module..."
-    cd "$ROOT_DIR"/api/app/regions/lib/line_predictor/dino/ops/
+if [[ "$INSTALLED_APPS" == *"region_extraction"* ]] && [[ $is_build -eq 0 ]]; then
+    color_echo blue "Building operators for region extraction module..."
+    cd "$ROOT_DIR"/api/app/region_extraction/lib/line_predictor/dino/ops/
     python setup.py build install || {
-        color_echo red "Failed to build regions operators"
+        color_echo red "Failed to build region extraction operators"
     }
     # DTLR code should work without the need to build, and use line_predictor's build
 fi

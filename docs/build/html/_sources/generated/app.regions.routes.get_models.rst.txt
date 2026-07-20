@@ -1,6 +1,6 @@
-app.regions.routes.get\_models
+app.region_extraction.routes.get\_models
 ==============================
 
-.. currentmodule:: app.regions.routes
+.. currentmodule:: app.region_extraction.routes
 
 .. autofunction:: get_models

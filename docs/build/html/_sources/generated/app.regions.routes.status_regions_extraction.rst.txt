@@ -1,6 +1,6 @@
-app.regions.routes.status\_regions\_extraction
+app.region_extraction.routes.status\_regions\_extraction
 ==============================================
 
-.. currentmodule:: app.regions.routes
+.. currentmodule:: app.region_extraction.routes
 
 .. autofunction:: status_regions_extraction

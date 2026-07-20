@@ -12,6 +12,7 @@ import mimetypes
 from datetime import datetime
 from os.path import exists
 from pathlib import Path
+from filelock import FileLock
 from slugify import slugify
 from typing import Union, Optional, Set, List, Tuple, Generator, Iterable, Dict
 from flask import Response
@@ -444,16 +445,21 @@ def download_model_if_not(url: str | Dict[str, str], path: Path) -> Path:
     Returns:
         Path to the model file
     """
-    if not path.exists():
-        try:
-            if type(url) is str:
-                download_file(url, path)
-            else:
-                from huggingface_hub import hf_hub_download
-
+    if path.exists():
+        return path
+    path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        if isinstance(url, str):
+            download_file(url, path)
+        else:
+            from huggingface_hub import hf_hub_download
+            with FileLock(f"{path}.lock"):
+                if path.exists():
+                    return path
                 hf_hub_download(local_dir=path.parent, **url)
-        except Exception as e:
-            console("Failed to download the model", e=e)
+    except Exception as e:
+        console("Failed to download the model", e=e)
+        raise
     return path
 
 
