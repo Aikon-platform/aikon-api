@@ -110,6 +110,7 @@ def resolve(mode: str, root_env: Path, use_defaults: bool) -> dict:
     v["YOLO_CONFIG_DIR"] = v["YOLO_CONFIG_DIR"] or str(
         Path(v["API_DATA_FOLDER"]) / "yolotmp"
     )
+    # TODO verify prod value -> should be localhost
     v["REDIS_HOST"] = (
         "host.docker.internal" if docker and not root
         else "redis" if docker
