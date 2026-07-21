@@ -85,11 +85,24 @@ def resolve(mode: str, root_env: Path, use_defaults: bool) -> dict:
     root = {k: v for k, (v, _) in parse_env(root_env).items()} if root_env else {}
     v = {}
     for key, (default, desc) in parse_env(TEMPLATE).items():
+        root_key = next((rk for rk, ak in ROOT_MAP.items() if ak == key), "")
         val = root.get(
-            next((rk for rk, ak in ROOT_MAP.items() if ak == key), ""),
+            root_key,
             current.get(key, default),
         )
-        if key in PROMPTED[mode] and key not in ROOT_MAP.values() and not use_defaults:
+        # optionnally prompt for user input
+        if (
+            # key should be prompted
+            key in PROMPTED[mode] 
+            # defaults should not be used
+            and not use_defaults
+            and (
+                # key is not expected in `root`
+                key not in ROOT_MAP.values()
+                # or key is present in `root` but has no value
+                or root.get(root_key) is None
+            )
+        ):
             user = input(f"{key} — {desc}\n  [{val or 'empty'}]: ").strip()
             val = user or val
         v[key] = val
