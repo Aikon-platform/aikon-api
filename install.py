@@ -93,7 +93,7 @@ def resolve(mode: str, root_env: Path, use_defaults: bool) -> dict:
         # optionnally prompt for user input
         if (
             # key should be prompted
-            key in PROMPTED[mode] 
+            key in PROMPTED[mode]
             # defaults should not be used
             and not use_defaults
             and (
@@ -123,9 +123,9 @@ def resolve(mode: str, root_env: Path, use_defaults: bool) -> dict:
     v["YOLO_CONFIG_DIR"] = v["YOLO_CONFIG_DIR"] or str(
         Path(v["API_DATA_FOLDER"]) / "yolotmp"
     )
-    # redis is only dockerized in AIKON-API if the api is 
-    # bundled with a Dockerized AIKON instance: in that case, it 
-    # uses AIKON-front's Redis. otherwise 
+    # redis is only dockerized in AIKON-API if the api is
+    # bundled with a Dockerized AIKON instance: in that case, it
+    # uses AIKON-front's Redis. otherwise
     # v["REDIS_HOST"] = (
     #     else "redis" if docker and root
     #     else "localhost"
@@ -166,7 +166,7 @@ def setup_dev(v: dict) -> None:
     uv = shutil.which("uv") or sys.exit(
         "uv is required in dev mode (https://docs.astral.sh/uv/)"
     )
-    sh([uv, "sync", "--group=dev"], cwd=API)
+    sh([uv, "sync", "--python", "<3.13", "--group=dev"], cwd=API)
     sh([uv, "tool", "install", "pre-commit", "--with", "pre-commit-uv"], cwd=API)
     subprocess.run(["git", "submodule", "update", "--init"], cwd=API)
     print("\n✅ api dev setup complete. Start it with:  python run.py")
