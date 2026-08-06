@@ -113,11 +113,13 @@ def resolve(mode: str, root_env: Path, use_defaults: bool) -> dict:
     v["DOCKER"] = str(docker)
     # in a bundle install the root .env is the source of truth: the api data folder
     # derives from its DATA_DIR (standalone customizations are overwritten)
-    data_folder = str(
-        Path(
-            Path(root["DATA_DIR"]) / "api" if root else v["DATA_FOLDER"] or API / "data"
-        ).resolve()
-    )
+    # data folder is named DATA_DIR in AIKON, MEDIA_ROOT in AIKON0-demo
+    if root:
+        root_data_folder = root.get("DATA_DIR") or root.get("MEDIA_ROOT")
+        data_folder = Path(root_data_folder) / "api"
+    else:
+        data_folder = v["DATA_FOLDER"] if v.get("DATA_FOLDER") else API / "data"
+    data_folder = str(data_folder) 
     v["DATA_FOLDER"] = data_folder  # host path mounted at /data
     v["API_DATA_FOLDER"] = "/data/" if docker else data_folder  # path read by base.py
     v["YOLO_CONFIG_DIR"] = v["YOLO_CONFIG_DIR"] or str(
