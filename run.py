@@ -66,6 +66,28 @@ def kill_stale(*patterns: str) -> None:
     time.sleep(1)
 
 
+def docker_build() -> None:
+    shutil.which("docker") or sys.exit(
+        "docker is required (https://docs.docker.com/engine/install/)"
+    )
+
+    userid = os.getuid() if hasattr(os, "getuid") else 1000
+    args = [
+        f"--build-arg={key}={val}"
+        for key, val in {
+            "USERID": userid,
+            "API_PORT": ENV["API_PORT"],
+            "HTTP_PROXY": ENV.get("HTTP_PROXY", ""),
+            "HTTPS_PROXY": ENV.get("HTTPS_PROXY", ""),
+            "HUGGING_FACE_HUB_TOKEN": ENV.get("HUGGING_FACE_HUB_TOKEN", ""),
+        }.items()
+    ]
+    sh(
+        ["docker", "build", "-t", ENV["CONTAINER_NAME"], "-f", "docker/Dockerfile", "."]
+        + args
+    )
+
+
 def docker_run() -> None:
     name = ENV["CONTAINER_NAME"]
     subprocess.run(["docker", "rm", "-f", name], capture_output=True)
@@ -100,24 +122,6 @@ def docker_run() -> None:
         cmd += ["-p", f"{ENV['CONTAINER_HOST']}:{ENV['API_PORT']}:{ENV['API_PORT']}"]
     sh(cmd + [name])
     print(f"→ api container '{name}' started")
-
-
-def docker_build() -> None:
-    userid = os.getuid() if hasattr(os, "getuid") else 1000
-    args = [
-        f"--build-arg={k}={v}"
-        for k, v in {
-            "USERID": userid,
-            "API_PORT": ENV["API_PORT"],
-            "HTTP_PROXY": ENV.get("HTTP_PROXY", ""),
-            "HTTPS_PROXY": ENV.get("HTTPS_PROXY", ""),
-            "HUGGING_FACE_HUB_TOKEN": ENV.get("HUGGING_FACE_HUB_TOKEN", ""),
-        }.items()
-    ]
-    sh(
-        ["docker", "build", "-t", ENV["CONTAINER_NAME"], "-f", "docker/Dockerfile", "."]
-        + args
-    )
 
 
 def spawn(name: str, cmd: list, cwd: Path) -> subprocess.Popen:
@@ -178,6 +182,7 @@ def run_dev() -> None:
 
 if __name__ == "__main__":
     action = sys.argv[1] if len(sys.argv) > 1 else "up"
+
     ENV = read_env()
     dev = ENV.get("MODE") == "dev"
 

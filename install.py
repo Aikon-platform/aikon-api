@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
 AIKON API installer — works standalone (no front files needed) or delegated
-from the root install.py (which passes --root-env to share its configuration).
+from the root install.py (which passes --root-env and --bundled to share its 
+configuration).
 
-    python install.py [--mode local|dev|prod] [--root-env PATH] [--defaults]
+    python install.py [--mode local|dev|prod] [--root-env PATH] [--bundled aikon|aikon-demo] [--defaults]
 
 local/prod = build and start the docker container
 dev        = create the venv on the host, then `python run.py`
@@ -12,6 +13,7 @@ dev        = create the venv on the host, then `python run.py`
 import argparse
 import subprocess
 import sys
+import shutil
 from pathlib import Path
 
 API = Path(__file__).resolve().parent
@@ -78,7 +80,7 @@ def render(template: Path, out: Path, mapping: dict) -> None:
     out.write_text(text)
 
 
-def resolve(mode: str, root_env: Path, use_defaults: bool) -> dict:
+def resolve(mode: str, root_env: Path, bundled: Literal["aikon", "aikon-demo", None], use_defaults: bool) -> dict:
     current = (
         {k: v for k, (v, _) in parse_env(ENV_FILE).items()} if ENV_FILE.exists() else {}
     )
@@ -134,7 +136,9 @@ def resolve(mode: str, root_env: Path, use_defaults: bool) -> dict:
         v["REDIS_PORT"] = "6379"
     if root:
         v["PROD_URL"] = root.get("PROD_API_URL", "").split("://")[-1] or v["PROD_URL"]
-        v["BUNDLED"] = "True"  # api container joins the front compose network
+    
+    # used to programmatically connect the API to an AIKON frontend
+    v["BUNDLED"] = bundled
 
     invalid = [a for a in v["INSTALLED_APPS"].split(",") if a and a not in API_APPS]
     if invalid:
@@ -180,6 +184,13 @@ if __name__ == "__main__":
         type=Path,
         help="root .env when installed as part of the full aikon bundle",
     )
+    parser.add_argument(
+        "--bundled", 
+        choices=["aikon", "aikon-demo"],
+        required=False,
+        default=False,
+        help="frontend app (AIKON or AIKON-demo) AIKON-API is bundled with" 
+    )
     parser.add_argument("--defaults", action="store_true")
     args = parser.parse_args()
 
@@ -189,10 +200,15 @@ if __name__ == "__main__":
     if mode not in MODES:
         sys.exit(f"Invalid mode '{mode}'")
 
-    v = resolve(mode, args.root_env, args.defaults or mode == "local")
+    bundled = args.bundled
+
+    # install
+    v = resolve(mode, root_env=args.root_env, bundled=bundled, use_defaults=args.defaults or mode == "local")
+
     if mode == "dev":
         setup_dev(v)
     else:
+        # docker setup is done directly in run.py
         import shutil
 
         shutil.which("docker") or sys.exit(
