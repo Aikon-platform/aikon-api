@@ -15,6 +15,7 @@ import subprocess
 import sys
 import shutil
 from pathlib import Path
+from typing import Literal
 
 API = Path(__file__).resolve().parent
 TEMPLATE = API / ".env.template"
