@@ -90,8 +90,12 @@ def docker_run() -> None:
             "-v",
             f"{ENV['CUDA_HOME']}:/cuda",
         ]
-    if ENV.get("BUNDLED") == "True":
+    # in bundled setups, add the API to the frontend's network. otherwise, set ports
+    bundled = ENV.get("BUNDLED", None)
+    if bundled == "aikon":
         cmd += ["--network", "aikon_aikon", "--network-alias", "api"]
+    elif bundled == "aikon-demo":
+        cmd += ["--network", "aikondemo_aikondemo", "--network-alias", "api"]
     else:
         cmd += ["-p", f"{ENV['CONTAINER_HOST']}:{ENV['API_PORT']}:{ENV['API_PORT']}"]
     sh(cmd + [name])
