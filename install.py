@@ -114,12 +114,13 @@ def resolve(mode: str, root_env: Path, bundled: Literal["aikon", "aikon-demo", N
     v["TARGET"] = mode  # legacy alias, in case the api code still reads TARGET
     docker = mode != "dev"
     v["DOCKER"] = str(docker)
-    # in a bundle install the root .env is the source of truth: the api data folder
+    # in a bundled install the root .env is the source of truth: the api data folder
     # derives from its DATA_DIR (standalone customizations are overwritten)
     # data folder is named DATA_DIR in AIKON, MEDIA_ROOT in AIKON0-demo
-    if root:
-        root_data_folder = root.get("DATA_DIR") or root.get("MEDIA_ROOT")
-        data_folder = Path(root_data_folder) / "api"
+    if bundled == "aikon":
+        data_folder = Path(root.get("DATA_DIR")) / "api"
+    elif bundled == "aikon-demo":
+        data_folder = Path(root.get("MEDIA_ROOT")) / "api"
     else:
         data_folder = v["DATA_FOLDER"] if v.get("DATA_FOLDER") else API / "data"
     data_folder = str(data_folder) 
