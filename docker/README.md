@@ -1,5 +1,11 @@
 # 📦 Deploy with Docker
 
+```bash
+# to update prod
+# inside api/
+python run.py build
+```
+
 ## Pre-requisites
 - Docker
 - [nvidia-container-toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
@@ -64,6 +70,8 @@ Depending on your CUDA version, it might be necessary to change:
 ## Docker setup
 
 ### 🚀 Scripted install
+
+> [!NOTE] 🚧️ Legacy documentation, to be updated
 
 ```bash
 cp .env.template .env.prod
