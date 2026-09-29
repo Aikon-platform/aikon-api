@@ -31,10 +31,16 @@ def gunzip_requests(wsgi_app):
     def middleware(environ, start_response):
         if environ.get("HTTP_CONTENT_ENCODING", "").lower() == "gzip":
             length = int(environ.get("CONTENT_LENGTH") or 0)
-            body = gzip.decompress(environ["wsgi.input"].read(length))
+            try:
+                body = gzip.decompress(environ["wsgi.input"].read(length))
+            except (OSError, EOFError):
+                start_response("400 Bad Request", [("Content-Type", "text/plain")])
+                return [b"Invalid gzip body"]
             environ["wsgi.input"] = io.BytesIO(body)
             environ["CONTENT_LENGTH"] = str(len(body))
+            environ["CONTENT_TYPE"] = "application/json"
             del environ["HTTP_CONTENT_ENCODING"]
+
         return wsgi_app(environ, start_response)
 
     return middleware
