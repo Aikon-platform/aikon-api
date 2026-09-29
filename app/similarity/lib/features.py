@@ -15,8 +15,7 @@ class FeatureExtractor:
         """
         Load a pre-trained model for features extraction
         """
-
-        self.feat_net = feat_net
+        self.feat_net = feat_net or FEAT_NET
         self.model_path = model_path
 
         self.extractor_label = f"{self.feat_net}"
