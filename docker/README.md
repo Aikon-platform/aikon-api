@@ -1,5 +1,11 @@
 # 📦 Deploy with Docker
 
+```bash
+# to update prod
+# inside api/
+python run.py build
+```
+
 ## Pre-requisites
 - Docker
 - [nvidia-container-toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
@@ -61,14 +67,12 @@ Depending on your CUDA version, it might be necessary to change:
 - [Dockerfile base image](Dockerfile#L2): find the corresponding image [here](https://hub.docker.com/r/nvidia/cuda/tags)
 - [Pytorch version](requirements-dev.txt#L44): find the corresponding requirements [here](https://pytorch.org/get-started/locally/)
 
-#### `HUGGING_FACE_HUB_TOKEN`
-
-Create a Hugging Face account and [create a new token](https://huggingface.co/settings/tokens/new?tokenType=read).
-Keep it secret and safe.
 
 ## Docker setup
 
 ### 🚀 Scripted install
+
+> [!NOTE] 🚧️ Legacy documentation, to be updated
 
 ```bash
 cp .env.template .env.prod
