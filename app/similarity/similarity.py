@@ -35,7 +35,7 @@ from ..shared.dataset import Dataset
 from ..shared.dataset.types import ImageDict, DocInRange
 from ..shared.dataset.utils import group_by_documents
 from ..shared.dataset.document import DocDict, get_file_url, Document
-from ..shared.utils import get_device, sort_naturally
+from ..shared.utils import get_device
 from ..shared.tasks import LoggedTask
 from ..shared.utils.logging import serializer
 
@@ -285,9 +285,10 @@ class ComputeSimilarity(LoggedTask):
         self._results_url.append(value)
 
     def skip(self, uid1: str, uid2: str) -> bool:
-        """Check if this pair should be skipped (explicitly listed by the front)"""
-        pair_id = "-".join(sort_naturally([uid1, uid2]))
-        skipping = pair_id in self.skip_pairs
+        """Check if this pair should be skipped (explicitly listed by the front, in any order)"""
+        skipping = (
+            f"{uid1}-{uid2}" in self.skip_pairs or f"{uid2}-{uid1}" in self.skip_pairs
+        )
         if skipping:
             self.log(f"Skipping {uid1} / {uid2}")
         return skipping
