@@ -124,11 +124,11 @@ def resolve(mode: str, root_env: Path, use_defaults: bool) -> dict:
         Path(v["API_DATA_FOLDER"]) / "yolotmp"
     )
     # TODO verify prod value -> should be localhost
-    v["REDIS_HOST"] = (
-        "host.docker.internal" if docker and not root
-        else "redis" if docker
-        else "localhost"
-    )
+    # v["REDIS_HOST"] = (
+    #     "host.docker.internal" if docker and not root
+    #     else "redis" if docker
+    #     else "localhost"
+    # )
     if docker:
         v["REDIS_PORT"] = "6379"
     if root:
