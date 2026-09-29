@@ -1,6 +1,8 @@
 """
 A script that initializes the Flask app and the Dramatiq broker.
 """
+import gzip
+import io
 import json
 
 from dramatiq import JSONEncoder
@@ -21,6 +23,24 @@ from .shared.utils.modular import auto_import_apps
 # Flask setup
 app = Flask(__name__)
 app.config.from_object(config.FLASK_CONFIG)
+
+
+def gunzip_requests(wsgi_app):
+    """Decompress gzip-encoded request bodies"""
+
+    def middleware(environ, start_response):
+        if environ.get("HTTP_CONTENT_ENCODING", "").lower() == "gzip":
+            length = int(environ.get("CONTENT_LENGTH") or 0)
+            body = gzip.decompress(environ["wsgi.input"].read(length))
+            environ["wsgi.input"] = io.BytesIO(body)
+            environ["CONTENT_LENGTH"] = str(len(body))
+            del environ["HTTP_CONTENT_ENCODING"]
+        return wsgi_app(environ, start_response)
+
+    return middleware
+
+
+app.wsgi_app = gunzip_requests(app.wsgi_app)
 
 
 class CustomEncoder(JSONEncoder):

@@ -99,7 +99,7 @@ def resolve(mode: str, root_env: Path, use_defaults: bool) -> dict:
             and (
                 # key is not expected in `root`
                 key not in ROOT_MAP.values()
-                # or key is present in `root` but has no value
+                # key has no value in `root` (useful for INSTALLED_APPS in AIKON-demo)
                 or root.get(root_key) is None
             )
         ):
@@ -113,22 +113,25 @@ def resolve(mode: str, root_env: Path, use_defaults: bool) -> dict:
     v["DOCKER"] = str(docker)
     # in a bundle install the root .env is the source of truth: the api data folder
     # derives from its DATA_DIR (standalone customizations are overwritten)
-    data_folder = str(
-        Path(
-            Path(root["DATA_DIR"]) / "api" if root else v["DATA_FOLDER"] or API / "data"
-        ).resolve()
-    )
+    # data folder is named DATA_DIR in AIKON, MEDIA_ROOT in AIKON0-demo
+    if root:
+        root_data_folder = root.get("DATA_DIR") or root.get("MEDIA_ROOT")
+        data_folder = Path(root_data_folder) / "api"
+    else:
+        data_folder = v["DATA_FOLDER"] if v.get("DATA_FOLDER") else API / "data"
+    data_folder = str(data_folder) 
     v["DATA_FOLDER"] = data_folder  # host path mounted at /data
     v["API_DATA_FOLDER"] = "/data/" if docker else data_folder  # path read by base.py
     v["YOLO_CONFIG_DIR"] = v["YOLO_CONFIG_DIR"] or str(
         Path(v["API_DATA_FOLDER"]) / "yolotmp"
     )
-    # TODO verify prod value -> should be localhost
-    v["REDIS_HOST"] = (
-        "host.docker.internal" if docker and not root
-        else "redis" if docker
-        else "localhost"
-    )
+    # redis is only dockerized in AIKON-API if the api is 
+    # bundled with a Dockerized AIKON instance: in that case, it 
+    # uses AIKON-front's Redis. otherwise 
+    # v["REDIS_HOST"] = (
+    #     else "redis" if docker and root
+    #     else "localhost"
+    # )
     if docker:
         v["REDIS_PORT"] = "6379"
     if root:
