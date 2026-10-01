@@ -196,10 +196,12 @@ def delete(doc_id: str):
             "error": f"Document {doc_id} not found",
         }
 
-    res_to_clear = (
-        f"*/{algorithm}*{doc_id}*.json" if algorithm else f"*/*{doc_id}*.json"
+    # result files are named "{algorithm}-{doc_id1}-{doc_id2}.json": match doc_id exactly
+    algo = algorithm or "*"
+    cleared_results = sum(
+        clear_dir(SIM_RESULTS_PATH, res_to_clear, delete_anyway=True)
+        for res_to_clear in (f"*/{algo}-{doc_id}-*.json", f"*/{algo}-*-{doc_id}.json")
     )
-    cleared_results = clear_dir(SIM_RESULTS_PATH, res_to_clear, delete_anyway=True)
     # delete empty directory of results
     cleared_res_dir = delete_empty_dirs(SIM_RESULTS_PATH)
 
