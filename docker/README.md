@@ -67,7 +67,6 @@ Depending on your CUDA version, it might be necessary to change:
 - [Dockerfile base image](Dockerfile#L2): find the corresponding image [here](https://hub.docker.com/r/nvidia/cuda/tags)
 - [Pytorch version](requirements-dev.txt#L44): find the corresponding requirements [here](https://pytorch.org/get-started/locally/)
 
-
 ## Docker setup
 
 ### 🚀 Scripted install

@@ -3,7 +3,7 @@ Routes for the regions extraction API.
 
 Routes:
 
-- POST ``/regions/start``:
+- POST ``/region_extraction/start``:
     Starts the regions extraction process for a dataset.
 
     - Parameters:
