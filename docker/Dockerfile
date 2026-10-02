@@ -1,4 +1,5 @@
-# API image (change image based on the version showed with $ nvidia-smi)
+# API image
+# see this if you have torch issues https://github.com/Aikon-platform/aikon-api/wiki/Torch-and-CUDA-Troubleshooting
 FROM nvidia/cuda:12.6.3-cudnn-devel-ubuntu22.04
 
 ARG HTTP_PROXY
@@ -8,6 +9,10 @@ ARG NO_PROXY
 ENV http_proxy=${HTTP_PROXY}
 ENV https_proxy=${HTTPS_PROXY}
 ENV no_proxy=${NO_PROXY}
+
+# see pyproject.toml: used to select torch index URL to be compatible with CUDA 12.6 image
+# will by accessible to all `RUN uv` commands
+ENV DOCKER=True
 
 ENV USER=aikonapi
 ARG USERID
@@ -60,7 +65,10 @@ ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
 ## Copy lockfiles and install deps
 # (Before copying the rest so that this part is not rerun unless the lock changes)
 COPY --chown=${USER} ./pyproject.toml ./uv.lock ./
-RUN uv python install 3.11 && uv sync --locked --group=prod
+RUN uv python install 3.11 
+# overwrite the lockfile which could have been generated in a non-docker setting (=> with different torch deps)
+RUN  uv lock --upgrade
+RUN uv sync --locked --group=prod
 
 # Copy the entire project code
 COPY --chown=${USER} ./ ./api/

@@ -131,9 +131,9 @@ def resolve(mode: str, root_env: Path, bundled: Literal["aikon", "aikon-demo", N
     )
     # redis is only dockerized in AIKON-API if the api is 
     # bundled with a Dockerized AIKON instance: in that case, it 
-    # uses AIKON-front's Redis. otherwise 
+    # uses AIKON-front's Redis. 
     # v["REDIS_HOST"] = (
-    #     else "redis" if docker and root
+    #     "redis" if docker and root
     #     else "localhost"
     # )
     if docker:
