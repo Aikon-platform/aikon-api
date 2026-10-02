@@ -649,20 +649,18 @@ class ComputeSimilarity(LoggedTask):
         try:
             self.results = self.compute_similarity()
 
-            (SCORES_PATH / self.experiment_id).parent.mkdir(parents=True, exist_ok=True)
-            with open(
-                SCORES_PATH / self.experiment_id / f"{self.dataset.uid}-scores.json",
-                "wb",
-            ) as f:
-                f.write(orjson.dumps(self.results, default=serializer))
-                self.add_results_url(
-                    {
-                        "doc_pair": "dataset",
-                        "result_url": get_file_url(
-                            DEMO_NAME, f"{self.experiment_id}/{self.dataset.uid}-scores"
-                        ),
-                    }
-                )
+            if not self.skip_pairs:
+                (SCORES_PATH / self.experiment_id).mkdir(parents=True, exist_ok=True)
+                with open(SCORES_PATH / self.experiment_id / f"{self.dataset.uid}-scores.json", "wb") as f:
+                    f.write(orjson.dumps(self.results, default=serializer))
+                    self.add_results_url(
+                        {
+                            "doc_pair": "dataset",
+                            "result_url": get_file_url(
+                                DEMO_NAME, f"{self.experiment_id}/{self.dataset.uid}-scores"
+                            ),
+                        }
+                    )
 
             self.log(f"Successfully computed similarity scores")
             return True
@@ -676,42 +674,16 @@ class ComputeSimilarity(LoggedTask):
         finally:
             pass
 
-    def check_parameters(self, parameters):
-        """
-        Return True if all the parameters are the same (meaning that the similarity has already been computed)
-        False if one of the parameters is not the same
-        """
-        if parameters is None:
-            return False
-        if parameters.get("algorithm", None) != self.algorithm:
-            return False
-        if parameters.get("topk", None) != self.topk:
-            return False
-        if parameters.get("feat_net", None) != self.feat_net:
-            return False
-        if parameters.get("segswap_n", None) != self.segswap_n:
-            return False
-
-        # OTHER PARAMETERS TO CHECK
-        # "segswap_prefilter": self.segswap_prefilter,
-        # "raw_transpositions": self.raw_transpositions,
-        # "transpositions": self.transpositions,
-        return True
 
     def check_already_computed(self):
         for path in SCORES_PATH.rglob(f"{self.dataset.uid}-scores.json"):
-            if not path.is_file():
-                continue
-
             try:
-                scores = orjson.loads(path.read_text())
+                scores = orjson.loads(path.read_bytes())
             except (orjson.JSONDecodeError, OSError) as e:
-                self.print_and_log_warning(
-                    f"[task.similarity] Error reading scores file {path}: {e}"
-                )
+                self.print_and_log_warning(f"[task.similarity] Error reading scores file {path}: {e}")
                 continue
 
-            if self.check_parameters(scores.get("parameters")):
+            if scores.get("parameters") == self.format_parameters():
                 return scores, path.parent.name
 
         return False, False
