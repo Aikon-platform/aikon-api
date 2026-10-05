@@ -1,6 +1,29 @@
-# API image
+## STEP 1 - install python packages 
+FROM ghcr.io/astral-sh/uv:debian-slim AS uvdeps
+
+# ARG API_UV_CACHE_VOLUME
+# ARG API_UV_VENV_VOLUME
+
+# uv config: install python + venv under the user's home, compile bytecode
+ENV UV_NO_DEV=1
+ENV UV_COMPILE_BYTECODE=1
+ENV UV_CACHE_DIR=/root/.uv_cache
+ENV UV_PROJECT_ENVIRONMENT=/root/.venv
+
+COPY ./pyproject.toml ./uv.lock ./
+
+RUN apt-get update && apt-get install -y git
+
+# RUN --mount=type=cache,target=${UV_CACHE_DIR},id=uv-cache \
+#     uv python install 3.11 
+RUN --mount=type=cache,target=${UV_CACHE_DIR},id=uv-cache \
+    uv sync --locked --group=prod
+
+# ----------------------------------------------------------
+
+## STEP 2 - final API image
 # see this if you have torch issues https://github.com/Aikon-platform/aikon-api/wiki/Torch-and-CUDA-Troubleshooting
-FROM nvidia/cuda:12.6.3-cudnn-devel-ubuntu22.04
+FROM nvidia/cuda:12.6.2-cudnn-runtime-ubuntu22.04
 
 ARG HTTP_PROXY
 ARG HTTPS_PROXY
@@ -15,21 +38,21 @@ ARG USERID
 
 ARG API_PORT
 
-# uv config: install python + venv under the user's home, compile bytecode
-ENV UV_NO_DEV=1
-ENV UV_COMPILE_BYTECODE=1
-ENV UV_CACHE_DIR=/home/${USER}/.uv_cache
-ENV UV_PROJECT_ENVIRONMENT=/home/${USER}/.venv
-ENV UV_PYTHON_INSTALL_DIR=/opt/uv-python
+# # uv config: install python + venv under the user's home, compile bytecode
+# ENV UV_NO_DEV=1
+# ENV UV_COMPILE_BYTECODE=1
+# ENV UV_CACHE_DIR=/home/${USER}/.uv_cache
+# ENV UV_PROJECT_ENVIRONMENT=/home/${USER}/.venv
+# ENV UV_PYTHON_INSTALL_DIR=/opt/uv-python
+
+ENV PYTHON_VENV=/home/${USER}/.venv
+
 ENV HF_HOME=/home/${USER}/.cache/huggingface
 
 RUN useradd -u ${USERID} -m -d /home/${USER} ${USER}
 
 ## Silence error messages
 ENV TERM=linux
-
-## Bash instead of shell
-SHELL ["/bin/bash", "-c"]
 
 ## Install utils
 ENV TZ=Europe/Paris
@@ -43,6 +66,9 @@ ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
 
 ## Set matplotlib tmp dir
 ENV MPLCONFIGDIR=/home/${USER}/.config/matplotlib
+
+## Bash instead of shell
+SHELL ["/bin/bash", "-c"]
 
 RUN apt-get update && apt-get install -y \
     unzip \
@@ -59,20 +85,23 @@ RUN apt-get update && apt-get install -y \
     poppler-utils \
     && rm -rf /var/lib/apt/lists/*
 
-# install uv
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
-
 WORKDIR /home/${USER}
 
-## Create and set permissions for local uv folders
-RUN mkdir -p ${UV_CACHE_DIR} ${UV_VENV_DIR} && \
-    chown -R ${USER}:${USER} ${UV_CACHE_DIR} ${UV_VENV_DIR}
+# # install uv
+# COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+# ## Create and set permissions for local uv folders
+# RUN mkdir -p ${UV_CACHE_DIR} ${UV_VENV_DIR} && \
+#     chown -R ${USER}:${USER} ${UV_CACHE_DIR} ${UV_VENV_DIR}
 
 ## Copy lockfiles and install deps
 # (Before copying the rest so that this part is not rerun unless the lock changes)
 COPY --chown=${USER} ./pyproject.toml ./uv.lock ./
 # RUN uv python install 3.11 
 # RUN uv sync --locked --group=prod
+
+# copy dependencies from build stage
+COPY --chown=${USER} --from=uvdeps /root/.venv ${PYTHON_VENV}
 
 # Copy additional configurations
 COPY --chown=${USER} ./.env ./api/.env

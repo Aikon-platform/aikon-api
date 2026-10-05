@@ -15,12 +15,12 @@ color_echo() {
     esac
 }
 
-# install dependencies (must be done in start.sh 
-# so that deps are copied in volume)
-export UV_CACHE_DIR=/home/aikonapi/.uv_cache
-export UV_PROJECT_ENVIRONMENT=/home/aikonapi/.venv
-uv python install 3.11
-uv sync --locked --group=prod
+## install dependencies (must be done in start.sh 
+## so that deps are copied in volume)
+#export UV_CACHE_DIR=/home/aikonapi/.uv_cache
+#export UV_PROJECT_ENVIRONMENT=/home/aikonapi/.venv
+#uv python install 3.11
+#uv sync --locked --group=prod
 
 source /home/aikonapi/.venv/bin/activate
 
