@@ -131,17 +131,6 @@ def resolve(mode: str, root_env: Path, bundled: Literal["aikon", "aikon-demo", N
         )
     v["DATA_FOLDER"] = str(data_folder)  # host path mounted at /data
     v["API_DATA_FOLDER"] = "/data/" if docker else str(data_folder)  # path read by base.py
-    
-    # if mode==local, add an env variable for the uv volumes.
-    # we cache the venv and the cache for faster builds.
-    # see `make_docker_uv_volume_dir` in run.py
-    if mode == "local":
-        print(data_folder, type(data_folder))
-        api_uv_volume = data_folder / "uv"
-        v["API_UV_VOLUME"] = str(api_uv_volume)
-        v["API_UV_VENV_VOLUME"] = str(api_uv_volume / ".venv")
-        v["API_UV_CACHE_VOLUME"] = str(api_uv_volume / ".uv_cache")
-
     v["YOLO_CONFIG_DIR"] = v["YOLO_CONFIG_DIR"] or str(
         Path(v["API_DATA_FOLDER"]) / "yolotmp"
     )

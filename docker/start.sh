@@ -3,9 +3,6 @@
 
 set -e
 
-ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-source "$ROOT_DIR"/api/.env
-
 color_echo() {
     case "$1" in
         green)  echo -e "\033[1;92m$2\033[0m";;
@@ -15,12 +12,27 @@ color_echo() {
     esac
 }
 
+ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+VENV_DIR=/home/aikonapi/.venv
+PYTHON_CMD="$VENV_DIR"/bin/python
+source "$ROOT_DIR"/api/.env
+
 ## install dependencies (must be done in start.sh 
 ## so that deps are copied in volume)
 #export UV_CACHE_DIR=/home/aikonapi/.uv_cache
 #export UV_PROJECT_ENVIRONMENT=/home/aikonapi/.venv
 #uv python install 3.11
 #uv sync --locked --group=prod
+
+echo "000000000000000000000000000000"
+echo "$ROOT_DIR"
+ls "$ROOT_DIR"
+
+echo "111111111111111111111111111111"
+ls -l /home/aikonapi/*
+
+echo "222222222222222222222222222222"
+ls -l /home/aikonapi/.venv/*
 
 source /home/aikonapi/.venv/bin/activate
 
@@ -32,7 +44,7 @@ chown -R "$USER" "$ROOT_DIR"/.config/matplotlib
 if [[ "$INSTALLED_APPS" == *"vectorization"* ]]; then
     color_echo blue "Building operators for vectorization module..."
     cd "$ROOT_DIR"/api/app/vectorization/lib/
-    python src/models/dino/ops/setup.py build install || {
+    "$PYTHON_CMD" src/models/dino/ops/setup.py build install || {
         color_echo red "Failed to build vectorization operators"
     }
     # python src/models/dino/ops/test.py
@@ -44,7 +56,7 @@ fi
 if [[ "$INSTALLED_APPS" == *"region_extraction"* ]] && [[ $is_build -eq 0 ]]; then
     color_echo blue "Building operators for region extraction module..."
     cd "$ROOT_DIR"/api/app/region_extraction/lib/line_predictor/dino/ops/
-    python setup.py build install || {
+    "$PYTHON_CMD" setup.py build install || {
         color_echo red "Failed to build region extraction operators"
     }
     # DTLR code should work without the need to build, and use line_predictor's build

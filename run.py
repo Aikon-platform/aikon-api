@@ -74,28 +74,6 @@ def get_uid():
 def get_gid():
     return os.getgid() if hasattr(os, "getgid") else 1000
 
-def make_docker_uv_volume_dir() -> None:
-    """
-    in local builds, create volume folders on the host for uv and set permissions for it
-    """
-    mode = ENV["MODE"]
-    if mode == "local":
-        if not all([
-            ENV["API_UV_VOLUME"], 
-            ENV["API_UV_CACHE_VOLUME"], 
-            ENV["API_UV_VENV_VOLUME"]
-        ]):
-            raise sys.exit(".env variables 'API_UV_VOLUME', 'API_UV_CACHE_VOLUME', 'API_UV_VENV_VOLUME'  are undefined but expected with MODE=local")
-        uv_dir = Path(ENV["API_UV_VOLUME"])
-        uv_cache_dir = Path(ENV["API_UV_VENV_VOLUME"])
-        uv_venv_dir = Path(ENV["API_UV_CACHE_VOLUME"])
-        userid = get_uid()
-        gid = get_gid()
-        for p in [uv_dir, uv_cache_dir, uv_venv_dir]:
-            p.mkdir(parents=True, exist_ok=True)
-            os.chown(p, userid, gid)
-    return        
-
 
 def docker_build() -> None:
     shutil.which("docker") or sys.exit(
@@ -114,8 +92,7 @@ def docker_build() -> None:
         }.items()
     ]
     sh(
-        ["docker", "build", "-t", ENV["CONTAINER_NAME"], "-f", "docker/Dockerfile", ".", 
-            "--progress=plain", "--no-cache"]
+        ["docker", "build", "-t", ENV["CONTAINER_NAME"], "-f", "docker/Dockerfile", "."]
         + args,
         env={**os.environ, "DOCKER_BUILDKIT": "1"}
     )
@@ -146,15 +123,6 @@ def docker_run() -> None:
             "-v",
             f"{ENV['CUDA_HOME']}:/cuda",
         ]
-    # in local dockerized builds, create local uv volumes
-    if ENV.get("MODE") == "local":
-        uv_cache_dir = Path(ENV["API_UV_CACHE_VOLUME"])
-        uv_venv_dir = Path(ENV["API_UV_VENV_VOLUME"])
-        cmd += [
-            "-v", f"{uv_cache_dir}:/home/aikonapi/.uv_cache:rw",
-            "-v", f"{uv_venv_dir}:/home/aikonapi/.venv:rw",
-        ]
-        print("*****", cmd)
     # in bundled setups, add the API to the frontend's network. otherwise, set ports
     bundled = ENV.get("BUNDLED", None)
     if bundled == "aikon":
@@ -163,6 +131,8 @@ def docker_run() -> None:
         cmd += ["--network", "aikondemo_aikondemo", "--network-alias", "api"]
     else:
         cmd += ["-p", f"{ENV['CONTAINER_HOST']}:{ENV['API_PORT']}:{ENV['API_PORT']}"]
+
+    print("*****", cmd)
     sh(cmd + [name])
     print(f"→ api container '{name}' started")
 
@@ -238,8 +208,6 @@ if __name__ == "__main__":
     elif action == "logs" and not dev:
         sh(["docker", "logs", "-f", ENV["CONTAINER_NAME"]], check=False)
     elif action == "build" and not dev:
-        if local:
-            make_docker_uv_volume_dir()
         docker_build()
         docker_run()
     elif action == "up":
