@@ -54,7 +54,7 @@ RUN apt-get update || true && \
     apt-transport-https \
     gnupg \
     dnsutils \
-    iputils-ping 
+    iputils-ping \
     unzip \
     zip \
     supervisor \
