@@ -10,10 +10,6 @@ ENV http_proxy=${HTTP_PROXY}
 ENV https_proxy=${HTTPS_PROXY}
 ENV no_proxy=${NO_PROXY}
 
-# see pyproject.toml: used to select torch index URL to be compatible with CUDA 12.6 image
-# will by accessible to all `RUN uv` commands
-ENV DOCKER=True
-
 ENV USER=aikonapi
 ARG USERID
 
@@ -39,6 +35,15 @@ SHELL ["/bin/bash", "-c"]
 ENV TZ=Europe/Paris
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
+## Set nvidia
+ENV CUDA_HOME=/usr/local/cuda
+ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64:${LD_LIBRARY_PATH}
+ENV PATH=/usr/local/cuda/bin:${PATH}
+ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
+
+## Set matplotlib tmp dir
+ENV MPLCONFIGDIR=/home/${USER}/.config/matplotlib
+
 RUN apt-get update && apt-get install -y \
     unzip \
     wget \
@@ -59,32 +64,29 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 WORKDIR /home/${USER}
 
-## Set nvidia
-ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
+## Create and set permissions for local uv folders
+RUN mkdir -p ${UV_CACHE_DIR} ${UV_VENV_DIR} && \
+    chown -R ${USER}:${USER} ${UV_CACHE_DIR} ${UV_VENV_DIR}
 
 ## Copy lockfiles and install deps
 # (Before copying the rest so that this part is not rerun unless the lock changes)
 COPY --chown=${USER} ./pyproject.toml ./uv.lock ./
-RUN uv python install 3.11 
-# overwrite the lockfile which could have been generated in a non-docker setting (=> with different torch deps)
-RUN  uv lock --upgrade
-RUN uv sync --locked --group=prod
-
-# Copy the entire project code
-COPY --chown=${USER} ./ ./api/
+# RUN uv python install 3.11 
+# RUN uv sync --locked --group=prod
 
 # Copy additional configurations
 COPY --chown=${USER} ./.env ./api/.env
 COPY docker/nginx.conf /etc/nginx/conf.d/${USER}.conf
 COPY docker/supervisord.conf ./supervisord.conf
 
-# Expose the application port
-EXPOSE ${API_PORT}
-
-# Set matplotlib tmp dir
-ENV MPLCONFIGDIR=/home/${USER}/.config/matplotlib
-
 COPY docker/start.sh /home/${USER}/start.sh
 RUN chmod +x /home/${USER}/start.sh
+
+# Copy the api code (having this as close to the bottom of the 
+# file as possible may speed up successive docker builds)
+COPY --chown=${USER} ./ ./api/
+
+# Expose the application port
+EXPOSE ${API_PORT}
 
 CMD ["/home/aikonapi/start.sh"]

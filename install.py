@@ -32,7 +32,10 @@ API_APPS = (
     "search",
 )
 PROMPTED = {
-    "local": (),
+    "local": (        
+        "DEVICE_NB",
+        "CUDA_HOME",
+    ),
     "dev": ("INSTALLED_APPS",),
     "prod": (
         "INSTALLED_APPS",
@@ -114,6 +117,7 @@ def resolve(mode: str, root_env: Path, bundled: Literal["aikon", "aikon-demo", N
     v["TARGET"] = mode  # legacy alias, in case the api code still reads TARGET
     docker = mode != "dev"
     v["DOCKER"] = str(docker)
+    
     # in a bundled install the root .env is the source of truth: the api data folder
     # derives from its DATA_DIR (standalone customizations are overwritten)
     # data folder is named DATA_DIR in AIKON, MEDIA_ROOT in AIKON0-demo
@@ -122,10 +126,22 @@ def resolve(mode: str, root_env: Path, bundled: Literal["aikon", "aikon-demo", N
     elif bundled == "aikon-demo":
         data_folder = Path(root.get("MEDIA_ROOT")) / "api"
     else:
-        data_folder = v["DATA_FOLDER"] if v.get("DATA_FOLDER") else API / "data"
-    data_folder = str(data_folder) 
-    v["DATA_FOLDER"] = data_folder  # host path mounted at /data
-    v["API_DATA_FOLDER"] = "/data/" if docker else data_folder  # path read by base.py
+        data_folder = Path(
+            v["DATA_FOLDER"] if v.get("DATA_FOLDER") else API / "data"
+        )
+    v["DATA_FOLDER"] = str(data_folder)  # host path mounted at /data
+    v["API_DATA_FOLDER"] = "/data/" if docker else str(data_folder)  # path read by base.py
+    
+    # if mode==local, add an env variable for the uv volumes.
+    # we cache the venv and the cache for faster builds.
+    # see `make_docker_uv_volume_dir` in run.py
+    if mode == "local":
+        print(data_folder, type(data_folder))
+        api_uv_volume = data_folder / "uv"
+        v["API_UV_VOLUME"] = str(api_uv_volume)
+        v["API_UV_VENV_VOLUME"] = str(api_uv_volume / ".venv")
+        v["API_UV_CACHE_VOLUME"] = str(api_uv_volume / ".uv_cache")
+
     v["YOLO_CONFIG_DIR"] = v["YOLO_CONFIG_DIR"] or str(
         Path(v["API_DATA_FOLDER"]) / "yolotmp"
     )
@@ -207,7 +223,7 @@ if __name__ == "__main__":
     bundled = args.bundled
 
     # install
-    v = resolve(mode, root_env=args.root_env, bundled=bundled, use_defaults=args.defaults or mode == "local")
+    v = resolve(mode, root_env=args.root_env, bundled=bundled, use_defaults=args.defaults)# or mode == "local")
 
     if mode == "dev":
         setup_dev(v)

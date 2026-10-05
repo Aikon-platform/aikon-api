@@ -15,12 +15,19 @@ color_echo() {
     esac
 }
 
-mkdir -p "$ROOT_DIR"/var/dramatiq/ "$ROOT_DIR"/.config/matplotlib
-chown -R "$USER" "$ROOT_DIR"/.config/matplotlib
+# install dependencies (must be done in start.sh 
+# so that deps are copied in volume)
+export UV_CACHE_DIR=/home/aikonapi/.uv_cache
+export UV_PROJECT_ENVIRONMENT=/home/aikonapi/.venv
+uv python install 3.11
+uv sync --locked --group=prod
 
 source /home/aikonapi/.venv/bin/activate
 
 is_build=0
+
+mkdir -p "$ROOT_DIR"/var/dramatiq/ "$ROOT_DIR"/.config/matplotlib
+chown -R "$USER" "$ROOT_DIR"/.config/matplotlib
 
 if [[ "$INSTALLED_APPS" == *"vectorization"* ]]; then
     color_echo blue "Building operators for vectorization module..."

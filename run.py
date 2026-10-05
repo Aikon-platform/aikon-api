@@ -53,8 +53,8 @@ def read_env() -> dict:
     )
 
 
-def sh(cmd: list, check: bool = True) -> int:
-    return subprocess.run(cmd, cwd=API, check=check).returncode
+def sh(cmd: list, check: bool = True, **kwargs) -> int:
+    return subprocess.run(cmd, cwd=API, check=check, **kwargs).returncode
 
 
 def kill_stale(*patterns: str) -> None:
@@ -66,12 +66,43 @@ def kill_stale(*patterns: str) -> None:
     time.sleep(1)
 
 
+# NOTE: os.getuid and os.getgid are linux/mac only commands 
+def get_uid():
+    return os.getuid() if hasattr(os, "getuid") else 1000
+
+
+def get_gid():
+    return os.getgid() if hasattr(os, "getgid") else 1000
+
+def make_docker_uv_volume_dir() -> None:
+    """
+    in local builds, create volume folders on the host for uv and set permissions for it
+    """
+    mode = ENV["MODE"]
+    if mode == "local":
+        if not all([
+            ENV["API_UV_VOLUME"], 
+            ENV["API_UV_CACHE_VOLUME"], 
+            ENV["API_UV_VENV_VOLUME"]
+        ]):
+            raise sys.exit(".env variables 'API_UV_VOLUME', 'API_UV_CACHE_VOLUME', 'API_UV_VENV_VOLUME'  are undefined but expected with MODE=local")
+        uv_dir = Path(ENV["API_UV_VOLUME"])
+        uv_cache_dir = Path(ENV["API_UV_VENV_VOLUME"])
+        uv_venv_dir = Path(ENV["API_UV_CACHE_VOLUME"])
+        userid = get_uid()
+        gid = get_gid()
+        for p in [uv_dir, uv_cache_dir, uv_venv_dir]:
+            p.mkdir(parents=True, exist_ok=True)
+            os.chown(p, userid, gid)
+    return        
+
+
 def docker_build() -> None:
     shutil.which("docker") or sys.exit(
         "docker is required (https://docs.docker.com/engine/install/)"
     )
 
-    userid = os.getuid() if hasattr(os, "getuid") else 1000
+    userid = get_uid()
     args = [
         f"--build-arg={key}={val}"
         for key, val in {
@@ -84,7 +115,8 @@ def docker_build() -> None:
     ]
     sh(
         ["docker", "build", "-t", ENV["CONTAINER_NAME"], "-f", "docker/Dockerfile", "."]
-        + args
+        + args,
+        env={**os.environ, "DOCKER_BUILDKIT": "1"}
     )
 
 
@@ -104,6 +136,7 @@ def docker_run() -> None:
         "-v",
         f"{ENV['DATA_FOLDER']}:/data",
     ]
+    # define GPU usage
     if ENV.get("DEVICE_NB"):
         cmd += [
             "--gpus",
@@ -112,6 +145,15 @@ def docker_run() -> None:
             "-v",
             f"{ENV['CUDA_HOME']}:/cuda",
         ]
+    # in local dockerized builds, create local uv volumes
+    if ENV.get("MODE") == "local":
+        uv_cache_dir = Path(ENV["API_UV_CACHE_VOLUME"])
+        uv_venv_dir = Path(ENV["API_UV_VENV_VOLUME"])
+        cmd += [
+            "-v", f"{uv_cache_dir}:/home/aikonapi/.uv_cache:rw",
+            "-v", f"{uv_venv_dir}:/home/aikonapi/.venv:rw",
+        ]
+        print("*****", cmd)
     # in bundled setups, add the API to the frontend's network. otherwise, set ports
     bundled = ENV.get("BUNDLED", None)
     if bundled == "aikon":
@@ -185,6 +227,7 @@ if __name__ == "__main__":
 
     ENV = read_env()
     dev = ENV.get("MODE") == "dev"
+    local = ENV.get("MODE") == "local"
 
     if action == "down":
         if dev:
@@ -194,6 +237,8 @@ if __name__ == "__main__":
     elif action == "logs" and not dev:
         sh(["docker", "logs", "-f", ENV["CONTAINER_NAME"]], check=False)
     elif action == "build" and not dev:
+        if local:
+            make_docker_uv_volume_dir()
         docker_build()
         docker_run()
     elif action == "up":
