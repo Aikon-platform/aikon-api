@@ -5,6 +5,7 @@ The main routes that handle the API requests regarding starting and monitoring t
 import functools
 import json
 import uuid
+from pathlib import Path
 
 import orjson
 from flask import request, send_from_directory, jsonify, Request, Response
@@ -322,25 +323,34 @@ def models(model_path, default_model_info=None):
         return jsonify("No models.")
 
 
-def delete(doc_id, to_delete=False):
-    doc_dir = None
-    for folder in DOCUMENTS_PATH.iterdir():
-        if (folder / doc_id).exists():
-            doc_dir = folder / doc_id
-            break
+def find_document(doc_id: str) -> Path | None:
+    return next((d / doc_id for d in DOCUMENTS_PATH.iterdir() if (d / doc_id).exists()), None)
+
+
+def document_datasets(doc_id: str) -> list[str]:
+    """Uid of every dataset containing the document"""
+    return [
+        dataset.name
+        for dataset in DATASETS_PATH.iterdir()
+        if (info := dataset / "info.json").exists()
+        and any(doc["uid"] == doc_id for doc in orjson.loads(info.read_bytes())["documents"])
+    ]
+
+
+def delete(doc_id, to_delete=False) -> tuple[Path | None, list[str]]:
+    doc_dir = next((f / doc_id for f in DOCUMENTS_PATH.iterdir() if (f / doc_id).exists()), None)
 
     if not doc_dir:
-        return None, None
+        return None, []
 
     if to_delete:
         if delete_path(doc_dir):
-            return doc_dir, None
-        return None, None
+            return doc_dir, []
+        return None, []
 
-    for dataset in DATASETS_PATH.iterdir():
-        if (dataset / "info.json").exists():
-            with open(dataset / "info.json", "rb") as f:
-                for doc in orjson.loads(f.read())["documents"]:
-                    if doc["uid"] == doc_id:
-                        return doc_dir, dataset.name
-    return doc_dir, None
+    return doc_dir, [
+        dataset.name
+        for dataset in DATASETS_PATH.iterdir()
+        if (info := dataset / "info.json").exists() and any(doc["uid"] == doc_id
+        for doc in orjson.loads(info.read_bytes())["documents"])
+    ]

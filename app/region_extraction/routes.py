@@ -162,19 +162,16 @@ def clear_images():
 
 @blueprint.route("<doc_id>/delete", methods=["POST"])
 def delete(doc_id: str):
-    model_name = request.args.get("model_name")
-
-    doc_dir, _ = shared_routes.delete(doc_id, to_delete=bool(model_name))
-    if not doc_dir:
+    if not (doc_dir := shared_routes.find_document(doc_id)):
         return {
-            "error": f"Document {doc_id} not found",
+            "error": f"Document {doc_id} not found"
         }
 
-    if not model_name:
-        return {"cleared_document": 1}
+    if model_name := request.args.get("model_name"):
+        return {
+            "cleared_annotations": clear_dir(doc_dir / "annotations", f"{model_name}*.json", delete_anyway=True)
+        }
 
     return {
-        "cleared_annotations": clear_dir(
-            doc_dir / "annotations", f"{model_name}*.json", delete_anyway=True
-        ),
+        "cleared_document": int(delete_path(doc_dir))
     }

@@ -187,45 +187,34 @@ def clear_doc(doc_id: str):
 
 @blueprint.route("<doc_id>/delete", methods=["POST"])
 def delete(doc_id: str):
-    algorithm = request.args.get("algorithm")
+    algo = request.args.get("algorithm") or "*"
     feat_net = request.args.get("feat_net")
 
-    doc_dir, dataset_id = shared_routes.delete(doc_id)
-    if not doc_dir:
-        return {
-            "error": f"Document {doc_id} not found",
-        }
+    if not (doc_dir := shared_routes.find_document(doc_id)):
+        return {"error": f"Document {doc_id} not found"}
+    dataset_ids = shared_routes.document_datasets(doc_id)
 
-    res_to_clear = (
-        f"*/{algorithm}*{doc_id}*.json" if algorithm else f"*/*{doc_id}*.json"
+    # result files are named "{algorithm}-{doc_id1}-{doc_id2}.json": match doc_id exactly
+    cleared_results = sum(
+        clear_dir(SIM_RESULTS_PATH, pattern, delete_anyway=True)
+        for pattern in (
+            f"*/{algo}-{doc_id}-*.json",
+            f"*/{algo}-*-{doc_id}.json",
+            *(f"*/{d}-scores.json" for d in dataset_ids),
+        )
     )
-    cleared_results = clear_dir(SIM_RESULTS_PATH, res_to_clear, delete_anyway=True)
-    # delete empty directory of results
-    cleared_res_dir = delete_empty_dirs(SIM_RESULTS_PATH)
-
+    cleared_feats = sum(
+        clear_dir(DATASETS_PATH / d / "features", f"{d}*{feat_net}.pt" if feat_net else "*", delete_anyway=True)
+        for d in dataset_ids
+    )
     cleared_imgs = clear_dir(doc_dir / "images", delete_anyway=True)
     delete_path(doc_dir / "images.json")
     delete_path(doc_dir / "metadata.json")
 
-    if not dataset_id:
-        return {
-            "cleared_images": cleared_imgs,
-            "cleared_results": cleared_results,
-            "cleared_result_directories": cleared_res_dir,
-        }
-
-    cleared_results += clear_dir(
-        SIM_RESULTS_PATH, f"*/{dataset_id}-scores.json", delete_anyway=True
-    )
-    feat_to_clear = f"{dataset_id}*{feat_net}.pt" if feat_net else "*"
-    cleared_feats = clear_dir(
-        DATASETS_PATH / dataset_id / "features", feat_to_clear, delete_anyway=True
-    )
-
     return {
         "cleared_images": cleared_imgs,
         "cleared_results": cleared_results,
-        "cleared_result_directories": cleared_res_dir,
+        "cleared_result_directories": delete_empty_dirs(SIM_RESULTS_PATH),
         "cleared_features": cleared_feats,
     }
 
