@@ -69,12 +69,6 @@ RUN apt-get update || true && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# install python
-RUN apt-get install -y software-properties-common && \
-    add-apt-repository -y ppa:deadsnakes/ppa && \
-    apt-get update && \
-    apt install -y python3.10
-
 # install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
