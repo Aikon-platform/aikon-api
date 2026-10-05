@@ -102,6 +102,8 @@ COPY --chown=${USER} ./pyproject.toml ./uv.lock ./
 
 # copy dependencies from build stage
 COPY --chown=${USER} --from=uvdeps /root/.venv ${PYTHON_VENV}
+RUN echo "1 *****" && echo "${PYTHON_VENV}"
+RUN echo "2 *****" && ls -l ${PYTHON_VENV}
 
 # Copy additional configurations
 COPY --chown=${USER} ./.env ./api/.env

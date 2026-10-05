@@ -114,7 +114,8 @@ def docker_build() -> None:
         }.items()
     ]
     sh(
-        ["docker", "build", "-t", ENV["CONTAINER_NAME"], "-f", "docker/Dockerfile", "."]
+        ["docker", "build", "-t", ENV["CONTAINER_NAME"], "-f", "docker/Dockerfile", ".", 
+            "--progress=plain", "--no-cache"]
         + args,
         env={**os.environ, "DOCKER_BUILDKIT": "1"}
     )
