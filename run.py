@@ -131,8 +131,6 @@ def docker_run() -> None:
         cmd += ["--network", "aikondemo_aikondemo", "--network-alias", "api"]
     else:
         cmd += ["-p", f"{ENV['CONTAINER_HOST']}:{ENV['API_PORT']}:{ENV['API_PORT']}"]
-
-    print("*****", cmd)
     sh(cmd + [name])
     print(f"→ api container '{name}' started")
 
