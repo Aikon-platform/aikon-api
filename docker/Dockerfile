@@ -1,7 +1,7 @@
 # NOTE : to use a GPU in docker, the nvidia container toolkit is needed on the host.
 # see: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html 
 # see this if you have torch issues https://github.com/Aikon-platform/aikon-api/wiki/Torch-and-CUDA-Troubleshooting
-FROM nvidia/cuda:12.6.2-cudnn-runtime-ubuntu22.04 AS aikonapi
+FROM nvidia/cuda:12.6.2-cudnn-devel-ubuntu22.04 AS aikonapi
 
 ARG HTTP_PROXY
 ARG HTTPS_PROXY

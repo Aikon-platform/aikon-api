@@ -15,26 +15,9 @@ color_echo() {
 ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 VENV_DIR=/home/aikonapi/.venv
 PYTHON_CMD="$VENV_DIR"/bin/python
+
 source "$ROOT_DIR"/api/.env
-
-## install dependencies (must be done in start.sh 
-## so that deps are copied in volume)
-#export UV_CACHE_DIR=/home/aikonapi/.uv_cache
-#export UV_PROJECT_ENVIRONMENT=/home/aikonapi/.venv
-#uv python install 3.11
-#uv sync --locked --group=prod
-
-echo "000000000000000000000000000000"
-echo "$ROOT_DIR"
-ls "$ROOT_DIR"
-
-echo "111111111111111111111111111111"
-ls -l /home/aikonapi/*
-
-echo "222222222222222222222222222222"
-ls -l /home/aikonapi/.venv/*
-
-source /home/aikonapi/.venv/bin/activate
+source "$VENV_DIR"/bin/activate
 
 is_build=0
 
