@@ -21,7 +21,6 @@ dependencies = [
     "numpy>=1.26.4", 
     "opencv-python>=4.11.0.86",
     "orjson>=3.11.7",
-    # "packaging>=26.0",
     "packaging",
     "pandas>=2.3.3",
     "panopticapi",
@@ -51,39 +50,9 @@ dependencies = [
     "yapf==0.3.1",
 ]
 
-# [tool.uv.sources]
-# panopticapi = { git = "https://github.com/cocodataset/panopticapi.git" }
-# # if the app is dockerized, install torch-related libraries 
-# # from `pytorch-dockerized` index, otherwise use the `pytorch-host` index.
-# torch = [
-#     { index = "pytorch-dockerized", marker = "env.DOCKER == 'True'" },
-#     { index = "pytorch-host", marker = "env.DOCKER == 'False'" },
-# ]
-# torchvision = [
-#     { index = "pytorch-dockerized", marker = "env.DOCKER == 'True'" },
-#     { index = "pytorch-host", marker = "env.DOCKER == 'False'" },
-# ]
-# torchaudio = [
-#     { index = "pytorch-dockerized", marker = "env.DOCKER == 'True'" },
-#     { index = "pytorch-host", marker = "env.DOCKER == 'False'" },
-# ]
-# 
-# # dockerized torch is installed with CUDA 12.6 builds, corresponding to the 
-# # CUDA image used to build the docker (see `docker/Dockerfile`)
-# # => dockerized AIKON-api is completely independent from the host's CUDA
-# [[tool.uv.index]]
-# name = "pytorch-dockerized"
-# url = "https://download.pytorch.org/whl/cu126"
-# priority = "explicit"
-# 
-# # non-dockerized torch will whatever CUDA the host has, if any. CUDA issues may arise
-# [[tool.uv.index]]
-# name = "pytorch-host"
-# url = "https://download.pytorch.org/whl"
-# priority = "explicit"
-
 [tool.uv.sources]
 panopticapi = { git = "https://github.com/cocodataset/panopticapi.git" }
+# torch will be installed with CUDA 12.6
 torch = { index = "pytorch-cu126" }
 torchaudio = { index = "pytorch-cu126" }
 torchvision = { index = "pytorch-cu126" }
