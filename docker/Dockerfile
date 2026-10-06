@@ -97,7 +97,11 @@ RUN \
     find ${PYTHON_DIR} -type d -print0 | xargs -0 -P ${N_PROCESS} chmod u+rwx & \
     find ${PYTHON_DIR}/bin -type f -print0 | xargs -0 -P ${N_PROCESS} chmod u+x & \
     # update symlink so that the python in .venv properly links to the one in PYTHON_DIR
-    find ${PYTHON_VENV}/bin -type l -exec sh -c "target=\$(readlink '{}'); newtarget=\$(echo \"\$target\" | sed \"s|/root/.local/share/uv/python|${PYTHON_DIR}|g\"); ln -sf \"\$newtarget\" '{}'" \; & \
+    find ${PYTHON_VENV}/bin -type l | while read link; do \
+      target=$(readlink "$link"); \
+      new_target="${PYTHON_DIR}${target#/root/.local/share/uv/python}"; \
+      ln -sf "$new_target" "$link"; \
+    done & \
     wait
 
 # Copy additional configurations
