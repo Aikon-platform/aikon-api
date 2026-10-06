@@ -17,6 +17,7 @@ import shutil
 from pathlib import Path
 from typing import Literal
 
+
 API = Path(__file__).resolve().parent
 TEMPLATE = API / ".env.template"
 ENV_FILE = API / ".env"
@@ -75,6 +76,18 @@ def parse_env(path: Path) -> dict:
 
 def sh(cmd: list, cwd: Path = None) -> None:
     subprocess.run(cmd, cwd=cwd, check=True)
+
+
+def check_deps(v: dict):
+    if v.get("MODE") in ("local", "prod"):
+        shutil.which("docker") or sys.exit(
+            "docker is required (https://docs.docker.com/engine/install/)"
+        )
+        if v.get("DEVICE_NB"):
+            shutil.which("nvidia-ctk") or sys.exit(
+                "to run the app in Docker with a GPU, nvidia-container-toolkit is required (https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)"
+            )
+    return
 
 
 def render(template: Path, out: Path, mapping: dict) -> None:
@@ -212,16 +225,10 @@ if __name__ == "__main__":
     bundled = args.bundled
 
     # install
-    v = resolve(mode, root_env=args.root_env, bundled=bundled, use_defaults=args.defaults)# or mode == "local")
-
+    v = resolve(mode, root_env=args.root_env, bundled=bundled, use_defaults=args.defaults)
     if mode == "dev":
         setup_dev(v)
     else:
-        # docker setup is done directly in run.py
-        import shutil
-
-        shutil.which("docker") or sys.exit(
-            "docker is required (https://docs.docker.com/engine/install/)"
-        )
+        check_deps(v)
         render_confs(v)
         sh([sys.executable, str(API / "run.py"), "build"], cwd=API)
