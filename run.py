@@ -125,13 +125,17 @@ def docker_run() -> None:
         ]
     # in bundled setups, add the API to the frontend's network. otherwise, set ports
     bundled = ENV.get("BUNDLED", None)
-    if bundled == "aikon":
-        cmd += ["--network", "aikon_aikon", "--network-alias", "api"]
-    elif bundled == "aikon-demo":
-        cmd += ["--network", "aikondemo_aikondemo", "--network-alias", "api"]
+    if bundled:
+        network_name = {
+            "aikon": "aikon_aikon",
+            "aikon-demo": "aikondemo_aikondemo"
+        }
+        cmd += ["--network", network_name[bundled], "--network-alias", "api", 
+            "-p", f"{ENV['API_PORT']}:{ENV['API_PORT']}"]
     else:
         cmd += ["-p", f"{ENV['CONTAINER_HOST']}:{ENV['API_PORT']}:{ENV['API_PORT']}"]
     sh(cmd + [name])
+    print(">>>", cmd)
     print(f"→ api container '{name}' started")
 
 
