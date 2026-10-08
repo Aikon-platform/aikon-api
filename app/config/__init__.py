@@ -12,7 +12,7 @@ from .base import ENV
 
 TARGET = ENV("TARGET", default="").strip()
 
-if TARGET == "dev" or TARGET == "local":
+if TARGET in ("dev", "local"):
     from .dev import *
 elif TARGET == "prod":
     from .prod import *

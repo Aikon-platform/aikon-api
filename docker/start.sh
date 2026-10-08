@@ -3,9 +3,6 @@
 
 set -e
 
-ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-source "$ROOT_DIR"/api/.env
-
 color_echo() {
     case "$1" in
         green)  echo -e "\033[1;92m$2\033[0m";;
@@ -15,17 +12,22 @@ color_echo() {
     esac
 }
 
-mkdir -p "$ROOT_DIR"/var/dramatiq/ "$ROOT_DIR"/.config/matplotlib
-chown -R "$USER" "$ROOT_DIR"/.config/matplotlib
+ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+VENV_DIR=/home/aikonapi/.venv
+PYTHON_CMD="$VENV_DIR"/bin/python
 
-source /home/aikonapi/.venv/bin/activate
+source "$ROOT_DIR"/api/.env
+source "$VENV_DIR"/bin/activate
 
 is_build=0
+
+mkdir -p "$ROOT_DIR"/var/dramatiq/ "$ROOT_DIR"/.config/matplotlib
+chown -R "$USER" "$ROOT_DIR"/.config/matplotlib
 
 if [[ "$INSTALLED_APPS" == *"vectorization"* ]]; then
     color_echo blue "Building operators for vectorization module..."
     cd "$ROOT_DIR"/api/app/vectorization/lib/
-    python src/models/dino/ops/setup.py build install || {
+    "$PYTHON_CMD" src/models/dino/ops/setup.py build install || {
         color_echo red "Failed to build vectorization operators"
     }
     # python src/models/dino/ops/test.py
@@ -37,7 +39,7 @@ fi
 if [[ "$INSTALLED_APPS" == *"region_extraction"* ]] && [[ $is_build -eq 0 ]]; then
     color_echo blue "Building operators for region extraction module..."
     cd "$ROOT_DIR"/api/app/region_extraction/lib/line_predictor/dino/ops/
-    python setup.py build install || {
+    "$PYTHON_CMD" setup.py build install || {
         color_echo red "Failed to build region extraction operators"
     }
     # DTLR code should work without the need to build, and use line_predictor's build

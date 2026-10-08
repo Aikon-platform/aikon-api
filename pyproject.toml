@@ -1,7 +1,7 @@
 [project]
 name = "api"
 version = "0.1.0"
-description = "Add your description here"
+description = "AIKON-api"
 readme = "README.md"
 requires-python = ">=3.11,<3.12"
 dependencies = [
@@ -18,10 +18,10 @@ dependencies = [
     "iiif-download>=0.1.10",
     "kornia==0.7.*",
     "matplotlib>=3.10.8",
-    "numpy>=1.26.4",
+    "numpy>=1.26.4", 
     "opencv-python>=4.11.0.86",
     "orjson>=3.11.7",
-    "packaging>=26.0",
+    "packaging",
     "pandas>=2.3.3",
     "panopticapi",
     "pillow>=10.0.0",
@@ -52,6 +52,17 @@ dependencies = [
 
 [tool.uv.sources]
 panopticapi = { git = "https://github.com/cocodataset/panopticapi.git" }
+# torch will be installed with CUDA 12.6
+torch = { index = "pytorch-cu126" }
+torchaudio = { index = "pytorch-cu126" }
+torchvision = { index = "pytorch-cu126" }
+
+# see this if you have torch issues:
+# https://github.com/Aikon-platform/aikon-api/wiki/Torch-and-CUDA-Troubleshooting
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
+explicit = true
 
 [dependency-groups]
 dev = [

@@ -53,8 +53,8 @@ def read_env() -> dict:
     )
 
 
-def sh(cmd: list, check: bool = True) -> int:
-    return subprocess.run(cmd, cwd=API, check=check).returncode
+def sh(cmd: list, check: bool = True, **kwargs) -> int:
+    return subprocess.run(cmd, cwd=API, check=check, **kwargs).returncode
 
 
 def kill_stale(*patterns: str) -> None:
@@ -64,6 +64,38 @@ def kill_stale(*patterns: str) -> None:
         if not subprocess.run(["pkill", "-f", p], capture_output=True).returncode:
             print(f"killed stale '{p}'")
     time.sleep(1)
+
+
+# NOTE: os.getuid and os.getgid are linux/mac only commands 
+def get_uid():
+    return os.getuid() if hasattr(os, "getuid") else 1000
+
+
+def get_gid():
+    return os.getgid() if hasattr(os, "getgid") else 1000
+
+
+def docker_build() -> None:
+    shutil.which("docker") or sys.exit(
+        "docker is required (https://docs.docker.com/engine/install/)"
+    )
+
+    userid = get_uid()
+    args = [
+        f"--build-arg={key}={val}"
+        for key, val in {
+            "USERID": userid,
+            "API_PORT": ENV["API_PORT"],
+            "HTTP_PROXY": ENV.get("HTTP_PROXY", ""),
+            "HTTPS_PROXY": ENV.get("HTTPS_PROXY", ""),
+            "HUGGING_FACE_HUB_TOKEN": ENV.get("HUGGING_FACE_HUB_TOKEN", ""),
+        }.items()
+    ]
+    sh(
+        ["docker", "build", "-t", ENV["CONTAINER_NAME"], "-f", "docker/Dockerfile", "."]
+        + args,
+        env={**os.environ, "DOCKER_BUILDKIT": "1"}
+    )
 
 
 def docker_run() -> None:
@@ -82,6 +114,7 @@ def docker_run() -> None:
         "-v",
         f"{ENV['DATA_FOLDER']}:/data",
     ]
+    # define GPU usage
     if ENV.get("DEVICE_NB"):
         cmd += [
             "--gpus",
@@ -90,30 +123,20 @@ def docker_run() -> None:
             "-v",
             f"{ENV['CUDA_HOME']}:/cuda",
         ]
-    if ENV.get("BUNDLED") == "True":
-        cmd += ["--network", "aikon_aikon", "--network-alias", "api"]
+    # in bundled setups, add the API to the frontend's network. otherwise, set ports
+    bundled = ENV.get("BUNDLED", None)
+    if bundled:
+        network_name = {
+            "aikon": "aikon_aikon",
+            "aikon-demo": "aikondemo_aikondemo"
+        }
+        cmd += ["--network", network_name[bundled], "--network-alias", "api", 
+            "-p", f"{ENV['API_PORT']}:{ENV['API_PORT']}"]
     else:
         cmd += ["-p", f"{ENV['CONTAINER_HOST']}:{ENV['API_PORT']}:{ENV['API_PORT']}"]
     sh(cmd + [name])
+    print(">>>", cmd)
     print(f"→ api container '{name}' started")
-
-
-def docker_build() -> None:
-    userid = os.getuid() if hasattr(os, "getuid") else 1000
-    args = [
-        f"--build-arg={k}={v}"
-        for k, v in {
-            "USERID": userid,
-            "API_PORT": ENV["API_PORT"],
-            "HTTP_PROXY": ENV.get("HTTP_PROXY", ""),
-            "HTTPS_PROXY": ENV.get("HTTPS_PROXY", ""),
-            "HUGGING_FACE_HUB_TOKEN": ENV.get("HUGGING_FACE_HUB_TOKEN", ""),
-        }.items()
-    ]
-    sh(
-        ["docker", "build", "-t", ENV["CONTAINER_NAME"], "-f", "docker/Dockerfile", "."]
-        + args
-    )
 
 
 def spawn(name: str, cmd: list, cwd: Path) -> subprocess.Popen:
@@ -174,8 +197,10 @@ def run_dev() -> None:
 
 if __name__ == "__main__":
     action = sys.argv[1] if len(sys.argv) > 1 else "up"
+
     ENV = read_env()
     dev = ENV.get("MODE") == "dev"
+    local = ENV.get("MODE") == "local"
 
     if action == "down":
         if dev:
