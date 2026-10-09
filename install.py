@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 AIKON API installer — works standalone (no front files needed) or delegated
-from the root install.py (which passes --root-env and --bundled to share its 
+from the root install.py (which passes --root-env and --bundled to share its
 configuration).
 
     python install.py [--mode local|dev|prod] [--root-env PATH] [--bundled aikon|aikon-demo] [--defaults]
@@ -33,7 +33,7 @@ API_APPS = (
     "search",
 )
 PROMPTED = {
-    "local": (        
+    "local": (
         "DEVICE_NB",
         "CUDA_HOME",
     ),
@@ -112,7 +112,7 @@ def resolve(mode: str, root_env: Path, bundled: Literal["aikon", "aikon-demo", N
         # optionnally prompt for user input
         if (
             # key should be prompted
-            key in PROMPTED[mode] 
+            key in PROMPTED[mode]
             # defaults should not be used
             and not use_defaults
             and (
@@ -130,7 +130,7 @@ def resolve(mode: str, root_env: Path, bundled: Literal["aikon", "aikon-demo", N
     v["TARGET"] = mode  # legacy alias, in case the api code still reads TARGET
     docker = mode != "dev"
     v["DOCKER"] = str(docker)
-    
+
     # in a bundled install the root .env is the source of truth: the api data folder
     # derives from its DATA_DIR (standalone customizations are overwritten)
     # data folder is named DATA_DIR in AIKON, MEDIA_ROOT in AIKON0-demo
@@ -147,9 +147,9 @@ def resolve(mode: str, root_env: Path, bundled: Literal["aikon", "aikon-demo", N
     v["YOLO_CONFIG_DIR"] = v["YOLO_CONFIG_DIR"] or str(
         Path(v["API_DATA_FOLDER"]) / "yolotmp"
     )
-    # redis is only dockerized in AIKON-API if the api is 
-    # bundled with a Dockerized AIKON instance: in that case, it 
-    # uses AIKON-front's Redis. 
+    # redis is only dockerized in AIKON-API if the api is
+    # bundled with a Dockerized AIKON instance: in that case, it
+    # uses AIKON-front's Redis.
     # v["REDIS_HOST"] = (
     #     "redis" if docker and root
     #     else "localhost"
@@ -158,9 +158,12 @@ def resolve(mode: str, root_env: Path, bundled: Literal["aikon", "aikon-demo", N
         v["REDIS_PORT"] = "6379"
     if root:
         v["PROD_URL"] = root.get("PROD_API_URL", "").split("://")[-1] or v["PROD_URL"]
-    
+
     # used to programmatically connect the API to an AIKON frontend
     v["BUNDLED"] = bundled
+    # used only if mode=local. see app/config/dev
+    print(v)
+    v["API_URL_FROM_DOCKER"] = f"http://api:{v['API_PORT']}"
 
     invalid = [a for a in v["INSTALLED_APPS"].split(",") if a and a not in API_APPS]
     if invalid:
@@ -207,11 +210,11 @@ if __name__ == "__main__":
         help="root .env when installed as part of the full aikon bundle",
     )
     parser.add_argument(
-        "--bundled", 
+        "--bundled",
         choices=["aikon", "aikon-demo"],
         required=False,
         default=False,
-        help="frontend app (AIKON or AIKON-demo) AIKON-API is bundled with" 
+        help="frontend app (AIKON or AIKON-demo) AIKON-API is bundled with"
     )
     parser.add_argument("--defaults", action="store_true")
     args = parser.parse_args()
