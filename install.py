@@ -133,11 +133,8 @@ def resolve(mode: str, root_env: Path, bundled: Literal["aikon", "aikon-demo", N
 
     # in a bundled install the root .env is the source of truth: the api data folder
     # derives from its DATA_DIR (standalone customizations are overwritten)
-    # data folder is named DATA_DIR in AIKON, MEDIA_ROOT in AIKON0-demo
-    if bundled == "aikon":
+    if bundled:
         data_folder = Path(root.get("DATA_DIR")) / "api"
-    elif bundled == "aikon-demo":
-        data_folder = Path(root.get("MEDIA_ROOT")) / "api"
     else:
         data_folder = Path(
             v["DATA_FOLDER"] if v.get("DATA_FOLDER") else API / "data"
