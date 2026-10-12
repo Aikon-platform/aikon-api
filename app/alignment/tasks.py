@@ -1,9 +1,9 @@
 import dramatiq
 from typing import Optional
 
-from .const import ALIGN_QUEUE, DEMO_NAME, DEFAULT_METHOD
+from .alignment import ComputeAlignment, DEFAULT_TRANSFORM
+from .const import ALIGN_QUEUE, DEFAULT_METHOD
 from ..config import TIME_LIMIT
-from ..shared.dataset.document import get_file_url
 from ..shared.utils.logging import notifying, TLogger, LoggerHelper, console
 from ..shared.dataset import Dataset
 
@@ -45,35 +45,30 @@ def compute_alignment(
             "status": "ERROR",
         }
 
-    target_transform = parameters.get("target_transform", "homographic")
+    target_transform = parameters.get("target_transform", DEFAULT_TRANSFORM)
     if target_transform not in AVAILABLE_TRANSFORMS:
         return {
-            "error": f"Invalid target transform: {target_transform}. Available transforms: homography, affine",
+            "error": f"Invalid target transform: {target_transform}. Available transforms: {AVAILABLE_TRANSFORMS}",
             "status": "ERROR",
         }
 
-    reference_image = parameters.get("reference_image", None)
+    alignment_task = ComputeAlignment(
+        experiment_id=experiment_id,
+        dataset=dataset,
+        parameters=parameters,
+        notify_url=notify_url,
+        logger=logger,
+        notifier=notifier,
+    )
+    success = alignment_task.run_task()
 
-    # TODO: Implement alignment logic here
-    # For now, just return a placeholder
-    alignment_task = None  # Will be implemented later
-    
-    # Placeholder for actual implementation
-    # alignment_task = ComputeAlignment(
-    #     experiment_id=experiment_id,
-    #     dataset=dataset,
-    #     parameters=parameters,
-    #     notify_url=notify_url,
-    #     logger=logger,
-    #     notifier=notifier,
-    # )
-    # success = alignment_task.run_task()
+    if success:
+        return {
+            "dataset_url": dataset.get_absolute_url(),
+            "results_url": alignment_task.results_url,
+            "error": alignment_task.error_list,
+        }
 
-    # For now, return a placeholder success
     return {
-        "dataset_url": dataset.get_absolute_url(),
-        "results_url": [],
-        "method": method,
-        "status": "SUCCESS",
-        "message": "Alignment task placeholder - implementation pending",
+        "error": alignment_task.error_list,
     }
