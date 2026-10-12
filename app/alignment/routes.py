@@ -48,11 +48,11 @@ from ..shared import routes as shared_routes
 from ..shared.const import DATASETS_PATH
 from ..shared.utils.fileutils import clear_dir, delete_path, delete_empty_dirs
 from .const import (
-    ALIGN_METHODS,
     ALIGN_RESULTS_PATH,
     ALIGN_XACCEL_PREFIX,
     DEFAULT_METHOD,
 )
+from .lib.const import ALIGN_METHODS, AVAILABLE_TRANSFORMS
 
 blueprint = Blueprint("alignment", __name__, url_prefix="/alignment")
 
@@ -88,6 +88,8 @@ def start_alignment(client_id):
 
     parameters = {
         "method": param.get("method", DEFAULT_METHOD),
+        "target_transform": param.get("target_transform", "homographic"),
+        "reference_image": param.get("reference_image", None),
         "client_id": client_id,
     }
 
@@ -98,6 +100,16 @@ def start_alignment(client_id):
             {
                 "error": f"Invalid method: {method}. Available methods: {ALIGN_METHODS}",
                 "available_methods": ALIGN_METHODS,
+            }
+        )
+
+    # Validate target_transform parameter
+    target_transform = parameters["target_transform"]
+    if target_transform not in AVAILABLE_TRANSFORMS:
+        return jsonify(
+            {
+                "error": f"Invalid target_transform: {target_transform}. Available transforms: {AVAILABLE_TRANSFORMS}",
+                "available_transforms": AVAILABLE_TRANSFORMS,
             }
         )
 

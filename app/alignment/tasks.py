@@ -1,11 +1,13 @@
 import dramatiq
 from typing import Optional
 
-from .const import ALIGN_QUEUE, DEMO_NAME, ALIGN_METHODS, DEFAULT_METHOD
+from .const import ALIGN_QUEUE, DEMO_NAME, DEFAULT_METHOD
 from ..config import TIME_LIMIT
 from ..shared.dataset.document import get_file_url
 from ..shared.utils.logging import notifying, TLogger, LoggerHelper, console
 from ..shared.dataset import Dataset
+
+from .lib.const import ALIGN_METHODS, AVAILABLE_TRANSFORMS
 
 
 @dramatiq.actor(
@@ -43,6 +45,15 @@ def compute_alignment(
             "status": "ERROR",
         }
 
+    target_transform = parameters.get("target_transform", "homographic")
+    if target_transform not in AVAILABLE_TRANSFORMS:
+        return {
+            "error": f"Invalid target transform: {target_transform}. Available transforms: homography, affine",
+            "status": "ERROR",
+        }
+
+    reference_image = parameters.get("reference_image", None)
+
     # TODO: Implement alignment logic here
     # For now, just return a placeholder
     alignment_task = None  # Will be implemented later
@@ -61,7 +72,7 @@ def compute_alignment(
     # For now, return a placeholder success
     return {
         "dataset_url": dataset.get_absolute_url(),
-        "results_url": None,  # Will be updated when implementation is ready
+        "results_url": [],
         "method": method,
         "status": "SUCCESS",
         "message": "Alignment task placeholder - implementation pending",

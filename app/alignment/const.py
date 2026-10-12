@@ -13,7 +13,6 @@ ALIGN_XACCEL_PREFIX = f"{XACCEL_PREFIX}/{DEMO_NAME}"
 ALIGN_RESULTS_PATH = ALIGN_DATA_FOLDER / "results"
 
 # Available alignment methods
-ALIGN_METHODS = ["sift+ransac"]
 DEFAULT_METHOD = "sift+ransac"
 
 create_dirs_if_not([ALIGN_RESULTS_PATH])
