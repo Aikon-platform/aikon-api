@@ -1,5 +1,6 @@
 """
-Align images onto a reference image with SIFT keypoint matching and RANSAC transform estimation
+Align images onto a reference image with SIFT keypoint matching and RANSAC 
+transform estimation
 """
 
 from pathlib import Path
@@ -7,6 +8,8 @@ from collections.abc import Callable
 
 import cv2
 import numpy as np
+
+from ...shared.dataset.types import Image
 
 from .const import MAX_SIZE, RATIO_TEST, RANSAC_THRESHOLD
 from .types import AlignedImage, Keypoint
@@ -32,15 +35,18 @@ ESTIMATORS = {
 }
 
 
-def extract_features(
-    sift: cv2.SIFT, path: Path, max_size: int = MAX_SIZE
-) -> tuple[np.ndarray, np.ndarray | None, float]:
+def extract_sift_features(
+    path: Path, max_size: int = MAX_SIZE
+) -> tuple[np.ndarray, np.ndarray, float]:
     """
     Detect SIFT keypoints on a downscaled grayscale version of the image
 
     Returns:
-        keypoint coordinates (N, 2) in original image pixels, descriptors (N, 128) or None, downscale factor
+        tuple of 
+        - keypoint coordinates (N, 2) in original image pixels
+        - descriptors (N, 128)
     """
+    sift = cv2.SIFT_create()
     img = cv2.imread(str(path), cv2.IMREAD_GRAYSCALE)
     if img is None:
         raise ValueError(f"Could not read image {path}")
@@ -50,8 +56,9 @@ def extract_features(
         img = cv2.resize(img, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
 
     kps, desc = sift.detectAndCompute(img, None)
+
     pts = np.array([kp.pt for kp in kps], dtype=np.float32).reshape(-1, 2) / scale
-    return pts, desc, scale
+    return pts, desc
 
 
 def match_to_reference(
@@ -112,8 +119,7 @@ def to_keypoint(pt: np.ndarray, inlier: bool) -> Keypoint:
 
 
 def align_sift_ransac(
-    paths: list[Path],
-    names: list[str],
+    images: list[Image],
     ref_idx: int,
     target_transform: str,
     log: Callable[[str], None] = print,
@@ -129,21 +135,29 @@ def align_sift_ransac(
             f"Transform '{target_transform}' is not supported by sift+ransac (available: {list(ESTIMATORS)})"
         )
 
-    sift = cv2.SIFT_create()
-    ref_pts, ref_desc, ref_scale = extract_features(sift, paths[ref_idx])
-    # RANSAC runs in reference pixel coordinates, while the threshold is set at working resolution
-    threshold = RANSAC_THRESHOLD / ref_scale
-    log(f"Reference {names[ref_idx]}: {len(ref_pts)} keypoints")
+    ref_img = images[ref_idx]
+
+    # Reference descriptors
+    ref_pts, ref_desc = extract_sift_features(ref_img.path)
+
+    # TODO scale threshold?
+    threshold = RANSAC_THRESHOLD
+
+    log(f"Reference {ref_img.id}: {len(ref_pts)} keypoints")
 
     # image index -> (matrix, {ref kp index: (image point, inlier)})
     aligned: dict[
         int, tuple[np.ndarray | None, dict[int, tuple[np.ndarray, bool]]]
     ] = {}
-    for i, path in enumerate(paths):
+
+    for i, img in enumerate(images):
+        path = img.path
         if i == ref_idx:
             continue
-        pts, desc, _ = extract_features(sift, path)
+
+        pts, desc = extract_sift_features(path)
         matches = match_to_reference(desc, ref_desc)
+
         ref_ids = sorted(matches)
         src = pts[[matches[r] for r in ref_ids]].reshape(-1, 2)
         matrix, inliers = estimate_transform(
@@ -151,7 +165,7 @@ def align_sift_ransac(
         )
         aligned[i] = (matrix, {r: (p, inl) for r, p, inl in zip(ref_ids, src, inliers)})
         log(
-            f"{names[i]}: {len(matches)} matches, {int(inliers.sum())} inliers"
+            f"{img.id}: {len(matches)} matches, {int(inliers.sum())} inliers"
             + ("" if matrix is not None else " (no transform found)")
         )
 
@@ -161,11 +175,11 @@ def align_sift_ransac(
     }
 
     results: list[AlignedImage] = []
-    for i, name in enumerate(names):
+    for i, img in enumerate(images):
         if i == ref_idx:
             results.append(
                 {
-                    "image_name": name,
+                    "image_id": img.id,
                     "transform_matrix": np.eye(3).tolist(),
                     "keypoints": [
                         to_keypoint(ref_pts[r], r in ref_inliers) for r in used
@@ -177,7 +191,7 @@ def align_sift_ransac(
         matrix, kps = aligned[i]
         results.append(
             {
-                "image_name": name,
+                "image_id": img.id,
                 "transform_matrix": matrix.tolist() if matrix is not None else None,
                 "keypoints": [to_keypoint(*kps[r]) if r in kps else None for r in used],
             }

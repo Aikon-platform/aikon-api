@@ -56,9 +56,10 @@ class ComputeAlignment(LoggedTask):
     def result_name(self) -> str:
         return f"{self.experiment_id}/{self.dataset.uid}-alignment"
 
-    def get_reference_index(self, images: list[Image]) -> int:
+    def _find_reference_index(self, images: list[Image]) -> int:
         """
-        Index of the requested reference image (matched by id or file name), or of the first image
+        Index of the requested reference image (matched by id or file name),
+        or of the first image
         """
         if self.requested_reference:
             for i, im in enumerate(images):
@@ -69,24 +70,27 @@ class ComputeAlignment(LoggedTask):
             )
         return 0
 
-    def compute_alignment(self) -> AlignmentResults:
+    def _compute_alignment(self) -> AlignmentResults:
+        """
+        Core alignment pipeline
+        """
         images = self.dataset.prepare()
         if len(images) == 0:
             raise Exception(f"No images found for {self.dataset.uid}")
 
-        ref_idx = self.get_reference_index(images)
+        ref_idx = self._find_reference_index(images)
         self.log(
             f"Aligning {len(images)} images onto {images[ref_idx].id} "
             f"with {self.method} ({self.target_transform})"
         )
 
         aligned = PIPELINES[self.method](
-            paths=[im.path for im in images],
-            names=[im.id for im in images],
+            images=images,
             ref_idx=ref_idx,
             target_transform=self.target_transform,
             log=self.log,
         )
+
         return {
             "parameters": {
                 "method": self.method,
@@ -97,20 +101,27 @@ class ComputeAlignment(LoggedTask):
             "images": aligned,
         }
 
-    def store(self, results: AlignmentResults) -> None:
+    def _store_results(self, results: AlignmentResults) -> None:
+        """
+        Make results accessible through the API
+        """
         result_file = ALIGN_RESULTS_PATH / f"{self.result_name}.json"
         result_file.parent.mkdir(parents=True, exist_ok=True)
+
         with open(result_file, "wb") as f:
             f.write(orjson.dumps(results, default=serializer))
+
         self.log(f"Stored alignment results inside {result_file}")
         self.results_url = [
             {
-                "doc_pair": "dataset",
                 "result_url": get_file_url(DEMO_NAME, self.result_name),
             }
         ]
 
     def run_task(self) -> bool:
+        """
+        Main entry point
+        """
         if self.dataset is None or len(self.dataset.documents) == 0:
             self.task_update(
                 "ERROR",
@@ -122,8 +133,8 @@ class ComputeAlignment(LoggedTask):
         self.task_update("STARTED")
 
         try:
-            self.results = self.compute_alignment()
-            self.store(self.results)
+            self.results = self._compute_alignment()
+            self._store_results(self.results)
             self.log("Successfully computed alignment")
             return True
         except Exception as e:
