@@ -117,6 +117,30 @@ def to_keypoint(pt: np.ndarray, inlier: bool) -> Keypoint:
         "inlier": bool(inlier),
     }
 
+def find_duplicates(pts: np.ndarray, eps: float=1e-3) -> np.ndarray:
+    """
+    Find duplicate 2d points within eps distance
+
+    Returns:
+        indices of unique points
+    """
+    order = np.lexsort((pts[:, 1], pts[:, 0]))
+    reverse_order = np.empty(len(pts), dtype=int)
+    reverse_order[order] = range(len(pts))
+
+    dist = np.linalg.norm(pts[order][1:] - pts[order][:-1], axis=1)
+
+    steps = [True] + list(dist > eps)
+    unique = np.where(steps)[0]
+    rmap = np.cumsum(steps) - 1
+
+    return order[unique[rmap][reverse_order]]
+
+def collapse_duplicate_matches(matches: dict[int, int], dup: np.ndarray, dup_ref: np.ndarray) -> dict[int, int]:
+    """
+    Remove duplicate keypoints from matches
+    """
+    return {dup_ref[ref_idx]: dup[idx] for ref_idx, idx in matches.items()}
 
 def align_sift_ransac(
     images: list[Image],
@@ -140,6 +164,8 @@ def align_sift_ransac(
     # Reference descriptors
     ref_pts, ref_desc = extract_sift_features(ref_img.path)
 
+    dup_ref_kp = find_duplicates(ref_pts)
+
     # TODO scale threshold?
     threshold = RANSAC_THRESHOLD
 
@@ -156,14 +182,18 @@ def align_sift_ransac(
             continue
 
         pts, desc = extract_sift_features(path)
+        dup_kp = find_duplicates(pts)
+
         matches = match_to_reference(desc, ref_desc)
+        # There may be duplicate matched keypoints, RANSAC will deal with/filter it
 
         ref_ids = sorted(matches)
         src = pts[[matches[r] for r in ref_ids]].reshape(-1, 2)
         matrix, inliers = estimate_transform(
             src, ref_pts[ref_ids].reshape(-1, 2), target_transform, threshold
         )
-        aligned[i] = (matrix, {r: (p, inl) for r, p, inl in zip(ref_ids, src, inliers)})
+        # TODO use dup_kp too to deduplicate, and choose the best match as being part of inliers
+        aligned[i] = (matrix, {dup_ref_kp[ref_id]: (p, inl) for ref_id, p, inl in zip(ref_ids, src, inliers)})
         log(
             f"{img.id}: {len(matches)} matches, {int(inliers.sum())} inliers"
             + ("" if matrix is not None else " (no transform found)")
