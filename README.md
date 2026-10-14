@@ -15,19 +15,7 @@ This repository contains the code for the worker API.
 > - **Git**:
 >     - `sudo apt install git`
 >     - Having configured [SSH access to GitHub](https://docs.github.com/en/authentication/connecting-to-github-with-ssh)
-> - **CUDA** if you want to run the API with a GPU
-
-### CUDA
-
-Some tasks (i.e., watermark extraction or vectorization) require a GPU to function, which means you need CUDA.
-- **for development usage** (`MODE=dev`), you will need either:
-	- CUDA 12.6 
-	- to update the `torch` source in [`pyproject.toml`](./pyproject.toml) to match your CUDA version
-- **for dockerized builds** (`MODE=prod|local`), you will need 
-	- a machine with CUDA
-	- the [NVIDIA container toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) 
-
-If you run into CUDA problems, see (this guide)[https://github.com/Aikon-platform/aikon-api/wiki/Torch-and-CUDA-Troubleshooting].
+> - **CUDA** if you want to run the API with a GPU. See the [dedicated section](https://github.com/Aikon-platform/aikon-api/tree/main#cuda)
 
 ---
 
@@ -86,6 +74,31 @@ python run.py down
 
 GPU support: set `DEVICE_NB` and `CUDA_HOME` in `.env` (leave `DEVICE_NB` empty for cpu-only).
 When installed as part of the bundle in `local` mode, the container joins the front compose network and is reachable by the web app at `http://api:<API_PORT>`.
+
+---
+
+## CUDA
+
+CUDA requirements and troubleshooting info.
+
+Some tasks (i.e., watermark extraction or vectorization) require a GPU to function, which means you need CUDA.
+- **for development usage** (`MODE=dev`), you will need either:
+	- CUDA 12.6 
+	- to update the `torch` source in [`pyproject.toml`](./pyproject.toml) to match your CUDA version
+- **for dockerized builds** (`MODE=prod|local`), you will need 
+	- a machine with CUDA
+	- the [NVIDIA container toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) 
+
+Test that your Torch/CUDA installation was successful after installation with: 
+
+```bash
+# add `-d` flag if `MODE=local|dev` 
+bash scripts/test_torch.sh [-d]
+```
+
+If you run into CUDA problems, see (this guide)[https://github.com/Aikon-platform/aikon-api/wiki/Torch-and-CUDA-Troubleshooting].
+
+
 
 ---
 
