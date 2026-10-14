@@ -66,7 +66,7 @@ def kill_stale(*patterns: str) -> None:
     time.sleep(1)
 
 
-# NOTE: os.getuid and os.getgid are linux/mac only commands 
+# NOTE: os.getuid and os.getgid are linux/mac only commands
 def get_uid():
     return os.getuid() if hasattr(os, "getuid") else 1000
 
@@ -130,12 +130,11 @@ def docker_run() -> None:
             "aikon": "aikon_aikon",
             "aikon-demo": "aikondemo_aikondemo"
         }
-        cmd += ["--network", network_name[bundled], "--network-alias", "api", 
+        cmd += ["--network", network_name[bundled], "--network-alias", "api",
             "-p", f"{ENV['API_PORT']}:{ENV['API_PORT']}"]
     else:
         cmd += ["-p", f"{ENV['CONTAINER_HOST']}:{ENV['API_PORT']}:{ENV['API_PORT']}"]
     sh(cmd + [name])
-    print(">>>", cmd)
     print(f"→ api container '{name}' started")
 
 

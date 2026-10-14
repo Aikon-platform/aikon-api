@@ -169,8 +169,6 @@ def _pipeline(
         output["matches"] = get_closest_matches(feats, compare_to)
         output["query_flips"] = [None, "rot90", "rot180", "rot270"]
 
-    print(output)
-
     return output
 
 
