@@ -9,7 +9,7 @@ from typing import Optional, Callable, Dict, Any, List
 
 from .const import DEMO_NAME
 from .dataset import Dataset
-from ..config import TIME_LIMIT, BASE_URL
+from ..config import TIME_LIMIT
 from ..shared.utils.logging import (
     notifying,
     TLogger,

@@ -136,8 +136,7 @@ def get_models():
 
 @blueprint.route("<doc_id>/delete", methods=["POST"])
 def delete(doc_id: str):
-    doc_dir, dataset_id = shared_routes.delete(doc_id)
-    if not doc_dir:
+    if not (doc_dir := shared_routes.find_document(doc_id)):
         return {"error": f"Document {doc_id} not found"}
 
     cleared_results = clear_dir(VEC_RESULTS_PATH, f"*{doc_id}*.svg", delete_anyway=True)
