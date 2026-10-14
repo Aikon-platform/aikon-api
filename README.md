@@ -83,22 +83,29 @@ CUDA requirements and troubleshooting info.
 
 Some tasks (i.e., watermark extraction or vectorization) require a GPU to function, which means you need CUDA.
 - **for development usage** (`MODE=dev`), you will need either:
-	- CUDA 12.6 
+	- CUDA `>=12.6, <13`
 	- to update the `torch` source in [`pyproject.toml`](./pyproject.toml) to match your CUDA version
-- **for dockerized builds** (`MODE=prod|local`), you will need 
+- **for dockerized builds** (`MODE=prod|local`), you will need
 	- a machine with CUDA
-	- the [NVIDIA container toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) 
+	- the [NVIDIA container toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
 
-Test that your Torch/CUDA installation was successful after installation with: 
+Useful CUDA commands:
 
 ```bash
-# add `-d` flag if `MODE=local|dev` 
+# maximum available CUDA version is displayed on the top-left
+nvidia-smi
+# CUDA version currently in use
+nvcc --version
+```
+
+Test that your Torch/CUDA installation was successful after installation with:
+
+```bash
+# add `-d` flag if `MODE=local|dev`
 bash scripts/test_torch.sh [-d]
 ```
 
 If you run into CUDA problems, see (this guide)[https://github.com/Aikon-platform/aikon-api/wiki/Torch-and-CUDA-Troubleshooting].
-
-
 
 ---
 
