@@ -2,6 +2,23 @@
 
 This repository contains the code for the worker API.
 
+## Requirements
+
+> - **Sudo** privileges
+> - **Python** >= 3.10
+> - **UV** ([install guide](https://docs.astral.sh/uv/getting-started/installation/))
+> - **Docker** ([install guide](https://docs.docker.com/engine/install/))
+> - **Git**:
+>     - `sudo apt install git`
+>     - Having configured [SSH access to GitHub](https://docs.github.com/en/authentication/connecting-to-github-with-ssh)
+> - **CUDA** if you want to run the API with a GPU
+
+For development usage, you will need either:
+- CUDA 12.6 
+- to update the `torch` source in [`pyproject.toml`](./pyproject.toml) to match your CUDA version
+
+If you run into CUDA problems, see (this guide)[https://github.com/Aikon-platform/aikon-api/wiki/Torch-and-CUDA-Troubleshooting].
+
 ## Development
 
 ```bash
