@@ -64,7 +64,7 @@ class Extractor:
     def extract(self, path: Path) -> Features:
         raise NotImplementedError
 
-    def match(self, query: Features, ref: Features) -> np.ndarray:
+    def match(self, query: Features, ref: Features) -> dict[int, tuple[int, float]]:
         raise NotImplementedError
 
 class SiftExtractor(Extractor):
@@ -101,27 +101,30 @@ class SiftExtractor(Extractor):
         desc: np.ndarray | None,
         ref_desc: np.ndarray | None,
         ratio: float = RATIO_TEST,
-    ) -> dict[int, int]:
+    ) -> dict[int, tuple[int, float]]:
         """
         Match image descriptors to reference descriptors with Lowe's ratio test,
         keeping at most one image keypoint per reference keypoint (the closest)
 
         Returns:
-            {reference keypoint index: image keypoint index}
+            {reference keypoint index: (image keypoint index, score)}, the score being
+            1 - distance ratio of the best to the second best match
         """
         if desc is None or ref_desc is None or len(desc) < 2 or len(ref_desc) < 2:
             return {}
 
-        best: dict[int, cv2.DMatch] = {}
+        best: dict[int, tuple[cv2.DMatch, float]] = {}
         for pair in cv2.BFMatcher(cv2.NORM_L2).knnMatch(desc, ref_desc, k=2):
             if len(pair) < 2:
                 continue
             m, n = pair
             if m.distance >= ratio * n.distance:
                 continue
-            if m.trainIdx not in best or m.distance < best[m.trainIdx].distance:
-                best[m.trainIdx] = m
-        return {ref_idx: m.queryIdx for ref_idx, m in best.items()}
+            if m.trainIdx not in best or m.distance < best[m.trainIdx][0].distance:
+                best[m.trainIdx] = (m, 1 - m.distance / n.distance if n.distance > 0 else 0.0)
+        return {
+            ref_idx: (m.queryIdx, float(score)) for ref_idx, (m, score) in best.items()
+        }
 
 
 class DeepExtractor(Extractor):
@@ -176,12 +179,13 @@ class DeepExtractor(Extractor):
 
     def match(
         self, desc: torch.Tensor | None, ref_desc: torch.Tensor | None
-    ) -> dict[int, int]:
+    ) -> dict[int, tuple[int, float]]:
         """
         Mutual nearest neighbours between image and reference descriptors
 
         Returns:
-            {reference keypoint index: image keypoint index}
+            {reference keypoint index: (image keypoint index, score)}, the score being
+            the cosine similarity
         """
         if desc is None or ref_desc is None:
             return {}
@@ -189,7 +193,8 @@ class DeepExtractor(Extractor):
         sim = desc @ ref_desc.T
         fwd, bwd = sim.argmax(dim=1), sim.argmax(dim=0)
         idx = (bwd[fwd] == torch.arange(len(desc), device=desc.device)).nonzero()[:, 0]
-        return dict(zip(fwd[idx].tolist(), idx.tolist()))
+        scores = sim[idx, fwd[idx]].tolist()
+        return dict(zip(fwd[idx].tolist(), zip(idx.tolist(), scores)))
 
 
 class SegSwapExtractor(Extractor):
@@ -226,14 +231,17 @@ class SegSwapExtractor(Extractor):
         return Features(pts.numpy(), fmap, w / fw)
 
     @torch.no_grad()
-    def match(self, desc: torch.Tensor, ref_desc: torch.Tensor) -> dict[int, int]:
+    def match(
+        self, desc: torch.Tensor, ref_desc: torch.Tensor
+    ) -> dict[int, tuple[int, float]]:
         """
         Predicted correspondence of each image cell in the reference, kept where the
         cycle-consistent co-segmentation mask is confident; when several image cells
         point to the same reference cell, the one with the highest mask value is kept
 
         Returns:
-            {reference keypoint index: image keypoint index}
+            {reference keypoint index: (image keypoint index, score)}, the score being
+            the mask value
         """
         out, ref_out = self.encoder(desc, ref_desc)
         out, ref_out = out.cpu(), ref_out.cpu()
@@ -251,7 +259,9 @@ class SegSwapExtractor(Extractor):
         keep = (mask > SEGSWAP_MASK_THRESHOLD).nonzero()[:, 0]
         # ascending mask order: the best match of each reference cell is written last
         keep = keep[mask[keep].argsort()]
-        return dict(zip(ref_ids[keep].tolist(), keep.tolist()))
+        return dict(
+            zip(ref_ids[keep].tolist(), zip(keep.tolist(), mask[keep].tolist()))
+        )
 
 
 Extractor = SiftExtractor | DeepExtractor | SegSwapExtractor
@@ -290,11 +300,12 @@ def estimate_transform(
     return result.transform.double().cpu().numpy(), result.inliers.cpu().numpy()
 
 
-def to_keypoint(pt: np.ndarray, inlier: bool) -> Keypoint:
+def to_keypoint(pt: np.ndarray, inlier: bool, score: float) -> Keypoint:
     return {
         "x": round(float(pt[0]), 2),
         "y": round(float(pt[1]), 2),
         "inlier": bool(inlier),
+        "score": round(float(score), 4),
     }
 
 
@@ -345,9 +356,9 @@ def align_ransac(
 
     log(f"Reference {ref_img.id}: {len(ref.pts)} keypoints")
 
-    # image index -> (matrix, {ref kp index: (image point, inlier)})
+    # image index -> (matrix, {ref kp index: (image point, inlier, match score)})
     aligned: dict[
-        int, tuple[np.ndarray | None, dict[int, tuple[np.ndarray, bool]]]
+        int, tuple[np.ndarray | None, dict[int, tuple[np.ndarray, bool, float]]]
     ] = {}
 
     for i, img in enumerate(images):
@@ -359,7 +370,7 @@ def align_ransac(
         # There may be duplicate matched keypoints, RANSAC will deal with/filter it
 
         ref_ids = sorted(matches)
-        src = feats.pts[[matches[r] for r in ref_ids]].reshape(-1, 2)
+        src = feats.pts[[matches[r][0] for r in ref_ids]].reshape(-1, 2)
         matrix, inliers = estimate_transform(
             src,
             ref.pts[ref_ids].reshape(-1, 2),
@@ -372,7 +383,7 @@ def align_ransac(
         aligned[i] = (
             matrix,
             {
-                ref_canonical[ref_id]: (p, inl)
+                ref_canonical[ref_id]: (p, inl, matches[ref_id][1])
                 for ref_id, p, inl in zip(ref_ids, src, inliers)
             },
         )
@@ -384,9 +395,15 @@ def align_ransac(
     del extractor
     clear_cuda()
 
-    used = sorted({r for _, kps in aligned.values() for r in kps})
+    scores: dict[int, list[float]] = {}
+    for _, kps in aligned.values():
+        for r, (_, _, score) in kps.items():
+            scores.setdefault(r, []).append(score)
+    # reference score: average of the match scores; best keypoints first
+    ref_scores = {r: float(np.mean(s)) for r, s in scores.items()}
+    used = sorted(ref_scores, key=lambda r: (-ref_scores[r], r))
     ref_inliers = {
-        r for _, kps in aligned.values() for r, (_, inl) in kps.items() if inl
+        r for _, kps in aligned.values() for r, (_, inl, _) in kps.items() if inl
     }
 
     results: list[AlignedImage] = []
@@ -397,7 +414,8 @@ def align_ransac(
                     "image_id": img.id,
                     "transform_matrix": np.eye(3).tolist(),
                     "keypoints": [
-                        to_keypoint(ref.pts[r], r in ref_inliers) for r in used
+                        to_keypoint(ref.pts[r], r in ref_inliers, ref_scores[r])
+                        for r in used
                     ],
                     "is_reference": True,
                 }

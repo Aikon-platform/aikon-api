@@ -5,6 +5,7 @@ class Keypoint(TypedDict):
     x: float
     y: float
     inlier: bool
+    score: float
 
 
 class AlignedImage(TypedDict):
