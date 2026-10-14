@@ -23,7 +23,16 @@ from .types import Image
 from .utils import pdf_to_img
 from ...config import BASE_URL
 
-ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".json", ".tiff", ".pdf"}
+ALLOWED_EXTENSIONS = {
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".gif",
+    ".json",
+    ".tiff",
+    ".pdf",
+    ".txt",
+}
 
 DocType = Literal["zip", "pdf", "img", "url_list", "iiif"]
 
