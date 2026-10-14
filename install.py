@@ -189,6 +189,32 @@ def render_confs(v: dict) -> None:
     )
 
 
+def compile_cuda_ops(v: dict) -> None:
+    """compile dino cuda operators for dev"""
+    python_exec = API / ".venv" / "bin" / "python"
+    path_vec = API / "app" / "vectorization" / "lib"
+    path_reg = API / "app" / "region_extraction" / "lib" / "line_predictor" / "dino" / "ops"
+    build_paths = {
+        "region_extraction": (path_reg, path_reg / "setup.py"),
+        "vectorization": (path_vec, path_vec / "src" / "models" / "dino" / "ops" / "setup.py")
+    }
+    success = []
+    failure = []
+    for app_name, (cwd, setup_path) in build_paths.items():
+        if app_name in v["INSTALLED_APPS"]:
+            try:
+                sh([python_exec, setup_path, "build", "install"], cwd=cwd)
+                success.append(app_name)
+            except Exception as e:
+                print(f"\ncould not build CUDA operators for app '{app_name}': {e}")
+                failure.append(app_name)
+    if len(failure):
+        print(f"\n⛔ could not build CUDA operators for apps: {failure}")
+    if len(success):
+        print(f"\n✅ CUDA operators compiled for apps: {success}")
+    return
+
+
 def setup_dev(v: dict) -> None:
     import shutil
 
@@ -198,6 +224,7 @@ def setup_dev(v: dict) -> None:
     sh([uv, "sync", "--group=dev"], cwd=API)
     sh([uv, "tool", "install", "pre-commit", "--with", "pre-commit-uv"], cwd=API)
     subprocess.run(["git", "submodule", "update", "--init"], cwd=API)
+    compile_cuda_ops(v)
     print("\n✅ api dev setup complete. Start it with:  python run.py")
 
 
