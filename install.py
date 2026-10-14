@@ -162,7 +162,6 @@ def resolve(mode: str, root_env: Path, bundled: Literal["aikon", "aikon-demo", N
     # used to programmatically connect the API to an AIKON frontend
     v["BUNDLED"] = bundled
     # used only if mode=local. see app/config/dev
-    print(v)
     v["API_URL_FROM_DOCKER"] = f"http://api:{v['API_PORT']}"
 
     invalid = [a for a in v["INSTALLED_APPS"].split(",") if a and a not in API_APPS]
