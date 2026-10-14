@@ -1,6 +1,6 @@
 """
-Align images onto a reference image: keypoint extraction (SIFT or dense features of a
-similarity model), matching to the reference keypoints and RANSAC transform estimation
+Align images onto a reference image: keypoint extraction (SIFT, dense features of a
+similarity model or SegSwap), matching to the reference keypoints and RANSAC transform estimation
 """
 
 from collections.abc import Callable
@@ -17,9 +17,11 @@ from torchvision.transforms import functional as TF
 
 from ...shared.dataset.types import Image
 from ...shared.utils import clear_cuda, get_device
+from ...similarity.lib import segswap
 from ...similarity.lib.models import (
     IMAGENET_NORMALIZE,
     MODELS,
+    get_model_path,
     get_transforms_for_model,
     load_model,
 )
@@ -34,6 +36,10 @@ from .const import (
     MAX_SIZE,
     RANSAC_THRESHOLD,
     RATIO_TEST,
+    SEGSWAP_FEATURE,
+    SEGSWAP_MASK_THRESHOLD,
+    SEGSWAP_MODEL,
+    SEGSWAP_SIZE,
     SIFT_FEATURE,
 )
 from .ransac import ransac
@@ -186,12 +192,76 @@ class DeepExtractor(Extractor):
         return dict(zip(fwd[idx].tolist(), idx.tolist()))
 
 
-Extractor = SiftExtractor | DeepExtractor
+class SegSwapExtractor(Extractor):
+    """
+    SegSwap co-segmentation transformer: every cell of its ResNet feature map is a keypoint
+    (at the centre of the cell); matching runs the transformer on the image pair, which
+    predicts for each image cell its corresponding reference cell and whether it lies in
+    the region shared by both images
+    """
+
+    requires_deduplication = False
+    ransac_threshold = DEEP_RANSAC_THRESHOLD
+
+    def __init__(self, device: str):
+        self.device = device
+        param = torch.load(
+            get_model_path(SEGSWAP_MODEL), map_location=device, weights_only=False
+        )
+        self.backbone = segswap.load_backbone(param).to(device)
+        self.encoder = segswap.load_encoder(param).to(device)
+
+    @torch.no_grad()
+    def extract(self, path: Path) -> Features:
+        img = PILImage.open(path).convert("RGB")
+        w, h = img.size
+        x = IMAGENET_NORMALIZE(TF.to_tensor(segswap.resize(img, SEGSWAP_SIZE)))
+        fmap = F.normalize(self.backbone(x[None].to(self.device)))  # (1, C, fh, fw)
+        fh, fw = fmap.shape[2:]
+
+        ys, xs = torch.meshgrid(
+            torch.arange(fh) + 0.5, torch.arange(fw) + 0.5, indexing="ij"
+        )
+        pts = torch.stack([xs * w / fw, ys * h / fh], dim=-1).reshape(-1, 2)
+        return Features(pts.numpy(), fmap, w / fw)
+
+    @torch.no_grad()
+    def match(self, desc: torch.Tensor, ref_desc: torch.Tensor) -> dict[int, int]:
+        """
+        Predicted correspondence of each image cell in the reference, kept where the
+        cycle-consistent co-segmentation mask is confident; when several image cells
+        point to the same reference cell, the one with the highest mask value is kept
+
+        Returns:
+            {reference keypoint index: image keypoint index}
+        """
+        out, ref_out = self.encoder(desc, ref_desc)
+        out, ref_out = out.cpu(), ref_out.cpu()
+        mask, _ = segswap.consistent_mask(
+            out[:, 2:].numpy(), ref_out[:, 2:].numpy(), out, ref_out
+        )
+        mask = torch.from_numpy(mask).flatten()
+
+        rh, rw = ref_desc.shape[2:]
+        flow = out[0, :2].flatten(1)  # (2, N): x, y in [0, 1] of the reference
+        ref_ids = (flow[1] * (rh - 1)).round().long() * rw + (
+            flow[0] * (rw - 1)
+        ).round().long()
+
+        keep = (mask > SEGSWAP_MASK_THRESHOLD).nonzero()[:, 0]
+        # ascending mask order: the best match of each reference cell is written last
+        keep = keep[mask[keep].argsort()]
+        return dict(zip(ref_ids[keep].tolist(), keep.tolist()))
+
+
+Extractor = SiftExtractor | DeepExtractor | SegSwapExtractor
 
 
 def make_extractor(ransac_feature: str, device: str) -> Extractor:
     if ransac_feature == SIFT_FEATURE:
         return SiftExtractor()
+    if ransac_feature == SEGSWAP_FEATURE:
+        return SegSwapExtractor(device)
     if MODELS.get(ransac_feature, {}).get("arch") in DENSE_ARCHS:
         return DeepExtractor(ransac_feature, device)
     raise ValueError(f"Feature '{ransac_feature}' cannot be used to compute keypoints")

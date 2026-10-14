@@ -22,7 +22,7 @@ Routes:
     - Response: JSON object containing the status of the task.
 
 - GET ``/alignment/models``:
-    List the features available as ``ransac_feature`` (SIFT and the similarity models).
+    List the features available as ``ransac_feature`` (SIFT, SegSwap and the similarity models).
 
     - Response: JSON object mapping each feature to its ``model``, ``name`` and ``desc``.
 
@@ -61,7 +61,13 @@ from .const import (
     DEFAULT_METHOD,
     DEFAULT_RANSAC_FEATURE,
 )
-from .lib.const import ALIGN_METHODS, AVAILABLE_TRANSFORMS, DENSE_ARCHS, SIFT_FEATURE
+from .lib.const import (
+    ALIGN_METHODS,
+    AVAILABLE_TRANSFORMS,
+    DENSE_ARCHS,
+    SEGSWAP_FEATURE,
+    SIFT_FEATURE,
+)
 
 blueprint = Blueprint("alignment", __name__, url_prefix="/alignment")
 
@@ -73,6 +79,11 @@ def available_features() -> dict:
             "model": SIFT_FEATURE,
             "name": SIFT_FEATURE,
             "desc": "Classical SIFT keypoints and descriptors (no network)",
+        },
+        SEGSWAP_FEATURE: {
+            "model": SEGSWAP_FEATURE,
+            "name": SEGSWAP_FEATURE,
+            "desc": "Dense correspondences predicted by the SegSwap co-segmentation transformer",
         },
         **{
             name: info

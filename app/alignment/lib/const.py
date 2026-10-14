@@ -28,3 +28,11 @@ DEEP_MIN_SIZE = 112
 CNN_SIZE_MULTIPLE = 32
 # RANSAC reprojection threshold, in feature cells of the reference image at scale 1
 DEEP_RANSAC_THRESHOLD = 1.5
+
+# Pseudo-feature for the SegSwap co-segmentation transformer (dense correspondences)
+SEGSWAP_FEATURE = "SegSwap"
+SEGSWAP_MODEL = "hard_mining_neg5"
+# Largest image side fed to SegSwap (its training resolution)
+SEGSWAP_SIZE = 480
+# Minimum (cycle-consistent) co-segmentation mask value to keep a correspondence
+SEGSWAP_MASK_THRESHOLD = 0.5
