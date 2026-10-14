@@ -109,8 +109,11 @@ def resolve(mode: str, root_env: Path, bundled: Literal["aikon", "aikon-demo", N
             root_key,
             current.get(key, default),
         )
+        # in AIKON-demo, all apps but vectorization are installed => force the value of INSTALLED_APPS
+        if key == "INSTALLED_APPS" and bundled == "aikon-demo":
+            val = ",".join(a for a in API_APPS if a != "vectorization")
         # optionnally prompt for user input
-        if (
+        elif (
             # key should be prompted
             key in PROMPTED[mode]
             # defaults should not be used
