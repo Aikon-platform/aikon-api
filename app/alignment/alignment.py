@@ -1,9 +1,14 @@
-from typing import List, Optional, TypedDict
+from typing import TypedDict
 
 import orjson
 
-from .const import ALIGN_RESULTS_PATH, DEMO_NAME, DEFAULT_METHOD
-from .lib.sift_ransac import align_sift_ransac
+from .const import (
+    ALIGN_RESULTS_PATH,
+    DEMO_NAME,
+    DEFAULT_METHOD,
+    DEFAULT_RANSAC_FEATURE,
+)
+from .lib.align_ransac import align_ransac
 from .lib.types import AlignedImage
 
 from ..shared.dataset import Dataset
@@ -14,14 +19,11 @@ from ..shared.utils.logging import serializer
 
 DEFAULT_TRANSFORM = "homographic"
 
-# method -> pipeline(paths, names, ref_idx, target_transform, log) -> List[AlignedImage]
-PIPELINES = {
-    "sift+ransac": align_sift_ransac,
-}
 
 
 class AlignParameters(TypedDict):
     method: str
+    ransac_feature: str
     target_transform: str
     reference_image: str
 
@@ -45,6 +47,9 @@ class ComputeAlignment(LoggedTask):
         parameters = parameters or {}
         self.dataset = dataset
         self.method: str = parameters.get("method", DEFAULT_METHOD)
+        self.ransac_feature: str = parameters.get(
+            "ransac_feature", DEFAULT_RANSAC_FEATURE
+        )
         self.target_transform: str = parameters.get(
             "target_transform", DEFAULT_TRANSFORM
         )
@@ -80,20 +85,25 @@ class ComputeAlignment(LoggedTask):
 
         ref_idx = self._find_reference_index(images)
         self.log(
-            f"Aligning {len(images)} images onto {images[ref_idx].id} "
-            f"with {self.method} ({self.target_transform})"
+            f"Aligning {len(images)} images onto {images[ref_idx].id} ({self.target_transform})"
         )
 
-        aligned = PIPELINES[self.method](
-            images=images,
-            ref_idx=ref_idx,
-            target_transform=self.target_transform,
-            log=self.log,
-        )
+        if self.method == "ransac":
+            self.log(f"Using RANSAC alignment with {self.ransac_feature} features")
+            aligned = align_ransac(
+                images=images,
+                ref_idx=ref_idx,
+                target_transform=self.target_transform,
+                ransac_feature=self.ransac_feature,
+                log=self.log,
+            )
+        else:
+            raise Exception(f"Unknown alignment method {self.method}")
 
         return {
             "parameters": {
                 "method": self.method,
+                "ransac_feature": self.ransac_feature,
                 "target_transform": self.target_transform,
                 "reference_image": images[ref_idx].id,
             },

@@ -21,6 +21,11 @@ Routes:
 
     - Response: JSON object containing the status of the task.
 
+- GET ``/alignment/models``:
+    List the features available as ``ransac_feature`` (SIFT and the similarity models).
+
+    - Response: JSON object mapping each feature to its ``model``, ``name`` and ``desc``.
+
 - GET ``/alignment/qsizes``:
     List the queues of the broker and the number of tasks in each queue.
 
@@ -47,14 +52,34 @@ from .tasks import compute_alignment
 from ..shared import routes as shared_routes
 from ..shared.const import DATASETS_PATH
 from ..shared.utils.fileutils import clear_dir, delete_path, delete_empty_dirs
+from ..shared.utils.fileutils import list_known_models
+from ..similarity.const import MODEL_PATH
+from ..similarity.lib.models import DEFAULT_MODEL_INFOS, MODELS
 from .const import (
     ALIGN_RESULTS_PATH,
     ALIGN_XACCEL_PREFIX,
     DEFAULT_METHOD,
+    DEFAULT_RANSAC_FEATURE,
 )
-from .lib.const import ALIGN_METHODS, AVAILABLE_TRANSFORMS
+from .lib.const import ALIGN_METHODS, AVAILABLE_TRANSFORMS, DENSE_ARCHS, SIFT_FEATURE
 
 blueprint = Blueprint("alignment", __name__, url_prefix="/alignment")
+
+
+def available_features() -> dict:
+    """SIFT plus the feature extraction networks of the similarity app giving a feature map"""
+    return {
+        SIFT_FEATURE: {
+            "model": SIFT_FEATURE,
+            "name": SIFT_FEATURE,
+            "desc": "Classical SIFT keypoints and descriptors (no network)",
+        },
+        **{
+            name: info
+            for name, info in list_known_models(MODEL_PATH, DEFAULT_MODEL_INFOS).items()
+            if MODELS.get(name, {}).get("arch") in DENSE_ARCHS
+        },
+    }
 
 
 @blueprint.route("start", methods=["POST"])
@@ -71,7 +96,10 @@ def start_alignment(client_id):
         {
             ...(tasking.routes.receive_task request)...
             "parameters": {
-                "method": "sift+ransac"
+                "method": "ransac",
+                "ransac_feature": "SIFT",
+                "target_transform": "homographic",
+                "reference_image": null
             }
         }
     """
@@ -88,6 +116,7 @@ def start_alignment(client_id):
 
     parameters = {
         "method": param.get("method", DEFAULT_METHOD),
+        "ransac_feature": param.get("ransac_feature", DEFAULT_RANSAC_FEATURE),
         "target_transform": param.get("target_transform", "homographic"),
         "reference_image": param.get("reference_image", None),
         "client_id": client_id,
@@ -100,6 +129,17 @@ def start_alignment(client_id):
             {
                 "error": f"Invalid method: {method}. Available methods: {ALIGN_METHODS}",
                 "available_methods": ALIGN_METHODS,
+            }
+        )
+
+    # Validate ransac_feature parameter
+    features = available_features()
+    ransac_feature = parameters["ransac_feature"]
+    if ransac_feature not in features:
+        return jsonify(
+            {
+                "error": f"Invalid ransac_feature: {ransac_feature}. Available features: {list(features)}",
+                "available_features": list(features),
             }
         )
 
@@ -198,6 +238,17 @@ def delete(doc_id: str):
         "cleared_results": cleared_results,
         "cleared_result_directories": delete_empty_dirs(ALIGN_RESULTS_PATH),
     }
+
+
+@blueprint.route("models", methods=["GET"])
+def get_models():
+    """
+    Get the list of features usable as ``ransac_feature``: SIFT and the
+    feature extraction networks of the similarity app.
+
+    - Response: JSON object mapping each feature to its ``model``, ``name`` and ``desc``.
+    """
+    return jsonify(available_features())
 
 
 @blueprint.route("methods", methods=["GET"])
