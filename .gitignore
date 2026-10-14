@@ -92,7 +92,8 @@ node_modules/
 app/region_extraction/lib/line_predictor/MultiScaleDeformableAttention.egg-info/
 app/region_extraction/lib/line_predictor/build/
 app/region_extraction/lib/line_predictor/dist/
-
+app/region_extraction/lib/line_predictor/dino/ops/MultiScaleDeformableAttention.egg-info/
+app/region_extraction/lib/line_predictor/dino/ops/build/
 
 
 .idea/
@@ -100,3 +101,5 @@ yolotmp/
 
 docker/nginx.conf
 docker/supervisord.conf
+
+
