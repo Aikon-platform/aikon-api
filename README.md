@@ -107,6 +107,8 @@ bash scripts/test_torch.sh [-d]
 
 If you run into CUDA problems, see (this guide)[https://github.com/Aikon-platform/aikon-api/wiki/Torch-and-CUDA-Troubleshooting].
 
+See [this guide](https://github.com/paulhectork/halp/blob/main/cuda.md) to install a specific CUDA version.
+
 ---
 
 ## Citation
