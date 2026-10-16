@@ -150,7 +150,6 @@ class DatasetIndex:
         img_paths = [str(i.path) for i in self.images]
 
         transform = self.extractor.transforms
-        print("ARE SKETCHES", are_sketches)
         if are_sketches:
             assert isinstance(transform.transforms[0], transforms.Resize)
             transform = transforms.Compose(

@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
 AIKON API installer — works standalone (no front files needed) or delegated
-from the root install.py (which passes --root-env to share its configuration).
+from the root install.py (which passes --root-env and --bundled to share its
+configuration).
 
-    python install.py [--mode local|dev|prod] [--root-env PATH] [--defaults]
+    python install.py [--mode local|dev|prod] [--root-env PATH] [--bundled aikon|aikon-demo] [--defaults]
 
 local/prod = build and start the docker container
 dev        = create the venv on the host, then `python run.py`
@@ -12,7 +13,10 @@ dev        = create the venv on the host, then `python run.py`
 import argparse
 import subprocess
 import sys
+import shutil
 from pathlib import Path
+from typing import Literal
+
 
 API = Path(__file__).resolve().parent
 TEMPLATE = API / ".env.template"
@@ -29,7 +33,10 @@ API_APPS = (
     "search",
 )
 PROMPTED = {
-    "local": (),
+    "local": (
+        "DEVICE_NB",
+        "CUDA_HOME",
+    ),
     "dev": ("INSTALLED_APPS",),
     "prod": (
         "INSTALLED_APPS",
@@ -71,6 +78,18 @@ def sh(cmd: list, cwd: Path = None) -> None:
     subprocess.run(cmd, cwd=cwd, check=True)
 
 
+def check_deps(v: dict):
+    if v.get("MODE") in ("local", "prod"):
+        shutil.which("docker") or sys.exit(
+            "docker is required (https://docs.docker.com/engine/install/)"
+        )
+        if v.get("DEVICE_NB"):
+            shutil.which("nvidia-ctk") or sys.exit(
+                "to run the app in Docker with a GPU, nvidia-container-toolkit is required (https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)"
+            )
+    return
+
+
 def render(template: Path, out: Path, mapping: dict) -> None:
     text = template.read_text()
     for key, val in mapping.items():
@@ -78,7 +97,7 @@ def render(template: Path, out: Path, mapping: dict) -> None:
     out.write_text(text)
 
 
-def resolve(mode: str, root_env: Path, use_defaults: bool) -> dict:
+def resolve(mode: str, root_env: Path, bundled: Literal["aikon", "aikon-demo", None], use_defaults: bool) -> dict:
     current = (
         {k: v for k, (v, _) in parse_env(ENV_FILE).items()} if ENV_FILE.exists() else {}
     )
@@ -90,10 +109,13 @@ def resolve(mode: str, root_env: Path, use_defaults: bool) -> dict:
             root_key,
             current.get(key, default),
         )
+        # in AIKON-demo, all apps but vectorization are installed => force the value of INSTALLED_APPS
+        if key == "INSTALLED_APPS" and bundled == "aikon-demo":
+            val = ",".join(a for a in API_APPS if a != "vectorization")
         # optionnally prompt for user input
-        if (
+        elif (
             # key should be prompted
-            key in PROMPTED[mode] 
+            key in PROMPTED[mode]
             # defaults should not be used
             and not use_defaults
             and (
@@ -111,32 +133,36 @@ def resolve(mode: str, root_env: Path, use_defaults: bool) -> dict:
     v["TARGET"] = mode  # legacy alias, in case the api code still reads TARGET
     docker = mode != "dev"
     v["DOCKER"] = str(docker)
-    # in a bundle install the root .env is the source of truth: the api data folder
+
+    # in a bundled install the root .env is the source of truth: the api data folder
     # derives from its DATA_DIR (standalone customizations are overwritten)
-    # data folder is named DATA_DIR in AIKON, MEDIA_ROOT in AIKON0-demo
-    if root:
-        root_data_folder = root.get("DATA_DIR") or root.get("MEDIA_ROOT")
-        data_folder = Path(root_data_folder) / "api"
+    if bundled:
+        data_folder = Path(root.get("DATA_DIR")) / "api"
     else:
-        data_folder = v["DATA_FOLDER"] if v.get("DATA_FOLDER") else API / "data"
-    data_folder = str(data_folder) 
-    v["DATA_FOLDER"] = data_folder  # host path mounted at /data
-    v["API_DATA_FOLDER"] = "/data/" if docker else data_folder  # path read by base.py
+        data_folder = Path(
+            v["DATA_FOLDER"] if v.get("DATA_FOLDER") else API / "data"
+        )
+    v["DATA_FOLDER"] = str(data_folder)  # host path mounted at /data
+    v["API_DATA_FOLDER"] = "/data/" if docker else str(data_folder)  # path read by base.py
     v["YOLO_CONFIG_DIR"] = v["YOLO_CONFIG_DIR"] or str(
         Path(v["API_DATA_FOLDER"]) / "yolotmp"
     )
-    # redis is only dockerized in AIKON-API if the api is 
-    # bundled with a Dockerized AIKON instance: in that case, it 
-    # uses AIKON-front's Redis. otherwise 
+    # redis is only dockerized in AIKON-API if the api is
+    # bundled with a Dockerized AIKON instance: in that case, it
+    # uses AIKON-front's Redis.
     # v["REDIS_HOST"] = (
-    #     else "redis" if docker and root
+    #     "redis" if docker and root
     #     else "localhost"
     # )
     if docker:
         v["REDIS_PORT"] = "6379"
     if root:
         v["PROD_URL"] = root.get("PROD_API_URL", "").split("://")[-1] or v["PROD_URL"]
-        v["BUNDLED"] = "True"  # api container joins the front compose network
+
+    # used to programmatically connect the API to an AIKON frontend
+    v["BUNDLED"] = bundled
+    # used only if mode=local. see app/config/dev
+    v["API_URL_FROM_DOCKER"] = f"http://api:{v['API_PORT']}"
 
     invalid = [a for a in v["INSTALLED_APPS"].split(",") if a and a not in API_APPS]
     if invalid:
@@ -162,6 +188,32 @@ def render_confs(v: dict) -> None:
     )
 
 
+def compile_cuda_ops(v: dict) -> None:
+    """compile dino cuda operators for dev"""
+    python_exec = API / ".venv" / "bin" / "python"
+    path_vec = API / "app" / "vectorization" / "lib"
+    path_reg = API / "app" / "region_extraction" / "lib" / "line_predictor" / "dino" / "ops"
+    build_paths = {
+        "region_extraction": (path_reg, path_reg / "setup.py"),
+        "vectorization": (path_vec, path_vec / "src" / "models" / "dino" / "ops" / "setup.py")
+    }
+    success = []
+    failure = []
+    for app_name, (cwd, setup_path) in build_paths.items():
+        if app_name in v["INSTALLED_APPS"]:
+            try:
+                sh([python_exec, setup_path, "build", "install"], cwd=cwd)
+                success.append(app_name)
+            except Exception as e:
+                print(f"\ncould not build CUDA operators for app '{app_name}': {e}")
+                failure.append(app_name)
+    if len(failure):
+        print(f"\n⛔ could not build CUDA operators for apps: {failure}")
+    if len(success):
+        print(f"\n✅ CUDA operators compiled for apps: {success}")
+    return
+
+
 def setup_dev(v: dict) -> None:
     import shutil
 
@@ -171,6 +223,7 @@ def setup_dev(v: dict) -> None:
     sh([uv, "sync", "--group=dev"], cwd=API)
     sh([uv, "tool", "install", "pre-commit", "--with", "pre-commit-uv"], cwd=API)
     subprocess.run(["git", "submodule", "update", "--init"], cwd=API)
+    compile_cuda_ops(v)
     print("\n✅ api dev setup complete. Start it with:  python run.py")
 
 
@@ -182,6 +235,13 @@ if __name__ == "__main__":
         type=Path,
         help="root .env when installed as part of the full aikon bundle",
     )
+    parser.add_argument(
+        "--bundled",
+        choices=["aikon", "aikon-demo"],
+        required=False,
+        default=None,
+        help="frontend app (AIKON or AIKON-demo) AIKON-API is bundled with (None for standalone API builds)"
+    )
     parser.add_argument("--defaults", action="store_true")
     args = parser.parse_args()
 
@@ -191,14 +251,13 @@ if __name__ == "__main__":
     if mode not in MODES:
         sys.exit(f"Invalid mode '{mode}'")
 
-    v = resolve(mode, args.root_env, args.defaults or mode == "local")
+    bundled = args.bundled
+
+    # install
+    v = resolve(mode, root_env=args.root_env, bundled=bundled, use_defaults=args.defaults)
     if mode == "dev":
         setup_dev(v)
     else:
-        import shutil
-
-        shutil.which("docker") or sys.exit(
-            "docker is required (https://docs.docker.com/engine/install/)"
-        )
+        check_deps(v)
         render_confs(v)
         sh([sys.executable, str(API / "run.py"), "build"], cwd=API)
