@@ -239,8 +239,8 @@ if __name__ == "__main__":
         "--bundled",
         choices=["aikon", "aikon-demo"],
         required=False,
-        default=False,
-        help="frontend app (AIKON or AIKON-demo) AIKON-API is bundled with"
+        default=None,
+        help="frontend app (AIKON or AIKON-demo) AIKON-API is bundled with (None for standalone API builds)"
     )
     parser.add_argument("--defaults", action="store_true")
     args = parser.parse_args()
