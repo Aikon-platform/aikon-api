@@ -125,6 +125,8 @@ def docker_run() -> None:
         ]
     # in bundled setups, add the API to the frontend's network. otherwise, set ports
     bundled = ENV.get("BUNDLED", None)
+    # sanitize .env (shouldn't be necessary)
+    bundled = None if str(bundled).lower().strip() in ("none", "") else bundled
     if bundled:
         network_name = {
             "aikon": "aikon_aikon",
