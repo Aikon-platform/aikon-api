@@ -1,7 +1,7 @@
 from .base import *
 
 
-if ENV("MODE")=="local":# and ENV("BUNDLED")=="aikon-demo":
+if ENV("MODE")=="local":
     if api_url_from_docker := ENV("API_URL_FROM_DOCKER", default=None):
         BASE_URL = api_url_from_docker
     else:
