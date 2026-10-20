@@ -12,7 +12,7 @@ from pathlib import Path
 from ..const import M4M_PATH
 
 DEFAULTS = {
-    0: dict(max_e=20, batch_size=16),
+    0: dict(max_e=20, batch_size=8),
     1: dict(max_e=100, batch_size=8, learning_rate="1e-4", weight_loss_reconstruction=3),
     2: dict(max_e=140, batch_size=8, learning_rate="1e-2"),
 }
@@ -42,6 +42,9 @@ class M4MEntrypoint:
 
     def build_cmd(self, step, **kwargs):
         p = {**DEFAULTS[step], **self.params.get(f"step{step}", {}), **kwargs}
+        max_e = int(p["max_e"])
+        if max_e < 1:
+            raise M4MError(f"step {step}: max_e doit etre >= 1 (recu {max_e})")
         cmd = [self.python_bin, "reconstruction.py",
                "--dataset_file", "dataset",
                "--data_folder", str(self.data_folder),
@@ -51,7 +54,7 @@ class M4MEntrypoint:
                "--step", str(step),
                "--loss", LOSS,
                "--tag", self.tag(step),
-               "--max_e", str(p["max_e"]),
+               "--max_e", str(max_e - 1),
                "--batch_size", str(p["batch_size"])]
         if step == 0:
             cmd += ["--init", "--model_checkpoint_path", str(p["checkpoint"])]  # checkpoint HF obligatoire
