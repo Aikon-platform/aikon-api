@@ -78,8 +78,6 @@ class Paleography(LoggedTask):
         if "convert" in steps:
             if not params.get("converter_path"):
                 raise ValueError("params['converter_path'] manquant")  # emplacement a trancher. [A CONFIRMER] Paul
-            if not (params.get("script") or params.get("script_map")):
-                raise ValueError("params['script'] ou params['script_map'] requis par le converter")
         if "0" in steps and not params.get("checkpoint"):
             raise ValueError("params['checkpoint'] manquant")  # checkpoint HF du step 0
 
