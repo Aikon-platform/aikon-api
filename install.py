@@ -97,7 +97,12 @@ def render(template: Path, out: Path, mapping: dict) -> None:
     out.write_text(text)
 
 
-def resolve(mode: str, root_env: Path, bundled: Literal["aikon", "aikon-demo", None], use_defaults: bool) -> dict:
+def resolve(
+    mode: str,
+    root_env: Path,
+    bundled: Literal["aikon", "aikon-demo", None],
+    use_defaults: bool,
+) -> dict:
     current = (
         {k: v for k, (v, _) in parse_env(ENV_FILE).items()} if ENV_FILE.exists() else {}
     )
@@ -139,11 +144,11 @@ def resolve(mode: str, root_env: Path, bundled: Literal["aikon", "aikon-demo", N
     if bundled:
         data_folder = Path(root.get("DATA_DIR")) / "api"
     else:
-        data_folder = Path(
-            v["DATA_FOLDER"] if v.get("DATA_FOLDER") else API / "data"
-        )
+        data_folder = Path(v["DATA_FOLDER"] if v.get("DATA_FOLDER") else API / "data")
     v["DATA_FOLDER"] = str(data_folder)  # host path mounted at /data
-    v["API_DATA_FOLDER"] = "/data/" if docker else str(data_folder)  # path read by base.py
+    v["API_DATA_FOLDER"] = (
+        "/data/" if docker else str(data_folder)
+    )  # path read by base.py
     v["YOLO_CONFIG_DIR"] = v["YOLO_CONFIG_DIR"] or str(
         Path(v["API_DATA_FOLDER"]) / "yolotmp"
     )
@@ -193,10 +198,15 @@ def compile_cuda_ops(v: dict) -> None:
     """compile dino cuda operators for dev"""
     python_exec = API / ".venv" / "bin" / "python"
     path_vec = API / "app" / "vectorization" / "lib"
-    path_reg = API / "app" / "region_extraction" / "lib" / "line_predictor" / "dino" / "ops"
+    path_reg = (
+        API / "app" / "region_extraction" / "lib" / "line_predictor" / "dino" / "ops"
+    )
     build_paths = {
         "region_extraction": (path_reg, path_reg / "setup.py"),
-        "vectorization": (path_vec, path_vec / "src" / "models" / "dino" / "ops" / "setup.py")
+        "vectorization": (
+            path_vec,
+            path_vec / "src" / "models" / "dino" / "ops" / "setup.py",
+        ),
     }
     success = []
     failure = []
@@ -224,6 +234,7 @@ def setup_dev(v: dict) -> None:
     sh([uv, "sync", "--group=dev"], cwd=API)
     sh([uv, "tool", "install", "pre-commit", "--with", "pre-commit-uv"], cwd=API)
     subprocess.run(["git", "submodule", "update", "--init"], cwd=API)
+    sh(["pre-commit", "install"])
     compile_cuda_ops(v)
     print("\n✅ api dev setup complete. Start it with:  python run.py")
 
@@ -241,7 +252,7 @@ if __name__ == "__main__":
         choices=["aikon", "aikon-demo"],
         required=False,
         default=None,
-        help="frontend app (AIKON or AIKON-demo) AIKON-API is bundled with (None for standalone API builds)"
+        help="frontend app (AIKON or AIKON-demo) AIKON-API is bundled with (None for standalone API builds)",
     )
     parser.add_argument("--defaults", action="store_true")
     args = parser.parse_args()
@@ -255,7 +266,9 @@ if __name__ == "__main__":
     bundled = args.bundled
 
     # install
-    v = resolve(mode, root_env=args.root_env, bundled=bundled, use_defaults=args.defaults)
+    v = resolve(
+        mode, root_env=args.root_env, bundled=bundled, use_defaults=args.defaults
+    )
     if mode == "dev":
         setup_dev(v)
     else:
