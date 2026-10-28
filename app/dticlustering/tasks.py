@@ -134,5 +134,6 @@ def train_dti(
             zipObj.write(file, file.relative_to(output_path))
 
     return {
+        "dataset_url": dataset.get_absolute_url(),
         "result_url": f"{BASE_URL}/clustering/{experiment_id}/result",
     }
