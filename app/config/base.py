@@ -15,8 +15,17 @@ except (ImportError, RuntimeError):
     IS_CUDA = False
 
 INSTALLED_APPS = ENV.list("INSTALLED_APPS", default=[])
+
+if "alignment" in INSTALLED_APPS:
+    for app in ("dticlustering", "similarity"):
+        if app not in INSTALLED_APPS:
+            INSTALLED_APPS.append(app)
+            print(
+                f"Info: added app '{app}' to INSTALLED_APPS (required by app 'alignment')"
+            )
+
 if not IS_CUDA:
-    cuda_apps = {"vectorization", "dticlustering"}
+    cuda_apps = {"vectorization", "dticlustering", "alignment"}
     removed = cuda_apps & set(INSTALLED_APPS)
     INSTALLED_APPS = [app for app in INSTALLED_APPS if app not in cuda_apps]
     if removed:
