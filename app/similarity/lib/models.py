@@ -26,6 +26,10 @@ def _setup_cnn_features(model, node_name, spatial=False):
 
 def _setup_vit_hook(model, block_idx, spatial=False, patch_size=None):
     captured = {}
+    # feat_fn receives the model output: keep the input shape for the patch grid size
+    model.register_forward_pre_hook(
+        lambda m, args: captured.update(input_shape=args[0].shape)
+    )
     model.blocks[block_idx].register_forward_hook(
         lambda m, i, o: captured.update(feat=o)
     )
@@ -35,8 +39,8 @@ def _setup_vit_hook(model, block_idx, spatial=False, patch_size=None):
         def feat_fn(x):
             tokens = patch_tokens(x)
             B, N, C = tokens.shape
-            h = x.shape[2] // patch_size
-            w = x.shape[3] // patch_size
+            h = captured["input_shape"][2] // patch_size
+            w = captured["input_shape"][3] // patch_size
             return tokens.view(B, h, w, C).permute(0, 3, 1, 2)  # [B, C, h, w]
 
         return model, feat_fn
@@ -95,9 +99,12 @@ def _load_moco_v2(weights_path, device):
 
 
 def _load_resnet50(weights_path, device):
-    return models.resnet50(
-        torch.load(weights_path, weights_only=False, map_location=device)
+    # Legacy (non-zip) checkpoint: torch refuses to map it straight to CUDA
+    model = models.resnet50()
+    model.load_state_dict(
+        torch.load(weights_path, map_location="cpu", weights_only=False)
     )
+    return model.to(device)
 
 
 def _load_dino_deitsmall16(weights_path, device):
