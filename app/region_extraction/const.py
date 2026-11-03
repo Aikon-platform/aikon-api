@@ -2,7 +2,7 @@
 Module-specific constants for the regions app
 """
 from ..shared.utils.fileutils import create_dirs_if_not, download_model_if_not
-from ..config.base import ENV, BASE_DIR, API_DATA_FOLDER, IS_CUDA
+from ..config.base import BASE_DIR, API_DATA_FOLDER, IS_CUDA
 
 DEMO_NAME = "region_extraction"
 

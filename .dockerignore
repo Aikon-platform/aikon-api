@@ -1,0 +1,17 @@
+.git
+.gitignore
+
+.venv/*
+venv/*
+.cache
+
+.vscode/
+.idea/
+
+**/__pycache__/
+
+install.py
+run.py
+
+README.md
+docs/*

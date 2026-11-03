@@ -5,6 +5,7 @@ import torch
 from pathlib import Path
 from typing import Optional, Dict
 
+from ..config import IS_CUDA
 from .const import DEFAULT_MODEL, MODEL_PATH, DEFAULT_MODEL_INFOS
 from .lib.extract import (
     YOLOExtractor,
@@ -12,6 +13,12 @@ from .lib.extract import (
     LineExtractor,
     DtlrExtractor,
 )
+# if IS_CUDA:
+#     from .lib.extract import (
+#         LineExtractor,
+#         DtlrExtractor,
+#     )
+
 from ..shared.tasks import LoggedTask
 from ..shared.dataset import Document, Dataset, Image as DImage
 from ..shared.utils.fileutils import get_model, list_known_models
@@ -32,9 +39,9 @@ def extend_with_model_class(model_key: str, model_infos: Dict) -> Dict:
     return {
         "model_class": (
             DtlrExtractor
-            if "character" in model_key
+            if ("character" in model_key and IS_CUDA)
             else LineExtractor
-            if "line" in model_key
+            if ("line" in model_key and IS_CUDA)
             else FasterRCNNExtractor
             if "rcnn" in model_key
             else YOLOExtractor  # last use case: `illustration_extraction`
@@ -88,15 +95,10 @@ class ExtractRegions(LoggedTask):
         Initialize the extractor, based on the model's name
         """
         if self.model not in MODEL_MAPPER:
-            # if "character" in self.model:
-            #     self.extractor = DtlrExtractor(self.weights, **self.extractor_kwargs)
-            # elif "line" in self.model:
-            #     self.extractor = LineExtractor(self.weights, **self.extractor_kwargs)
-            # elif "rcnn" in self.model:
-            #     self.extractor = FasterRCNNExtractor(self.weights, **self.extractor_kwargs)
-            # else: # last use case: `illustration_extraction`
-            #     self.extractor = YOLOExtractor(self.weights, **self.extractor_kwargs)
             raise ValueError(f"Model {self.model} is not supported for extraction.")
+
+        if self.weights is None or not Path(self.weights).exists():
+            raise FileNotFoundError(f"Weights for {self.model} not found (download likely failed)")
 
         self.extractor = MODEL_MAPPER[self.model]["model_class"](
             self.weights, **self.extractor_kwargs

@@ -15,8 +15,17 @@ except (ImportError, RuntimeError):
     IS_CUDA = False
 
 INSTALLED_APPS = ENV.list("INSTALLED_APPS", default=[])
+
+if "alignment" in INSTALLED_APPS:
+    for app in ("dticlustering", "similarity"):
+        if app not in INSTALLED_APPS:
+            INSTALLED_APPS.append(app)
+            print(
+                f"Info: added app '{app}' to INSTALLED_APPS (required by app 'alignment')"
+            )
+
 if not IS_CUDA:
-    cuda_apps = {"vectorization", "dticlustering"}
+    cuda_apps = {"vectorization", "dticlustering", "alignment"}
     removed = cuda_apps & set(INSTALLED_APPS)
     INSTALLED_APPS = [app for app in INSTALLED_APPS if app not in cuda_apps]
     if removed:
@@ -38,7 +47,11 @@ class FLASK_CONFIG:
     pass
 
 
-BROKER_URL = f"redis:///{ENV('REDIS_DB_INDEX', default=0)}"
-# BROKER_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/{ENV('REDIS_DB_INDEX', default=0)}"
+# BROKER_URL = f"redis:///{ENV('REDIS_DB_INDEX', default=0)}"
+# # BROKER_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/{ENV('REDIS_DB_INDEX', default=0)}"
+
+REDIS_HOST = ENV("REDIS_HOST", default="localhost")
+REDIS_PORT = ENV("REDIS_PORT", default=6379)
+BROKER_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/{ENV('REDIS_DB_INDEX', default=0)}"
 
 USE_NGINX_XACCEL = False
