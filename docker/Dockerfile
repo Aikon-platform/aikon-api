@@ -1,7 +1,9 @@
 # NOTE : to use a GPU in docker, the nvidia container toolkit is needed on the host.
-# see: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html 
+# see: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html
 # see this if you have torch issues https://github.com/Aikon-platform/aikon-api/wiki/Torch-and-CUDA-Troubleshooting
 FROM nvidia/cuda:12.6.2-cudnn-devel-ubuntu22.04 AS aikonapi
+
+#RUN echo "195.221.193.4 apt-cache.enpc.fr" >> /etc/hosts
 
 ARG HTTP_PROXY
 ARG HTTPS_PROXY
@@ -10,6 +12,13 @@ ARG NO_PROXY
 ENV http_proxy=${HTTP_PROXY}
 ENV https_proxy=${HTTPS_PROXY}
 ENV no_proxy=${NO_PROXY}
+ENV HTTP_PROXY=${HTTP_PROXY}
+ENV HTTPS_PROXY=${HTTPS_PROXY}
+ENV NO_PROXY=${NO_PROXY}
+#ENV http_proxy=http://proxy.enpc.fr:3128
+#ENV https_proxy=http://proxy.enpc.fr:3128
+#ENV HTTP_PROXY=http://proxy.enpc.fr:3128
+#ENV HTTPS_PROXY=http://proxy.enpc.fr:3128
 
 ENV USER=aikonapi
 ARG USERID
@@ -54,9 +63,19 @@ ENV MPLCONFIGDIR=/home/${USER}/.config/matplotlib
 ## Bash instead of shell
 SHELL ["/bin/bash", "-c"]
 
-RUN apt-get update && apt-get install -y \
-    unzip \
+RUN echo 'Acquire::http::Proxy "http://195.221.193.4:3142";' > /etc/apt/apt.conf.d/proxy.conf && \
+    echo 'Acquire::https::Proxy "http://195.221.193.4:3142";' >> /etc/apt/apt.conf.d/proxy.conf
+
+    RUN apt-get update || true && \
+    apt-get install -y --no-install-recommends \
+    ca-certificates \
     wget \
+    curl \
+    apt-transport-https \
+    gnupg \
+    dnsutils \
+    iputils-ping \
+    unzip \
     zip \
     supervisor \
     ffmpeg \
@@ -66,8 +85,9 @@ RUN apt-get update && apt-get install -y \
     redis-server \
     nginx \
     git \
-    poppler-utils \
-    && rm -rf /var/lib/apt/lists/*
+    poppler-utils && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /home/${USER}
 
@@ -86,11 +106,11 @@ COPY docker/start.sh /home/${USER}/start.sh
 RUN chmod +x /home/${USER}/start.sh
 
 # install python deps (putting this to the bottom of the file can speedup iterative builds)
-RUN uv python install 3.11 
+RUN uv python install 3.11
 RUN --mount=type=cache,target=${UV_CACHE_DIR},id=uv-cache \
     uv sync --locked --group=prod
 
-# Copy the api code (having this as close to the bottom of the 
+# Copy the api code (having this as close to the bottom of the
 # file as possible may speed up successive docker builds)
 COPY --chown=${USER} ./ ./api/
 
