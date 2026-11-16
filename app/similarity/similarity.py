@@ -1,5 +1,6 @@
 import itertools
 from collections import OrderedDict
+from functools import cached_property
 from typing import (
     Optional,
     TypedDict,
@@ -35,7 +36,7 @@ from ..shared.dataset import Dataset
 from ..shared.dataset.types import ImageDict, DocInRange
 from ..shared.dataset.utils import group_by_documents
 from ..shared.dataset.document import DocDict, get_file_url, Document
-from ..shared.utils import get_device
+from ..shared.utils import get_device, hash_str
 from ..shared.tasks import LoggedTask
 from ..shared.utils.logging import serializer
 
@@ -46,6 +47,22 @@ PairTuple: TypeAlias = Tuple[int, int, float, int, int]
 PairList: TypeAlias = Set[PairTuple] | List[PairTuple]
 DocRef: TypeAlias = Tuple[str, str]
 Pair: TypeAlias = Tuple[Tuple[DocInRange, int], Tuple[DocInRange, int], SimScore]
+
+
+def region_key(img_id: str) -> str:
+    """
+    Name of a region whatever the writing of its bbox, to match the front names with the API image ids:
+    - url_list ids (API) use the aiiinotate xywh as is: "12.6" or "-3" are possible
+    - front names clamp negative coordinates at 0 (get_coord_from_annotation) and truncate decimals (parse_bbox, norm_bbox)
+    → each coordinate is truncated, then clamped at 0
+    """
+    img_id = img_id.removesuffix(".jpg")
+    stem, _, bbox = img_id.rpartition("_")
+    try:
+        x, y, w, h = (max(0, int(float(c))) for c in bbox.split(","))
+    except ValueError:
+        return img_id  # not a region
+    return f"{stem}_{x},{y},{w},{h}"
 
 
 def _extend_from_dense_scores(
@@ -242,6 +259,10 @@ class ComputeSimilarity(LoggedTask):
             getattr(AllTranspose, t.upper()) for t in self.raw_transpositions
         ]
         self.skip_pairs: set[str] = set(parameters.get("skip_pairs", []))
+        # pairs of regions to score whatever their rank or score (e.g. regions remapped after the computation)
+        self.pairs: List[Tuple[str, str]] = parameters.get("pairs", [])
+        # recompute document pairs even if a dataset score file exists
+        self.force: bool = bool(parameters.get("force", False))
 
         self.device = get_device()
 
@@ -294,31 +315,35 @@ class ComputeSimilarity(LoggedTask):
         return skipping
 
     @torch.no_grad()
-    def get_features(self, img_paths: List[str]):
+    def get_features(self):
         """
-        Extract features from a list of images
+        Extract features document by document, in the order of self.images
+        Each document caches the features of its current list of images: a document whose images change is re-extracted alone
         """
         extractor = FeatureExtractor(
             feat_net=self.feat_net,
             device=self.device,
         )
+        transpositions = "".join(str(t.value) for t in self.transpositions)
 
-        img_dataset = FileListDataset(
-            data_paths=img_paths,
-            transform=extractor.transforms,
-            device=self.device,
-            transpositions=self.transpositions,
-        )
-
-        data_loader = DataLoader(img_dataset, batch_size=16, shuffle=False)
-        cache_id = (
-            f"{self.dataset.uid}@{''.join(str(t.value) for t in self.transpositions)}"
-        )
-
-        features = extractor.extract_features(
-            data_loader,
-            cache_dir=self.dataset.path / "features",
-            cache_id=cache_id,
+        features = torch.cat(
+            [
+                extractor.extract_features(
+                    DataLoader(
+                        FileListDataset(
+                            data_paths=[str(im.path) for im in doc.images],
+                            transform=extractor.transforms,
+                            device=self.device,
+                            transpositions=self.transpositions,
+                        ),
+                        batch_size=16,
+                        shuffle=False,
+                    ),
+                    cache_dir=doc.document.path / "features",
+                    cache_id=f"{hash_str(chr(10).join(im.id for im in doc.images))[:16]}@{transpositions}",
+                ).cpu()
+                for doc in self.doc_images
+            ]
         )
 
         if not features.numel():
@@ -393,7 +418,6 @@ class ComputeSimilarity(LoggedTask):
         """
         Compute the similarity between images in the dataset and returns the results
         """
-        source_paths = [str(i.path) for i in self.images]
         doc_ids = self.dataset.doc_uid
 
         if len(self.images) == 0:
@@ -404,11 +428,11 @@ class ComputeSimilarity(LoggedTask):
         )
 
         topk = self.segswap_n if self.algorithm == "segswap" else self.topk
-        features = self.get_features(source_paths)
+        features = self.get_features().numpy()
 
         # TODO skip this step if self.algorithm == "segswap" && self.segswap_prefilter == false
         pairs = self.compute_cosine_similarity(
-            features.cpu().numpy(),
+            features,
             topk=topk,
             n_transpositions=len(self.transpositions),
         )
@@ -418,11 +442,12 @@ class ComputeSimilarity(LoggedTask):
                 self.log(
                     "Warning: SegSwap on CPU will be slow. Consider using cosine similarity."
                 )
-            pairs = self.compute_segswap_similarity(
-                source_paths, pairs, cos_topk=topk, device=self.device
-            )
+            pairs = self.compute_segswap_similarity(pairs, cos_topk=topk)
 
         self.log(f"Computed similarity scores for {len(pairs)} pairs of images")
+
+        if self.pairs:
+            self.compute_pairs(features, topk)
 
         return self.format_results(pairs)
 
@@ -522,30 +547,12 @@ class ComputeSimilarity(LoggedTask):
 
         return all_scores
 
-    @torch.no_grad()
-    def compute_segswap_similarity(
-        self,
-        source_images: List[str],
-        input_pairs: BlockSimMatrix,
-        cos_topk,
-        device=None,
-    ) -> BlockSimMatrix:
+    @cached_property
+    def segswap_scorer(self):
         """
-        Compute the similarity between pairs of images using the SegSwap algorithm
-
-        Args:
-            source_images (List[str]): The list of image paths
-            input_pairs (BlockSimMatrix): The input pairs of documents
-            cos_topk (int): The number of best matches to return
-            device (str): The device to run the computation on
-
-        Returns:
-            A list of pairs (k_i, k_j, sim, tr_i, tr_j)
+        Load SegSwap once, return a function scoring pairs (i, j) of indices of self.images by batches
         """
-        self.log(
-            f"Computing SegSwap similarity for {len(input_pairs.data)} pairs of documents ({input_pairs})"
-        )
-
+        device = self.device
         param = torch.load(
             get_model_path("hard_mining_neg5"), map_location=device, weights_only=False
         )
@@ -556,7 +563,7 @@ class ComputeSimilarity(LoggedTask):
         y_grid, x_grid = np.where(np.ones((feat_size, feat_size), dtype=bool))
 
         img_dataset = FileListDataset(
-            data_paths=source_images,
+            data_paths=[str(i.path) for i in self.images],
             transform=transforms.Compose(
                 [
                     transforms.Resize((segswap.MAX_SIZE, segswap.MAX_SIZE)),
@@ -566,10 +573,49 @@ class ComputeSimilarity(LoggedTask):
             device=device,
         )
 
-        last_img_idx = None
-        q_tensor = None
+        def score(pairs: List[Tuple[int, int]], batch_size: int) -> List[float]:
+            """Scores in the order of pairs; pairs are grouped by query image so that it is loaded and encoded once per batch"""
+            scores = [0.0] * len(pairs)
+            order = sorted(range(len(pairs)), key=lambda k: pairs[k])
+            # TODO make a dataloader
+            for i, group in itertools.groupby(order, key=lambda k: pairs[k][0]):
+                group = list(group)
+                q_tensor = img_dataset[i].unsqueeze(0)
+                for start in range(0, len(group), batch_size):
+                    batch = group[start : start + batch_size]
+                    batch_scores = segswap.compute_score(
+                        q_tensor,
+                        torch.stack([img_dataset[pairs[k][1]] for k in batch]),
+                        backbone,
+                        encoder,
+                        y_grid,
+                        x_grid,
+                    )
+                    for k, s in zip(batch, batch_scores):
+                        scores[k] = float(s)
+            return scores
+
+        return score
+
+    @torch.no_grad()
+    def compute_segswap_similarity(
+        self, input_pairs: BlockSimMatrix, cos_topk
+    ) -> BlockSimMatrix:
+        """
+        Compute the similarity between pairs of images using the SegSwap algorithm
+
+        Args:
+            input_pairs (BlockSimMatrix): The input pairs of documents
+            cos_topk (int): The number of best matches to return
+
+        Returns:
+            A list of pairs (k_i, k_j, sim, tr_i, tr_j)
+        """
+        self.log(
+            f"Computing SegSwap similarity for {len(input_pairs.data)} pairs of documents ({input_pairs})"
+        )
+
         segswap_scores = BlockSimMatrix()
-        # TODO make a dataloader
         for block in input_pairs.blocks():
             doc1 = block.doc1
             doc2 = block.doc2
@@ -580,43 +626,72 @@ class ComputeSimilarity(LoggedTask):
                 continue
 
             doc_scores = segswap_scores[doc1, doc2]
-
-            pairs = list(block)
-
-            batched_pairs = [
-                pairs[i : i + cos_topk] for i in range(0, len(pairs), cos_topk)
-            ]
-            for batch in batched_pairs:
-                tensor1, tensor2, batch_pairs = [], [], []
-                for (_, rel_i), (_, rel_j), *_ in batch:
-                    i = doc1.range[rel_i]
-                    j = doc2.range[rel_j]
-                    # print(("i", rel_i, i, "j", rel_j, j, last_img_idx))
-
-                    # Reuse tensor if same image index (assumes sorted pairs)
-                    if last_img_idx != i:
-                        q_tensor = img_dataset[i]
-                        last_img_idx = i
-
-                    tensor1.append(q_tensor)
-                    tensor2.append(img_dataset[j])
-                    batch_pairs.append((rel_i, rel_j))
-
-                scores = segswap.compute_score(
-                    torch.stack(tensor1),
-                    torch.stack(tensor2),
-                    backbone,
-                    encoder,
-                    y_grid,
-                    x_grid,
-                )
-
-                for (i, j), s in zip(batch_pairs, scores):
-                    doc_scores[i, j] = (round(float(s), 2), 0, 0)
+            rel_pairs = [(rel_i, rel_j) for (_, rel_i), (_, rel_j), _ in block]
+            scores = self.segswap_scorer(
+                [(doc1.range[i], doc2.range[j]) for i, j in rel_pairs], cos_topk
+            )
+            for (i, j), s in zip(rel_pairs, scores):
+                doc_scores[i, j] = (round(s, 2), 0, 0)
 
             self.store(doc_scores, "segswap")
 
         return segswap_scores
+
+    @torch.no_grad()
+    def compute_pairs(self, features: np.ndarray, batch_size: int):
+        """
+        Score each pair of self.pairs, whatever its rank or score, and store them in "{algorithm}-pairs.json"
+        Pairs are returned with the names sent by the front, so that it updates its rows without renaming
+        """
+        index = {region_key(im.id): k for k, im in enumerate(self.images)}
+        found = [
+            (a, b, index[ka], index[kb])
+            for a, b in self.pairs
+            if (ka := region_key(a)) in index and (kb := region_key(b)) in index
+        ]
+        if missing := len(self.pairs) - len(found):
+            self.print_and_log_warning(
+                f"[task.similarity] {missing} requested pairs have an image missing from the dataset"
+            )
+        if not found:
+            return
+
+        if self.algorithm == "segswap":
+            scores = [
+                round(s, 2)
+                for s in self.segswap_scorer([(i, j) for *_, i, j in found], batch_size)
+            ]
+        else:
+            n = len(self.transpositions)
+            scores = [
+                round(float(1.0 - cdist(features[i * n : (i + 1) * n], features[j * n : (j + 1) * n], metric="cosine").max()), 3)
+                for *_, i, j in found
+            ]
+
+        names = list(dict.fromkeys(img for a, b, *_ in found for img in (a, b)))
+        position = {img: k for k, img in enumerate(names)}
+        result_name = f"{self.algorithm}-pairs"
+        score_file = SCORES_PATH / self.experiment_id / f"{result_name}.json"
+        score_file.parent.mkdir(parents=True, exist_ok=True)
+        score_file.write_bytes(
+            orjson.dumps(
+                {
+                    "parameters": self.format_parameters(),
+                    "index": {"images": [{"id": img} for img in names]},
+                    "pairs": [
+                        (position[a], position[b], s, 0, 0)
+                        for (a, b, *_), s in zip(found, scores)
+                    ],
+                }
+            )
+        )
+        self.add_results_url(
+            {
+                "doc_pair": "pairs",
+                "result_url": get_file_url(DEMO_NAME, f"{self.experiment_id}/{result_name}"),
+            }
+        )
+        self.log(f"Scored {len(found)} requested pairs")
 
     def run_task(self):
         if not self.check_dataset():
@@ -630,7 +705,11 @@ class ComputeSimilarity(LoggedTask):
 
         self.task_update("STARTED")
 
-        scores, experiment_id = self.check_already_computed()
+        scores, experiment_id = (
+            (False, False)
+            if self.pairs or self.force
+            else self.check_already_computed()
+        )
         if scores:
             response = {
                 "dataset_url": self.dataset.get_absolute_url(),
