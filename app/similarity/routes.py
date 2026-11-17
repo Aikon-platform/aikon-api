@@ -85,7 +85,10 @@ def start_similarity(client_id):
                 "cosine_n_filter": 20,
                 "segswap_prefilter": true,
                 "segswap_n": 10,
-                "transpositions": ["none", "rot90"]
+                "transpositions": ["none", "rot90"],
+                "skip_pairs": ["doc_uid1-doc_uid2"],
+                "pairs": [["img_id1", "img_id2"]],
+                "force": false
             }
         }
     """
@@ -108,6 +111,8 @@ def start_similarity(client_id):
         "segswap_n": param.get("segswap_n", 10),
         "transpositions": param.get("transpositions", ["none"]),
         "skip_pairs": param.get("skip_pairs", []),
+        "pairs": param.get("pairs", []),
+        "force": param.get("force", False),
         "client_id": client_id,
     }
 
@@ -207,6 +212,7 @@ def delete(doc_id: str):
         clear_dir(DATASETS_PATH / d / "features", f"{d}*{feat_net}.pt" if feat_net else "*", delete_anyway=True)
         for d in dataset_ids
     )
+    cleared_feats += clear_dir(doc_dir / "features", delete_anyway=True)
     cleared_imgs = clear_dir(doc_dir / "images", delete_anyway=True)
     delete_path(doc_dir / "images.json")
     delete_path(doc_dir / "metadata.json")
