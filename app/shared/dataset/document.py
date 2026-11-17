@@ -286,17 +286,26 @@ class Document:
         Download images from a dictionary of URLs [img_stem -> img_url]
         """
         images_dict = get_json(images_list_url)
+        if images_dict is None:
+            if self.sanity_check():
+                console(f"{images_list_url} unreachable, keeping the images of {self.uid}", color="yellow")
+                return
+            raise ValueError(f"Unable to get the list of images {images_list_url}")
+
+        # only images whose url changed or whose file is missing are downloaded
+        known = {im.id: im for im in self.images} if self.images_info_path.exists() else {}
         images = []
         for img_stem, img_url in images_dict.items():
-            ext = download_image(img_url, self.images_path, img_stem)
-            images.append(
-                Image(
+            img = known.get(img_stem)
+            if not (img and img.src == img_url and img.path.exists()):
+                ext = download_image(img_url, self.images_path, img_stem)
+                img = Image(
                     id=img_stem,
                     src=img_url,
                     path=self.images_path / f"{img_stem}.{ext}",
                     document=self,
                 )
-            )
+            images.append(img)
         self.save_images(images)
 
     def _download_from_pdf(self, pdf_url: str):
@@ -325,8 +334,8 @@ class Document:
         """
         Download a document from its source definition
         """
-        # if self.images_path.exists() and self.has_images():
-        if self.sanity_check():
+        # url_list documents are refreshed on each run: their regions can be corrected after download
+        if self.dtype != "url_list" and self.sanity_check():
             console(
                 f"Document {self.uid} already exists in {self.images_path}, skipping download.",
                 color="blue",
