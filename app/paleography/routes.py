@@ -6,6 +6,7 @@ from flask import request, Blueprint
 from .tasks import run_paleography
 from ..shared import routes as shared_routes
 from ..shared.const import DOCUMENTS_PATH
+from .const import PALEO_RESULTS_PATH, PALEO_XACCEL_PREFIX
 
 blueprint = Blueprint("paleography", __name__, url_prefix="/paleography")
 
@@ -45,3 +46,8 @@ def qsizes_paleography():
 @blueprint.route("monitor", methods=["GET"])
 def monitor_paleography():
     return shared_routes.monitor(DOCUMENTS_PATH, run_paleography.broker)
+
+
+@blueprint.route("<doc_id>/result", methods=["GET"])
+def result_paleography(doc_id: str):
+    return shared_routes.result(doc_id, PALEO_RESULTS_PATH, PALEO_XACCEL_PREFIX, "zip")

@@ -4,6 +4,8 @@ from typing import Optional
 from .lib.entrypoint import M4MEntrypoint
 from ..shared.tasks import LoggedTask
 from ..shared.dataset import Dataset
+import shutil
+from .const import DEMO_NAME, PALEO_RESULTS_PATH
 
 
 class Paleography(LoggedTask):
@@ -115,6 +117,20 @@ class Paleography(LoggedTask):
             ep.run_step(2, annotation_file=str(annotation))
         return ep.export() if "export" in steps else None
 
+    def store_results(self, src) -> list:
+        """Zip paleography_input as <doc.uid>.zip; one entry per document (M4M runs on the whole dataset)."""
+        PALEO_RESULTS_PATH.mkdir(parents=True, exist_ok=True)
+        entries, first_zip = [], None
+        for doc in self.dataset.documents:
+            zip_path = PALEO_RESULTS_PATH / f"{doc.uid}.zip"
+            if first_zip is None:
+                shutil.make_archive(str(zip_path.with_suffix("")), "zip", root_dir=str(src))
+                first_zip = zip_path
+            else:
+                shutil.copy2(first_zip, zip_path)
+            entries.append({"doc_id": doc.uid, "result_url": doc.get_results_url(DEMO_NAME)})
+        return entries
+
     def terminate(self):
         self.entrypoint = None
         gc.collect()
@@ -137,7 +153,7 @@ class Paleography(LoggedTask):
             self.initialize()
             result = self._run_chain()
             if result:
-                self.results_url.append(result)
+                self.results_url.extend(self.store_results(result))
             return True
         except Exception as e:
             self.task_update(

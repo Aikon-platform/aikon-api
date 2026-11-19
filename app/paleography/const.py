@@ -1,7 +1,7 @@
 """
 Module-specific constants for the paleography app
 """
-from ..config.base import BASE_DIR, API_DATA_FOLDER
+from ..config.base import BASE_DIR, API_DATA_FOLDER, XACCEL_PREFIX
 
 DEMO_NAME = "paleography"
 
@@ -13,3 +13,5 @@ M4M_PATH = LIB_PATH / "m4m"  # future git submodule (not added yet)
 PALEO_QUEUE = "queue5"
 
 PALEO_DATA_FOLDER = API_DATA_FOLDER / DEMO_NAME
+PALEO_RESULTS_PATH = PALEO_DATA_FOLDER / "results"  # <doc_uid>.zip (same pattern as vectorization)
+PALEO_XACCEL_PREFIX = f"{XACCEL_PREFIX}/{DEMO_NAME}"

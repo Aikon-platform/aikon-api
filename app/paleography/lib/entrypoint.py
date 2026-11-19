@@ -107,4 +107,16 @@ class M4MEntrypoint:
         r = subprocess.run(cmd, cwd=self.m4m_path)
         if r.returncode != 0:
             raise M4MError(f"export a echoue (code {r.returncode})")
-        return f"{self.out_dir(1)}/paleography_input"
+        out = self.m4m_path / self.out_dir(1) / "paleography_input"
+        problems = []
+        protos = out / "prototypes"
+        proto_dirs = [d for d in protos.iterdir() if d.is_dir()] if protos.is_dir() else []
+        if not proto_dirs:
+            problems.append("no folder in prototypes/")
+        problems += [f"prototypes/{d.name} is empty" for d in proto_dirs if not any(d.iterdir())]
+        meas = out / "characters_measurements"
+        if not (meas.is_dir() and any(meas.rglob("*.json"))):
+            problems.append("no JSON in characters_measurements/")
+        if problems:  # export exits 0 with warnings only: do not report an empty result as SUCCESS
+            raise M4MError("export incomplet: " + "; ".join(problems))
+        return out
