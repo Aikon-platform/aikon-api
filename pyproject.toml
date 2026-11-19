@@ -10,6 +10,7 @@ dependencies = [
     "django-environ>=0.12.1",
     "dramatiq-abort[redis]>=1.2.1",
     "dramatiq[redis]>=2.0.1",
+    "editdistance>=0.8.1",
     "flask>=3.1.2",
     "fvcore>=0.1.5.post20221221",
     "httpx>=0.28.1",
@@ -47,6 +48,7 @@ dependencies = [
     "tox>=4.36.0",
     "tqdm>=4.67.3",
     "ultralytics>=8.4.14",
+    "wandb>=0.31.0",
     "yapf==0.3.1",
 ]
 
