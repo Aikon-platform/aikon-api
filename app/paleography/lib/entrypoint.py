@@ -6,6 +6,7 @@ Sources: scripts/btv1b84472995/line_step_{0,1,2}.sh (Raphael, 37fea71) + reconst
 - --wandb jamais passe. --model_config_path et --loss passes a chaque step.
 """
 import os
+import sys
 import subprocess
 from pathlib import Path
 
@@ -18,6 +19,7 @@ DEFAULTS = {
 }
 MODEL_CONFIG = "config/Latin_accent.py"
 LOSS = "L1"
+DEFAULT_SEED = 42  # same default as M4M main_synthetic.py; params["seed"]=None disables it
 
 
 class M4MError(RuntimeError):
@@ -28,8 +30,8 @@ class M4MEntrypoint:
     def __init__(self, params=None, m4m_path=M4M_PATH, python_bin=None, logger=None):
         self.params = params or {}
         self.m4m_path = Path(m4m_path)
-        # env conda M4M (torch 2.1): [A CONFIRMER] nom de variable / chemin avec Paul
-        self.python_bin = python_bin or os.environ.get("M4M_PYTHON", "python")
+        # M4M runs with the API interpreter (single uv env, decided 19/11)
+        self.python_bin = python_bin or sys.executable
         self.logger = logger
         self.data_folder = self.params.get("data_folder")  # [A CONFIRMER] resolution via datasets/config.json
         self.run_id = self.params.get("run_id", "paleo")
@@ -54,8 +56,11 @@ class M4MEntrypoint:
                "--step", str(step),
                "--loss", LOSS,
                "--tag", self.tag(step),
-               "--max_e", str(max_e - 1),
+               "--max_e", str(max_e),
                "--batch_size", str(p["batch_size"])]
+        seed = self.params.get("seed", DEFAULT_SEED)
+        if seed is not None:
+            cmd += ["--seed", str(int(seed))]
         if step == 0:
             cmd += ["--init", "--model_checkpoint_path", str(p["checkpoint"])]  # checkpoint HF obligatoire
         elif step == 1:
