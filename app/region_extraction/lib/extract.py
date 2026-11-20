@@ -614,7 +614,7 @@ class DtlrExtractor(OcrExtractor):
                 np.array(self.charset)
             )  # the entire character set in utf8
             labels_chars = full_charset[
-                labels.cpu()
+                labels.cpu().numpy()
             ]  # the characters in each bounding box, ordered
 
             # remove bounding boxes whose label is `" "` (aka, don't detect spaces) (and also remove their scores and labels)
