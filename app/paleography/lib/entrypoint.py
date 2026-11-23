@@ -79,11 +79,16 @@ class M4MEntrypoint:
                     "--annotation_file", str(p["annotation_file"])]
         return cmd
 
-    def run_step(self, step, **kwargs):
-        cmd = self.build_cmd(step, **kwargs)
+    def _env(self):
+        """Environment of every M4M subprocess: honours params["cuda_device"]."""
         env = {**os.environ}
         if "cuda_device" in self.params:
             env["CUDA_VISIBLE_DEVICES"] = str(self.params["cuda_device"])
+        return env
+
+    def run_step(self, step, **kwargs):
+        cmd = self.build_cmd(step, **kwargs)
+        env = self._env()
         if self.logger:
             self.logger.info(" ".join(cmd))
         r = subprocess.run(cmd, cwd=self.m4m_path, env=env)
@@ -105,7 +110,7 @@ class M4MEntrypoint:
             cmd += ["--charset", str(self.params["charset"])]
         if self.params.get("annotation_file"):
             cmd += ["--annotation_file", str(self.params["annotation_file"])]
-        r = subprocess.run(cmd, cwd=self.m4m_path)
+        r = subprocess.run(cmd, cwd=self.m4m_path, env=self._env())  # export runs predict.py on the GPU too
         if r.returncode != 0:
             raise M4MError(f"export a echoue (code {r.returncode})")
         out = self.m4m_path / self.out_dir(1) / "paleography_input"
