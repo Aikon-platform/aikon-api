@@ -6,6 +6,7 @@ Sources: scripts/btv1b84472995/line_step_{0,1,2}.sh (Raphael, 37fea71) + reconst
 - --wandb jamais passe. --model_config_path et --loss passes a chaque step.
 """
 import os
+import shutil
 import sys
 import subprocess
 from pathlib import Path
@@ -109,6 +110,17 @@ class M4MEntrypoint:
             raise M4MError(f"export a echoue (code {r.returncode})")
         out = self.m4m_path / self.out_dir(1) / "paleography_input"
         problems = []
+        # CER global and per sub-folder (CR 15/10), shipped in the results zip under cer/
+        predict = self.m4m_path / self.out_dir(2) / "predict"
+        summaries = sorted(predict.glob("*/document_summary.json")) if predict.is_dir() else []
+        if (predict / "global_summary.json").is_file():
+            summaries.insert(0, predict / "global_summary.json")
+        else:
+            problems.append(f"no global_summary.json in {predict}")
+        for f in summaries:
+            dst = out / "cer" / f.relative_to(predict)
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(f, dst)
         protos = out / "prototypes"
         proto_dirs = [d for d in protos.iterdir() if d.is_dir()] if protos.is_dir() else []
         if not proto_dirs:
