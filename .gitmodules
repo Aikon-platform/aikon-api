@@ -10,3 +10,7 @@
 	path = app/region_extraction/lib/dtlr
 	url = git@github.com:paulhectork/DTLR.git
 	branch = aikon-api
+[submodule "app/paleography/lib/m4m"]
+	path = app/paleography/lib/m4m
+	url = git@github.com:NassimaOULDOUALI/morphology4metrology.git
+	branch = aikon-api

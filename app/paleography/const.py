@@ -8,7 +8,7 @@ DEMO_NAME = "paleography"
 
 DEMO_DIR = BASE_DIR / "app" / DEMO_NAME
 LIB_PATH = DEMO_DIR / "lib"
-M4M_PATH = LIB_PATH / "m4m"  # future git submodule (not added yet)
+M4M_PATH = LIB_PATH / "m4m"  # git submodule: fork of raphael-baena/morphology4metrology, branch aikon-api
 CONVERTER_PATH = LIB_PATH / "convert_d1_to_d2.py"  # D1 -> M4M dataset (from m4m_d2_tools 3e5b3f6)
 
 # dedicated queue (queue0-4 are taken, see docker/supervisord.conf.template): requires NB_PROCS >= 6
