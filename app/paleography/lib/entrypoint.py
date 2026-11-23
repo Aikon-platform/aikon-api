@@ -6,6 +6,7 @@ Sources: scripts/btv1b84472995/line_step_{0,1,2}.sh (Raphael, 37fea71) + reconst
 - --wandb jamais passe. --model_config_path et --loss passes a chaque step.
 """
 import os
+import re
 import shutil
 import sys
 import subprocess
@@ -19,6 +20,9 @@ DEFAULTS = {
     2: dict(max_e=140, batch_size=8, learning_rate="1e-2"),
 }
 MODEL_CONFIG = "config/Latin_accent.py"
+EPOCH_RE = re.compile(r"Epoch=(\d+)/(\d+)")        # tqdm postfix of reconstruction.py
+DOC_RE = re.compile(r"document: (\S+?):")          # step 2: one fine-tuning per folio
+PROGRESS_KEY = "m4m"                               # single progress bar, context changes
 LOSS = "L1"
 DEFAULT_SEED = 42  # same default as M4M main_synthetic.py; params["seed"]=None disables it
 
@@ -86,14 +90,53 @@ class M4MEntrypoint:
             env["CUDA_VISIBLE_DEVICES"] = str(self.params["cuda_device"])
         return env
 
+    def _progress(self, current, total, title, end=False):
+        """Forward progress to the task logger (JobLogger -> /status -> front). Never fails the run."""
+        if self.logger is None or not hasattr(self.logger, "progress"):
+            return
+        try:
+            self.logger.progress(current, total, title=title, key=PROGRESS_KEY, end=end)
+        except Exception:
+            pass
+
+    def _run(self, cmd, label):
+        """Run an M4M subprocess: echo its output to the worker log, report Epoch=N/T as progress."""
+        p = subprocess.Popen(cmd, cwd=self.m4m_path, env=self._env(),
+                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=0)
+        buf, last, doc = b"", None, ""
+        while True:
+            chunk = p.stdout.read(4096)
+            if not chunk:
+                break
+            try:
+                os.write(1, chunk)  # same destination as before (worker stdout)
+            except OSError:
+                pass
+            parts = re.split(rb"[\r\n]", buf + chunk)
+            buf = parts.pop()
+            for raw in parts:
+                line = raw.decode("utf-8", "replace")
+                m = DOC_RE.search(line)
+                if m:
+                    doc = m.group(1)
+                m = EPOCH_RE.search(line)
+                if m:
+                    cur = (doc, int(m.group(1)), int(m.group(2)))
+                    if cur != last:
+                        last = cur
+                        self._progress(cur[1], cur[2], f"{label} - {doc}" if doc else label)
+        p.wait()
+        self._progress(0, 0, label, end=True)
+        return p.returncode
+
     def run_step(self, step, **kwargs):
         cmd = self.build_cmd(step, **kwargs)
         env = self._env()
         if self.logger:
             self.logger.info(" ".join(cmd))
-        r = subprocess.run(cmd, cwd=self.m4m_path, env=env)
-        if r.returncode != 0:
-            raise M4MError(f"step {step} a echoue (code {r.returncode})")
+        code = self._run(cmd, f"Step {step}")
+        if code != 0:
+            raise M4MError(f"step {step} a echoue (code {code})")
         return self.out_dir(step)
 
     def export(self, **kwargs):
@@ -110,9 +153,10 @@ class M4MEntrypoint:
             cmd += ["--charset", str(self.params["charset"])]
         if self.params.get("annotation_file"):
             cmd += ["--annotation_file", str(self.params["annotation_file"])]
-        r = subprocess.run(cmd, cwd=self.m4m_path, env=self._env())  # export runs predict.py on the GPU too
-        if r.returncode != 0:
-            raise M4MError(f"export a echoue (code {r.returncode})")
+        self._progress(0, 1, "Export (predict + measurements)")
+        code = self._run(cmd, "Export (predict + measurements)")  # predict.py runs on the GPU too
+        if code != 0:
+            raise M4MError(f"export a echoue (code {code})")
         out = self.m4m_path / self.out_dir(1) / "paleography_input"
         problems = []
         # CER global and per sub-folder (CR 15/10), shipped in the results zip under cer/

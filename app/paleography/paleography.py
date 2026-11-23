@@ -23,7 +23,8 @@ class Paleography(LoggedTask):
         self.entrypoint = None
 
     def initialize(self):
-        self.entrypoint = M4MEntrypoint(self.params)
+        # task logger (JobLogger): epoch progress -> /status -> front progress tracker
+        self.entrypoint = M4MEntrypoint(self.params, logger=getattr(self, "jlogger", None) or getattr(self, "logger", None))
 
     def _prepare_d1_input(self):
         """Doit produire <dir>/<folio>/<ligne>.png + .txt (arborescence du zip D1).
