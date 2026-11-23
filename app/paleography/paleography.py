@@ -67,7 +67,7 @@ class Paleography(LoggedTask):
     def _run_chain(self):
         import json, subprocess, sys
         from pathlib import Path
-        from .const import M4M_PATH
+        from .const import M4M_PATH, CONVERTER_PATH, M4M_CHECKPOINT, PALEO_LOGS_PATH
 
         ep = self.entrypoint
         params = self.params
@@ -77,11 +77,17 @@ class Paleography(LoggedTask):
         # --out du converter ne doit pas exister: dossier neuf par experience
         ep.data_folder = params.get("data_folder") or f"paleo_{self.experiment_id}"
         ep.run_id = params.get("run_id") or ep.data_folder
-        if "convert" in steps:
-            if not params.get("converter_path"):
-                raise ValueError("params['converter_path'] manquant")  # emplacement a trancher. [A CONFIRMER] Paul
-        if "0" in steps and not params.get("checkpoint"):
-            raise ValueError("params['checkpoint'] manquant")  # checkpoint HF du step 0
+        converter = Path(params.get("converter_path") or CONVERTER_PATH)  # defaut: converter du module
+        if "convert" in steps and not converter.is_file():
+            raise ValueError(f"converter introuvable: {converter}")
+        checkpoint = Path(params.get("checkpoint") or M4M_CHECKPOINT)  # defaut: checkpoint HF (const.py)
+        if "0" in steps and not checkpoint.is_file():
+            raise ValueError(f"checkpoint introuvable: {checkpoint}")
+
+        # M4M writes to logs_reconstruction/<tag> (cwd = M4M_PATH): keep outputs in the data folder
+        logs_link = Path(M4M_PATH) / "logs_reconstruction"
+        if not logs_link.exists() and not logs_link.is_symlink():
+            logs_link.symlink_to(PALEO_LOGS_PATH, target_is_directory=True)
 
         cfg_path = Path(M4M_PATH) / "datasets" / "config.json"
         if not cfg_path.exists():  # fichier gitignore cote M4M, propre a chaque deploiement
@@ -93,7 +99,7 @@ class Paleography(LoggedTask):
 
         if "convert" in steps:
             d1_dir = self._prepare_d1_input()
-            cmd = [sys.executable, str(params["converter_path"]), "--d1", str(d1_dir), "--out", str(out),
+            cmd = [sys.executable, str(converter), "--d1", str(d1_dir), "--out", str(out),
                    "--val-ratio", "0"]  # CER complet (CR 08/10)
             if params.get("script"):
                 cmd += ["--script", str(params["script"])]
@@ -110,7 +116,7 @@ class Paleography(LoggedTask):
 
         # NB: les steps 1 et 2 supposent les sorties des steps precedents (meme run_id)
         if "0" in steps:
-            ep.run_step(0, checkpoint=params["checkpoint"])
+            ep.run_step(0, checkpoint=str(checkpoint))
         if "1" in steps:
             ep.run_step(1)
         if "2" in steps:
