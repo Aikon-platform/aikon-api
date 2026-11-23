@@ -27,6 +27,7 @@ API_APPS = (
     "region_extraction",
     "vectorization",
     "search",
+    "paleography",
 )
 PROMPTED = {
     "local": (),

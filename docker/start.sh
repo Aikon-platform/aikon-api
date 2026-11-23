@@ -33,8 +33,8 @@ if [[ "$INSTALLED_APPS" == *"vectorization"* ]]; then
     is_build=1
 fi
 
-# if region in INSTALLED_APPS, and build is not already done
-if [[ "$INSTALLED_APPS" == *"region_extraction"* ]] && [[ $is_build -eq 0 ]]; then
+# if region or paleography (same MultiScaleDeformableAttention ops) in INSTALLED_APPS, and build is not already done
+if { [[ "$INSTALLED_APPS" == *"region_extraction"* ]] || [[ "$INSTALLED_APPS" == *"paleography"* ]]; } && [[ $is_build -eq 0 ]]; then
     color_echo blue "Building operators for region extraction module..."
     cd "$ROOT_DIR"/api/app/region_extraction/lib/line_predictor/dino/ops/
     python setup.py build install || {
