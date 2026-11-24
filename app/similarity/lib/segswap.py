@@ -234,6 +234,9 @@ def compute_score(
 ):
     feat1 = F.normalize(backbone(tensor1))
     feat2 = F.normalize(backbone(tensor2))
+    if len(feat1) == 1 < len(feat2):
+        # one query compared to a batch of images: its features are computed once
+        feat1 = feat1.expand_as(feat2).contiguous()
     out1, out2 = net_encoder(feat1, feat2)
 
     m1_final, m2_final = consistent_mask(

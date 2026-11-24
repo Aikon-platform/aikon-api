@@ -176,6 +176,7 @@ def redis_up() -> bool:
 
 
 def run_dev() -> None:
+    subprocess.run(["docker", "rm", "-f", ENV["CONTAINER_NAME"]], capture_output=True)
     kill_stale("dramatiq app.main", "flask --app app.main")
     if not redis_up():
         sys.exit(

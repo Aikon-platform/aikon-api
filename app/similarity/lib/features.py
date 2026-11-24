@@ -49,7 +49,8 @@ class FeatureExtractor:
                     feat_path, map_location=self.device, weights_only=False
                 )
 
-                if feats.numel() != 0:
+                # a cache that does not match the images (e.g. written by an interrupted run) is recomputed
+                if feats.numel() != 0 and len(feats) == len(data_loader.dataset):
                     console(f"Loaded extracted features from {feat_path}")
                     # for feat in feats:
                     #     yield feat.to(self.device, non_blocking=True)
@@ -74,7 +75,9 @@ class FeatureExtractor:
 
         if cache_dir is not None:
             cache_dir.mkdir(parents=True, exist_ok=True)
-            torch.save(features, feat_path)
+            tmp_path = feat_path.with_suffix(".tmp")
+            torch.save(features, tmp_path)
+            tmp_path.replace(feat_path)
             # torch.save(torch.cat(features, dim=0).to(torch.float16), feat_path)
 
         clear_cuda()
