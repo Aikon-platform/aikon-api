@@ -379,7 +379,7 @@ class LoggedKMeansTrainer(LoggingTrainerMixin, KMeansTrainer):
         Overwrite original save_training_metrics method for lightweight plots saving
         """
         self.model.eval()
-        self.save_prototypes(path=self.prototypes_dir)
+        self.save_prototypes(path="prototypes")
         self.log_end()
 
 
