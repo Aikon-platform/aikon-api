@@ -66,10 +66,16 @@ class ComputeAlignment(LoggedTask):
         Index of the requested reference image (matched by id or file name),
         or of the first image
         """
+        best_match = None
+        best_match_len = 0
         if self.requested_reference:
             for i, im in enumerate(images):
-                if self.requested_reference in (im.id, im.path.name):
-                    return i
+                for candidate in (im.id, im.path.name):
+                    if self.requested_reference in candidate:
+                        if best_match is None or best_match_len > len(candidate):
+                            best_match, best_match_len = i, len(candidate)
+            if best_match is not None:
+                return best_match
             self.log(
                 f"Reference image {self.requested_reference} not found, using the first image"
             )
