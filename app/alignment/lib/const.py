@@ -14,10 +14,22 @@ SIFT_FEATURE = "SIFT"
 DENSE_ARCHS = ("cnn", "vit_hook", "dinov2")
 
 MAX_SIZE = 2000
-# Lowe's ratio test threshold to keep a SIFT match
-RATIO_TEST = 0.75
+# Lowe's ratio test threshold to keep a SIFT match (on RootSIFT descriptors); loose
+# like VISE's, as RANSAC copes with many outliers
+RATIO_TEST = 0.9
+# Give SIFT keypoints orientation 0: not rotation invariant (assumes roughly upright
+# images, as VISE does: alignment fails beyond ~30 degrees), but more distinctive
+# descriptors and one keypoint per position
+SIFT_UPRIGHT = True
 # RANSAC reprojection threshold, in pixels of the (downscaled to MAX_SIZE) reference image
 RANSAC_THRESHOLD = 3.0
+
+# RANSAC candidates are selected at RANSAC_LOOSE_FACTOR * threshold, then refitted
+# RANSAC_N_REFIT times with a threshold decreasing to the final one
+RANSAC_LOOSE_FACTOR = 3.0
+RANSAC_N_REFIT = 4
+# Minimum number of inliers for a transform to be returned
+MIN_INLIERS = 10
 
 # Dense deep features: target image diagonal (pixels) at scale 1, and scales extracted
 DEEP_SIZE = 640

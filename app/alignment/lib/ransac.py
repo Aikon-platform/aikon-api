@@ -6,6 +6,7 @@ Conventions:
 - a transform is a 3x3 matrix H mapping src onto dst in homogeneous coordinates
 """
 
+import math
 from collections.abc import Callable
 from typing import NamedTuple
 
@@ -65,16 +66,96 @@ def transfer_error(src: Tensor, dst: Tensor, h: Tensor) -> Tensor:
     return (dst - proj[..., :2] / proj[..., 2:]).norm(dim=-1)
 
 
-def _count_inliers(
-    src: Tensor, dst: Tensor, h: Tensor, threshold: float, min_det: float
-) -> Tensor:
+def _ajugate_invert(h: Tensor) -> Tensor:
     """
-    Number of inliers of each transform, 0 for invalid ones (non-finite or det(H) <= min_det)
+    Inverse of 3x3 matrices by their adjugate, inf/nan for singular ones
+    (torch.linalg.inv raises on singular matrices on CUDA)
 
-    Batched for h: src and dst (N, 2), h (B, 3, 3), output (B,)
+    Batched: (B, 3, 3) -> (B, 3, 3)
     """
-    valid_h = torch.isfinite(h).all(dim=(1, 2)) & (torch.linalg.det(h) > min_det)
-    return (transfer_error(src, dst, h) < threshold).sum(dim=1) * valid_h
+    r0, r1, r2 = h.unbind(1)
+    # columns of the inverse: cross products of the rows, over the determinant
+    adj = torch.stack(
+        [
+            torch.linalg.cross(r1, r2),
+            torch.linalg.cross(r2, r0),
+            torch.linalg.cross(r0, r1),
+        ],
+        dim=-1,
+    )
+    return adj / (r0 * adj[..., 0]).sum(-1)[:, None, None]
+
+
+def symmetric_error(src: Tensor, dst: Tensor, h: Tensor) -> Tensor:
+    """
+    RMS of the forward (src -> dst) and backward (dst -> src) transfer errors, in dst pixels.
+
+    Scaling factor between src & dst pixels is approximated by linear part of h 
+    (= exact for affine transform)
+
+    Args:
+        src, dst: (N, 2)
+        h: (B, 3, 3)
+
+    Returns:
+        (B, N) errors, inf/nan for points sent to infinity and singular transforms
+    """
+    fwd = transfer_error(src, dst, h)
+    bwd = transfer_error(dst, src, _ajugate_invert(h))
+    scale = (torch.linalg.det(h[:, :2, :2]) / h[:, 2, 2] ** 2).abs().sqrt()
+    return ((fwd**2 + (bwd * scale[:, None]) ** 2) / 2).sqrt()
+
+
+def _is_transform_valid(h: Tensor, min_det: float) -> Tensor:
+    """
+    Finite transforms with det(H) > min_det (neither degenerate nor mirroring)
+
+    Batched: (B, 3, 3) -> (B,) bool
+    """
+    return torch.isfinite(h).all(dim=(1, 2)) & (torch.linalg.det(h) > min_det)
+
+
+def _group_max_sum(values: Tensor, groups: Tensor, n_groups: int) -> Tensor:
+    """
+    Sum over groups of the largest value of each group
+
+    Batched: values (B, N) >= 0, groups (N,) in [0, n_groups), output (B,)
+    """
+    out = values.new_zeros(len(values), n_groups)
+    return out.scatter_reduce(1, groups.expand_as(values), values, "amax").sum(dim=1)
+
+
+class FitScorer:
+    """
+    Counts the inliers of transforms
+    
+    Deduplicates src & dst points, by considering the smaller of the numbers 
+    of src and dst points with an inlier
+    """
+
+    def __init__(
+        self,
+        src: Tensor,
+        dst: Tensor,
+        src_groups: Tensor,
+        dst_groups: Tensor,
+        min_det: float,
+    ):
+        self.src, self.dst, self.min_det = src, dst, min_det
+        self.groups = [
+            (g, int(g.max()) + 1 if len(g) else 0) for g in (src_groups, dst_groups)
+        ]
+
+    def errors(self, h: Tensor) -> Tensor:
+        return symmetric_error(self.src, self.dst, h)
+
+    def count(self, h: Tensor, threshold: float) -> Tensor:
+        """
+        (B, 3, 3) -> (B,), 0 for invalid transforms
+        """
+        inliers = (self.errors(h) < threshold).to(self.src.dtype)
+        counts = [_group_max_sum(inliers, g, n) for g, n in self.groups]
+        return torch.minimum(*counts) * _is_transform_valid(h, self.min_det)
 
 
 def _centered(src: Tensor, dst: Tensor) -> tuple[Tensor, Tensor]:
@@ -248,63 +329,169 @@ class RansacResult(NamedTuple):
     inliers: Tensor  # (N,) bool
 
 
+def _needed_iterations(inlier_ratio: float, min_points: int, p_fail: float) -> float:
+    """
+    Number of random minimal samples to draw to get an all-inlier one with
+    probability 1 - p_fail, i.e. log(p_fail) / log(1 - inlier_ratio ^ min_points)
+    """
+    p_good = inlier_ratio**min_points
+    if p_good >= 1:
+        return 0
+    if p_good <= 0:
+        return math.inf
+    return math.log(p_fail) / math.log1p(-p_good)
+
+
+def _refit_finer_transform(
+    scorer: FitScorer,
+    estimate: Estimator,
+    h: Tensor,
+    thresholds: list[float],
+    min_points: int,
+) -> Tensor:
+    """
+    Refit h on its inliers, with decreasing threshold, to tighten the transform estimate
+
+    (3, 3) -> (3, 3)
+    """
+    for t in thresholds:
+        inliers = scorer.errors(h[None])[0] < t
+        if inliers.sum() < min_points:
+            break
+        refit = estimate(scorer.src[inliers][None], scorer.dst[inliers][None])
+        if not _is_transform_valid(refit, scorer.min_det)[0]:
+            break
+        h = refit[0]
+    return h
+
+
 def ransac(
     src: Tensor,
     dst: Tensor,
     transform: str,
     threshold: float,
-    n_iter: int = 1000,
-    batch_size: int = 100,
+    *,
+    src_groups: Tensor | None = None,
+    dst_groups: Tensor | None = None,
+    hypotheses: Tensor | None = None,
+    loose_factor: float = 3.0,
+    n_refit: int = 4,
+    n_candidates: int = 8,
+    max_iter: int = 10000,
+    p_fail: float = 1e-3,
+    batch_size: int = 256,
+    min_inliers: int = 0,
     min_det: float = 1e-6,
-    n_refit: int = 1,
     generator: torch.Generator | None = None,
 ) -> RansacResult | None:
     """
-    Find the transform mapping the most src points within threshold of their dst match
+    Find the transform mapping src onto dst with the most inliers
 
-    Every iteration fits the model on a random minimal sample of distinct matches;
-    iterations are run batch_size at a time (memory is O(batch_size * N)).
-    Candidates whose det(H) <= min_det (degenerate or mirroring) are discarded.
-    The best candidate is then refitted on its inliers, up to n_refit times,
-    as long as this does not lose inliers.
+    An inlier is a match whose symmetric_error is below threshold; if a point is shared
+    by several matches, it counts once (cf _Scorer).
+
+    1. Collect candidate transforms:
+       - the given hypotheses, if any: typically one per match, each built from that
+         single match (with SIFT, from the size and orientation of its two keypoints);
+       - fits on random samples of min_points matches.
+       All are scored at a loose threshold (threshold * loose_factor), and only the
+       n_candidates best are kept.
+    2. Refine each kept candidate: refit it on its inliers n_refit times, with a
+       threshold shrinking from the loose one down to threshold.
+    3. Return the best transform, refined or not.
+
+    The hypotheses parameter is a way to provide candidate transforms obtained differently
+    (e.g., one-match hypotheses). It helps: if a fraction w of the matches are right, a hypothesis
+    built from a single match is right with probability w, while a random sample of
+    min_points matches is right only with probability w ** min_points (e.g. 1e-4 for a
+    homography, 4 matches, at w = 10%).
+
+    Args:
+        src, dst: (N, 2) matched points
+        transform: model name, a key of MODELS
+        threshold: inlier threshold, in dst pixels
+        src_groups, dst_groups: (N,) id of the src / dst point of each match, to count
+            a point shared by several matches once (default: all points distinct)
+        hypotheses: (M, 3, 3) candidate transforms, e.g. one per match from the size and
+            orientation of its two keypoints (see frame_hypotheses in align_ransac)
+        loose_factor: threshold multiplier for scoring the unrefined candidates
+        n_refit: number of refits of each candidate
+        n_candidates: number of candidates kept for refinement
+        max_iter: maximum number of random samples; sampling stops earlier once a right
+            sample has been drawn with probability 1 - p_fail, given the best inlier
+            ratio found so far
+        p_fail: accepted probability of missing a right random sample
+        batch_size: samples / hypotheses scored at once (memory is O(batch_size * N))
+        min_inliers: below this number of inliers, no transform is returned
+        min_det: transforms with det(H) <= min_det (degenerate or mirroring) are discarded
+        generator: random generator, for reproducible results
 
     Returns:
-        best transform and its inlier mask, or None if no candidate has any inlier
+        best transform and its inlier mask, or None if it has fewer than
+        max(min_inliers, min_points) inliers
     """
     min_points, estimate = MODELS[transform]
     n = len(src)
-    if n < min_points:
+    if n < max(min_points, min_inliers):
         return None
 
-    best_h, best_counts = [], []
-    for start in range(0, n_iter, batch_size):
-        b = min(batch_size, n_iter - start)
+    every = torch.arange(n, device=src.device)
+    scorer = FitScorer(
+        src,
+        dst,
+        every if src_groups is None else src_groups,
+        every if dst_groups is None else dst_groups,
+        min_det,
+    )
+    loose = threshold * loose_factor
+
+    # n_candidates best candidates, with their inlier count at the loose threshold, best first
+    cand_h = src.new_empty(0, 3, 3)
+    cand_s = src.new_empty(0)
+
+    def add_candidates(h: Tensor):
+        nonlocal cand_h, cand_s
+        cand_h = torch.cat([cand_h, h])
+        cand_s = torch.cat([cand_s, scorer.count(h, loose)])
+        keep = cand_s.topk(min(n_candidates, len(cand_s))).indices
+        cand_h, cand_s = cand_h[keep], cand_s[keep]
+
+    if hypotheses is not None:
+        for h in hypotheses.to(src).split(batch_size):
+            add_candidates(h)
+
+    done = 0
+    while done < max_iter:
+        ratio = (
+            float(scorer.count(cand_h[:1], threshold)[0]) / n if len(cand_h) else 0.0
+        )
+        if done >= _needed_iterations(ratio, min_points, p_fail):
+            break
+        b = min(batch_size, max_iter - done)
         # top-k of uniform noise = sampling without replacement
         samples = (
             torch.rand(b, n, device=src.device, generator=generator)
             .topk(min_points, dim=1)
             .indices
         )
-        h = estimate(src[samples], dst[samples])
-        counts = _count_inliers(src, dst, h, threshold, min_det)
-        best = counts.argmax()
-        best_h.append(h[best])
-        best_counts.append(counts[best])
+        add_candidates(estimate(src[samples], dst[samples]))
+        done += b
 
-    # single device sync, after all batches
-    best = torch.stack(best_counts).argmax()
-    if best_counts[best] == 0:
+    cand_h = cand_h[cand_s > 0]
+    if not len(cand_h):
         return None
-    h, count = best_h[best], best_counts[best]
 
-    for _ in range(n_refit):
-        if count < min_points:
-            break
-        inliers = transfer_error(src, dst, h[None])[0] < threshold
-        refit = estimate(src[inliers][None], dst[inliers][None])
-        refit_count = _count_inliers(src, dst, refit, threshold, min_det)[0]
-        if refit_count < count:
-            break
-        h, count = refit[0], refit_count
+    thresholds = [
+        loose * (threshold / loose) ** (i / max(n_refit - 1, 1)) for i in range(n_refit)
+    ]
+    refined = [
+        _refit_finer_transform(scorer, estimate, h, thresholds, min_points) for h in cand_h
+    ]
 
-    return RansacResult(h, transfer_error(src, dst, h[None])[0] < threshold)
+    # Chooser best transform
+    final = torch.cat([cand_h, torch.stack(refined)])
+    h = final[scorer.count(final, threshold).argmax()]
+
+    if scorer.count(h[None], threshold)[0] < max(min_inliers, min_points):
+        return None
+    return RansacResult(h, scorer.errors(h[None])[0] < threshold)

@@ -34,6 +34,9 @@ from .const import (
     DEEP_SIZE,
     DENSE_ARCHS,
     MAX_SIZE,
+    MIN_INLIERS,
+    RANSAC_LOOSE_FACTOR,
+    RANSAC_N_REFIT,
     RANSAC_THRESHOLD,
     RATIO_TEST,
     SEGSWAP_FEATURE,
@@ -41,6 +44,7 @@ from .const import (
     SEGSWAP_MODEL,
     SEGSWAP_SIZE,
     SIFT_FEATURE,
+    SIFT_UPRIGHT,
 )
 from .ransac import ransac
 from .types import AlignedImage, Keypoint
@@ -53,6 +57,9 @@ class Features(NamedTuple):
     desc: np.ndarray | torch.Tensor | None
     # size of a feature pixel (SIFT) / cell at scale 1 (deep), in original image pixels
     unit: float
+    # local frame of each keypoint (N, 2): size (orig image pixels), orientation (rad)
+    frames: np.ndarray | None = None
+
 
 class Extractor:
     """
@@ -69,15 +76,17 @@ class Extractor:
 
 class SiftExtractor(Extractor):
     """
-    SIFT keypoints on a downscaled grayscale version of the image, matched with Lowe's ratio test
+    SIFT keypoints on a downscaled grayscale version of the image, with RootSIFT
+    descriptors, matched with Lowe's ratio test
     """
 
     # SIFT gives several keypoints at the same position (one per orientation)
     requires_deduplication = True
     ransac_threshold = RANSAC_THRESHOLD
 
-    def __init__(self, max_size: int = MAX_SIZE):
+    def __init__(self, max_size: int = MAX_SIZE, upright: bool = SIFT_UPRIGHT):
         self.max_size = max_size
+        self.upright = upright
         self.sift = cv2.SIFT_create()
 
     def extract(self, path: Path) -> Features:
@@ -91,10 +100,26 @@ class SiftExtractor(Extractor):
                 img, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA
             )
 
-        kps, desc = self.sift.detectAndCompute(img, None)
+        kps = self.sift.detect(img, None)
+        if self.upright:
+            # Remove orientation, merge keypoints
+            unique = {}
+            for kp in kps:
+                kp.angle = 0
+                unique.setdefault((*kp.pt, kp.size), kp)
+            kps = list(unique.values())
+        kps, desc = self.sift.compute(img, kps)
+
+        if desc is not None:
+            # RootSIFT (Arandjelovic & Zisserman 2012): L2 distance on it compares
+            # the original descriptors with the Hellinger kernel
+            desc = np.sqrt(desc / np.maximum(desc.sum(axis=1, keepdims=True), 1e-6))
 
         pts = np.array([kp.pt for kp in kps], dtype=np.float32).reshape(-1, 2) / scale
-        return Features(pts, desc, 1 / scale)
+        frames = np.array(
+            [(kp.size / scale, np.deg2rad(kp.angle)) for kp in kps], dtype=np.float32
+        ).reshape(-1, 2)
+        return Features(pts, desc, 1 / scale, frames)
 
     def match(
         self,
@@ -155,7 +180,7 @@ class DeepExtractor(Extractor):
         w, h = img.size
         diag = (w**2 + h**2) ** 0.5
 
-        pts, desc = [], []
+        pts, desc, sizes = [], [], []
         unit = 1.0
         for scale in DEEP_SCALES:
             k = DEEP_SIZE * scale / diag
@@ -171,11 +196,15 @@ class DeepExtractor(Extractor):
             )
             pts.append(torch.stack([xs * w / fw, ys * h / fh], dim=-1).reshape(-1, 2))
             desc.append(F.normalize(fmap.flatten(1).T.float(), dim=1))
+            sizes.append(torch.full((fh * fw,), w / fw))
             unit = w / fw * scale
 
         if not pts:
             return Features(np.zeros((0, 2), dtype=np.float32), None, unit)
-        return Features(torch.cat(pts).numpy(), torch.cat(desc), unit)
+        # frames: cell size at the extraction scale, no orientation
+        sizes = torch.cat(sizes)
+        frames = torch.stack([sizes, torch.zeros_like(sizes)], dim=1).numpy()
+        return Features(torch.cat(pts).numpy(), torch.cat(desc), unit, frames)
 
     def match(
         self, desc: torch.Tensor | None, ref_desc: torch.Tensor | None
@@ -277,23 +306,59 @@ def make_extractor(ransac_feature: str, device: str) -> Extractor:
     raise ValueError(f"Feature '{ransac_feature}' cannot be used to compute keypoints")
 
 
+def frame_hypotheses(
+    src: np.ndarray, src_frames: np.ndarray, dst: np.ndarray, dst_frames: np.ndarray
+) -> np.ndarray:
+    """
+    One similarity per match, mapping the local frame (size, orientation) of its src
+    keypoint onto the one of its dst keypoint, as VISE does with affine regions
+
+    (N, 2) each -> (N, 3, 3)
+    """
+    scale = dst_frames[:, 0] / src_frames[:, 0]
+    angle = dst_frames[:, 1] - src_frames[:, 1]
+    cos, sin = scale * np.cos(angle), scale * np.sin(angle)
+    h = np.zeros((len(src), 3, 3))
+    h[:, 0, 0] = h[:, 1, 1] = cos
+    h[:, 0, 1], h[:, 1, 0] = -sin, sin
+    h[:, :2, 2] = dst - np.einsum("nij,nj->ni", h[:, :2, :2], src)
+    h[:, 2, 2] = 1
+    return h
+
+
 def estimate_transform(
     src: np.ndarray,
     dst: np.ndarray,
     target_transform: str,
     threshold: float,
     device: str,
+    src_groups: np.ndarray | None = None,
+    dst_groups: np.ndarray | None = None,
+    hypotheses: np.ndarray | None = None,
     generator: torch.Generator | None = None,
 ) -> tuple[np.ndarray | None, np.ndarray]:
     """
     Estimate the transform mapping src points onto dst points with RANSAC
+    (see ransac for the optional arguments)
 
     Returns:
         3x3 matrix (or None if it could not be estimated), boolean inlier mask
     """
-    to_tensor = lambda a: torch.as_tensor(a, dtype=torch.float32, device=device)
+    to_tensor = lambda a, dtype=torch.float32: (
+        None if a is None else torch.as_tensor(a, dtype=dtype, device=device)
+    )
     result = ransac(
-        to_tensor(src), to_tensor(dst), target_transform, threshold, generator=generator
+        to_tensor(src),
+        to_tensor(dst),
+        target_transform,
+        threshold,
+        src_groups=to_tensor(src_groups, torch.long),
+        dst_groups=to_tensor(dst_groups, torch.long),
+        hypotheses=to_tensor(hypotheses),
+        loose_factor=RANSAC_LOOSE_FACTOR,
+        n_refit=RANSAC_N_REFIT,
+        min_inliers=MIN_INLIERS,
+        generator=generator,
     )
     if result is None:
         return None, np.zeros(len(src), dtype=bool)
@@ -367,19 +432,31 @@ def align_ransac(
 
         feats = extractor.extract(img.path)
         matches = extractor.match(feats.desc, ref.desc)
-        # There may be duplicate matched keypoints, RANSAC will deal with/filter it
 
         ref_ids = sorted(matches)
-        src = feats.pts[[matches[r][0] for r in ref_ids]].reshape(-1, 2)
+        img_ids = np.array([matches[r][0] for r in ref_ids], dtype=int)
+        src = feats.pts[img_ids].reshape(-1, 2)
+        dst = ref.pts[ref_ids].reshape(-1, 2)
+        # duplicate keypoints (same position) count once among the inliers
+        img_canonical = (
+            find_duplicates(feats.pts) if extractor.requires_deduplication else np.arange(len(feats.pts))
+        )
+        hypotheses = (
+            frame_hypotheses(src, feats.frames[img_ids], dst, ref.frames[ref_ids])
+            if feats.frames is not None and ref.frames is not None
+            else None
+        )
         matrix, inliers = estimate_transform(
             src,
-            ref.pts[ref_ids].reshape(-1, 2),
+            dst,
             target_transform,
             threshold,
             device,
-            generator,
+            src_groups=img_canonical[img_ids],
+            dst_groups=ref_canonical[ref_ids],
+            hypotheses=hypotheses,
+            generator=generator,
         )
-        # TODO deduplicate image keypoints too, and choose the best match as being part of inliers
         aligned[i] = (
             matrix,
             {
